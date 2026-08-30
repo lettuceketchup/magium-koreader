@@ -1,6 +1,6 @@
 # SUMMARY — what we know so far
 
-- **Status:** in-progress (Phases 0 & 1 done; Phase 2 next)
+- **Status:** in-progress (Phases 0, 1 & 2 done; Phase 3 next)
 - **Last updated:** 2026-08-31
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
@@ -14,11 +14,15 @@
 deliberately keeps the end-form open (standalone plugin / extend an existing
 plugin / convert to a supported format) until the evidence is in.
 
-**Early read (low confidence):** the constraints picture favors a **standalone
-Lua plugin that reimplements the small `magium-dev` engine and bundles the
-`.magium` data** — memory is a non-issue on this device and the engine is tiny.
-The main unknowns are the KOReader UI fit (spike A) and redistribution permission
-(OQ-004). To be confirmed or overturned in Phase 6.
+**Early read (low→medium confidence):** the constraints picture favors a
+**standalone Lua plugin that reimplements the small `magium-dev` engine and
+bundles the `.magium` data** — memory is a non-issue on this device, the engine is
+tiny, and Phase 2 confirms **KOReader provides every widget/API the Magium UI
+needs** with a shipping plugin (`frotz.koplugin`) already demonstrating the exact
+"fullscreen styled narrative + choice list on e-ink" shape. Remaining unknowns:
+the e-ink *feel* of the choice→page loop (spike A / OQ-007), redistribution
+permission (OQ-004), and the one 490 KB condition outlier (OQ-011). To be
+confirmed or overturned in Phase 6.
 
 ## Established so far
 
@@ -36,14 +40,20 @@ The main unknowns are the KOReader UI fit (spike A) and redistribution permissio
 | 10 | **`.magium` format = 5 regexes, DNF conditions, flat non-nested `#if`.** Full 54-file corpus scanned ([`scan-magium-constructs.js`](reference/tools/scan-magium-constructs.js)): navigation is via the `v_current_scene` variable (not the `target` field, which the engine never reads); `choice(""spoken"")` doubled-quote labels are common (809×); no multi-digit `set()`; `<br/>` is the only markup. Latent parser hazards (unanchored regexes, `startsWith` traps) catalogued but none triggered by current data. | high | [`02-magium-format-spec.md`](docs/research/02-magium-format-spec.md) §2–4 |
 | 11 | **i18n = string-bundle swap.** en and fr `.magium` sets are structurally identical (same 54 files, scene ids, variables, conditions); only prose + labels are translated. One engine, one story-logic, N prose bundles. | high | [`01-magium-analysis.md`](docs/research/01-magium-analysis.md) §9, [`02`](docs/research/02-magium-format-spec.md) §5 |
 | 12 | **One performance outlier found:** `b3ch4a.magium:251` is a single ~490 KB `choice … if (…)` condition with 2044 OR-clauses (pre-expanded "Average Joe" check). Re-evaluating it per render on the Kindle CPU is untested → OQ-011. Mitigable (cache / pre-compile). | medium | [`01`](docs/research/01-magium-analysis.md) §11, [`02`](docs/research/02-magium-format-spec.md) §4, OQ-011 |
+| 13 | **KOReader gives us everything the Magium UI needs** — plugin = `WidgetContainer:extend` + `UIManager:show` for a fullscreen non-document UI; `TextBoxWidget`/`ScrollTextWidget` (C-shaped reflowed prose), `ButtonTable`/`Menu` (choice list), `KeyValuePage` (stats), `LuaSettings`/`Persist` (saves), `Notification` (achievement toast). No missing capability. `kbarni/frotz.koplugin` already ships a fullscreen "styled transcript + choice/input row on e-ink" plugin — direct prior art. | high (capability); medium (fit/feel → spike A) | [`03-koreader-platform.md`](docs/research/03-koreader-platform.md) §1,§3,§7; F-14/F-15 |
+| 14 | **Platform facts:** LuaJIT **2.1.ROLLING** (`NUM 20199`, upstream `LuaJIT/LuaJIT@3c4f9fe`, not OpenResty), Lua 5.1 + FFI, patterns not regex, no `utf8` stdlib. **Single OS process / single Lua state / no threads** — blocking work (cold parse, the 490 KB condition) must be sliced via `Trapper`/`UIManager:scheduleIn`. `<br/>` is the only Magium markup → `TextBoxWidget` + `\n`. Saves fsync on write → debounce autosave. Closes the Phase 0 LuaJIT-build item. | high | [`03`](docs/research/03-koreader-platform.md) §2,§5,§6; F-16/F-17/F-19/F-20 |
+| 15 | **Dev loop:** on-device = USB copy to `koreader/plugins/` + restart + read `koreader/crash.log` (all `logger` output, last 500 KB); no hot reload. The `kodev` desktop emulator is Linux/macOS-only → the owner (Windows) needs WSL2 / Docker / AppImage-extract → new **OQ-012**. | high | [`03`](docs/research/03-koreader-platform.md) §8; F-18 |
 
 ## Open questions
 
 Tracked in [`docs/research/07-risks-open-questions.md`](docs/research/07-risks-open-questions.md)
-(OQ-001 … OQ-011). Closed: OQ-010. Mostly resolved: OQ-001, OQ-008, OQ-009.
-Still blocking the verdict: OQ-002/OQ-007 (UI feasibility — spike A), OQ-004
-(redistribution permission), OQ-003 (existing offline gamebook players).
-New from Phase 1: OQ-011 (per-render cost of the 490 KB condition outlier).
+(OQ-001 … OQ-012). Closed: OQ-010. Mostly resolved: OQ-001, OQ-008, OQ-009.
+Narrowed by Phase 2: OQ-002 (widgets exist + prior art; only the "custom vs.
+off-the-shelf" call remains — spike A). Still blocking the verdict: OQ-007 (e-ink
+feel — spike A), OQ-004 (redistribution permission), OQ-003 (existing offline
+gamebook players — but `frotz.koplugin` is a strong lead). New from Phase 1:
+OQ-011 (per-render cost of the 490 KB condition outlier). New from Phase 2:
+OQ-012 (Windows dev loop for the emulator).
 
 ## Decisions
 

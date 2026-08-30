@@ -1,7 +1,7 @@
 # 04 — Constraints budget (go / no-go)
 
-- **Status:** draft (device limits confirmed on-device 2026-08-31; spikes B/D pending)
-- **Last updated:** 2026-08-31
+- **Status:** draft (device limits confirmed on-device 2026-08-31; platform limits from Phase 2; spikes A/B/D pending)
+- **Last updated:** 2026-08-31 (Phase 2: Lua VM / threads / e-ink / save-write rows filled from [`03`](03-koreader-platform.md))
 - **Phase:** 3
 - **Sources:** [`00-overview.md`](00-overview.md), [`03-koreader-platform.md`](03-koreader-platform.md), [`01-magium-analysis.md`](01-magium-analysis.md) §11, `../../reference/magium-dev-notes.md`, on-device measurement (pending), spike D (pending)
 - **Related:** [`06-approach-comparison.md`](06-approach-comparison.md), [`07-risks-open-questions.md`](07-risks-open-questions.md) OQ-001
@@ -22,10 +22,11 @@ see [`00-overview.md`](00-overview.md).
 | KOReader RSS (idle) | ~32.7 MB | high | on-device; a plugin's story data adds on top of this |
 | CPU | MediaTek dual-core @ 1 GHz | medium | first multi-core Paperwhite |
 | Storage | 11.6 GB partition / 10.6 GB free | high | bundling 7.5 MB of story text is trivial |
-| Threads | none — KOReader is single-process cooperative Lua | high | long parse/convert work blocks the UI unless chunked/yielded |
-| E-ink refresh | full ≈ 400–600 ms est., partial faster; A2 for fast updates | low | confirm feel in spike A |
-| Lua VM | LuaJIT (arm), `koreader-kindlehf` build | medium | confirm exact version Phase 2 |
-| Lua GC | incremental; watch for pauses when holding ~20–30 MB of tables | medium | measure in spike D |
+| Threads | none — single OS process, single Lua state, cooperative scheduling | high | confirmed [`03` §2](03-koreader-platform.md#2-lua-environment-22); long parse / the 490 KB condition eval block the UI unless sliced via `UIManager:scheduleIn`/`nextTick` or run under `Trapper` (coroutine) |
+| E-ink refresh | `full` ≈ 400–600 ms est. (flashing); `ui` partial (no-flash) well under; `partial` auto-promotes to a flash every 6 refreshes; MTK "fast mode" force-enabled on `KindlePaperWhite6` | medium (mechanics high, latency low) | mechanics from [`03` §6](03-koreader-platform.md#6-e-ink-specifics-26); latency + ghosting feel → spike A / OQ-007 |
+| Lua VM | **LuaJIT 2.1.ROLLING** (`LUAJIT_VERSION_NUM 20199`), upstream `LuaJIT/LuaJIT@3c4f9fe` (v2.1 branch), **not** OpenResty; Lua 5.1 + FFI; no `utf8` stdlib, patterns not regex, all-double numbers | high | `koreader-base` @ `6e4bc81`, [`03` §2](03-koreader-platform.md#2-lua-environment-22); closes OQ-010 LuaJIT tail |
+| Lua GC | LuaJIT incremental; watch for pauses when holding ~20–30 MB of tables | medium | measure in spike D (OQ-001) |
+| Save writes | `LuaSettings:flush()` / `Persist:save()` both **fsync** file (+ dir on create) | high | [`03` §4](03-koreader-platform.md#4-persistence-24); debounce autosave — risk is write *frequency* on flash, not size |
 
 ## 2. Magium demands *(3.2)*
 

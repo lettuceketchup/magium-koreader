@@ -35,6 +35,11 @@ reference them by relative path + commit hash.
 - `../magium-recrystallized` — secondary reference. Svelte + Rust/WASM; compiles the
   story to a binary `.story` format (`wasm_module/`, `static/magium.story`).
   License: AGPL-3.0. Upstream: https://github.com/Br3nnabee/magium-recrystallized
+- `../koreader` — **the target platform's source**, added in Phase 2. Sibling
+  checkout pinned to release tag **`v2026.07.1`** (commit `9192014`) = exactly the
+  build the owner runs. Cite by `../koreader/<path>:<line>` (same convention as
+  `../magium-dev`). Setup + how to run the emulator on Windows:
+  `reference/koreader-notes.md`. License: AGPL-3.0.
 
 The MIT/AGPL split matters for what license the port can adopt — see
 `docs/research/08-licensing.md`.

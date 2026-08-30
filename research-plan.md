@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phases 0 & 1 done; Phase 2 next
+- **Status:** active — Phases 0, 1 & 2 done; Phase 3 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -51,16 +51,16 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Deliverable:** `docs/research/03-koreader-platform.md`.
 **Depends on:** Phase 0. May overlap Phase 1.
 
-- [ ] 2.1 Plugin anatomy: directory layout, `_meta.lua`, `main.lua`, the `WidgetContainer` base, `init()`, how a plugin registers menu items, the event/dispatcher model. Cite the plugin dev guide + a real example plugin from the KOReader source tree.
-- [ ] 2.2 Lua environment: Lua 5.1 / LuaJIT, what stdlib is available, string/`re`/regex support (KOReader bundles `lua-lgettext`, `rapidjson`, etc.), UTF-8 handling.
-- [ ] 2.3 UI toolkit inventory for our needs: widgets for (a) a long scrollable block of prose, (b) a vertical list of tappable choice buttons, (c) modal menus/dialogs, (d) a stats panel. Candidates: `TextViewer`, `Menu`, `ButtonDialog`, `ButtonDialogTitle`, `ScrollTextWidget`, `ScrollableContainer`, `MovableContainer`, `InputDialog`. Record each one's constraints (max content, pagination behavior, back-button semantics).
-- [ ] 2.4 Persistence: `LuaSettings`, `DocSettings`, `Persist`, writing plain files to the plugin dir or a data dir. Where user data should live on a Kindle. Size/perf of reading/writing a multi-KB save blob frequently.
-- [ ] 2.5 Text rendering: how KOReader lays out and reflows text, font control, whether we can reuse the document renderer or must use text widgets, markup support (does any widget take a subset of HTML? our data has `<br/>`).
-- [ ] 2.6 E-ink specifics: refresh modes (full vs. partial vs. A2), how to avoid ghosting on frequent screen updates, expected latency per interaction.
-- [ ] 2.7 Lifecycle & integration: can a plugin present a fullscreen UI that isn't a "document"? How does it coexist with the file browser / reader? How is it launched (menu, gesture)? How does it exit cleanly?
-- [ ] 2.8 Build/deploy/debug loop: how to get a plugin onto the Paperwhite (USB copy to `koreader/plugins/`), how to see `logger` output / crash logs, hot-reload options, emulator availability on desktop for faster iteration.
-- [ ] 2.9 Localisation: KOReader's own gettext-based i18n, and whether/how a plugin ships translations.
-- [ ] 2.10 Packaging & distribution paths: KOReader's plugin index, `kindlemodshelf`, manual install. What each requires.
+- [x] 2.1 Plugin anatomy — [`03` §1](docs/research/03-koreader-platform.md#1-plugin-anatomy-21): `<name>.koplugin/` + `main.lua` (+ `_meta.lua`), `WidgetContainer:extend`, `init()`, `is_doc_only`, three entry points (main-menu item / Dispatcher action / event handlers), sandboxed `on*` handlers. Cites `hello.koplugin`, `pluginloader.lua`.
+- [x] 2.2 Lua environment — [`03` §2](docs/research/03-koreader-platform.md#2-lua-environment-22): **LuaJIT 2.1.ROLLING** (`NUM 20199`, `LuaJIT/LuaJIT@3c4f9fe`, not OpenResty), Lua 5.1 + FFI, no `utf8` stdlib, patterns not regex; `rapidjson`/SQLite3/`zstd`/`string.buffer` bundled, LZ-String not; single Lua state → `Trapper`/`scheduleIn` for long work. **Closes the Phase 0 LuaJIT-build item.**
+- [x] 2.3 UI toolkit inventory — [`03` §3](docs/research/03-koreader-platform.md#3-ui-toolkit-inventory-23): prose = `TextBoxWidget`/`ScrollTextWidget`/`TextViewer`; choices = `ButtonTable`/`ButtonDialog`/`Menu`; modals = `ConfirmBox`/`InfoMessage`/`InputDialog`; stats = `KeyValuePage`; toast = `Notification`. Nothing missing. `frotz.koplugin` `GameView` = working prior art. → OQ-002 narrowed.
+- [x] 2.4 Persistence — [`03` §4](docs/research/03-koreader-platform.md#4-persistence-24): `LuaSettings` (text kv) + `Persist` (codec blobs, `zstd`/`luajit`), both fsync; story data bundled next to `main.lua`, saves under `<data-dir>/`. Maps cleanly to Magium's 4 blobs; risk is autosave write *frequency*, debounce it. → F-20.
+- [x] 2.5 Text rendering — [`03` §5](docs/research/03-koreader-platform.md#5-text-rendering-25): two paths (`TextBoxWidget` own layout, C-shaped via `xtext`; or MuPDF `ScrollHtmlWidget`). `<br/>` is the only Magium markup → replace with `\n`, use `TextBoxWidget`, skip the document renderer. → F-19.
+- [x] 2.6 E-ink specifics — [`03` §6](docs/research/03-koreader-platform.md#6-e-ink-specifics-26): refresh types (`full`/`partial`/`ui`/`fast`/`a2` + flash variants), `partial`→flash every 6, MTK fast-mode forced on `KindlePaperWhite6`, `canHWDither=no`. Strategy: `"ui"` swaps + periodic `"full"`. Latency/ghosting feel → spike A / OQ-007.
+- [x] 2.7 Lifecycle & integration — [`03` §7](docs/research/03-koreader-platform.md#7-lifecycle--integration-27): fullscreen non-document UI is fine (`UIManager:show`); `is_doc_only=false` → launch from File Manager via `more_tools` menu item or a gesture; Back/`onClose` pops back cleanly + flushes save; handle broadcast `Close`/suspend.
+- [x] 2.8 Build/deploy/debug — [`03` §8](docs/research/03-koreader-platform.md#8-build--deploy--debug-loop-28): on-device = USB copy to `koreader/plugins/` + restart + read `koreader/crash.log` (all `logger` output, last 500 KB); no hot reload. `kodev` emulator Linux/macOS-only → owner on Windows needs WSL2/Docker/AppImage → **OQ-012**.
+- [x] 2.9 Localisation — [`03` §9](docs/research/03-koreader-platform.md#9-localisation-29): KOReader gettext (`_()`, `T()`); a plugin bundles its own `l10n/<lang>/*.po`. Independent of Magium's own en/fr story-bundle swap.
+- [x] 2.10 Packaging & distribution — [`03` §10](docs/research/03-koreader-platform.md#10-packaging--distribution-210): no first-party review store; manual install / `koreader/contrib` / GitHub topic / KindleModShelf. Real gate is redistribution permission (OQ-004) + license (OQ-005), not mechanism.
 
 ## Phase 3 — Constraints budget
 
@@ -68,7 +68,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Deliverable:** `docs/research/04-constraints-budget.md`.
 **Depends on:** Phase 2 (and 1.12).
 
-- [~] 3.1 Enumerate device hard limits under KOReader: RAM, CPU, storage, no OS threads, e-ink refresh latency, battery, Lua GC behavior. Core numbers already captured in [`04-constraints-budget.md`](docs/research/04-constraints-budget.md) §1 (2026-08-31); still need e-ink latency + LuaJIT specifics.
+- [~] 3.1 Enumerate device hard limits under KOReader: RAM, CPU, storage, no OS threads, e-ink refresh latency, battery, Lua GC behavior. [`04-constraints-budget.md`](docs/research/04-constraints-budget.md) §1 now has RAM/CPU/storage (on-device), threads/LuaJIT-version/refresh-mechanics/save-fsync (Phase 2). Still need: measured e-ink latency (spike A), Lua GC pause behaviour under load (spike D), battery.
 - [ ] 3.2 Enumerate Magium's demands: 7.7 MB text on disk, parsed-story memory footprint (1.12), regex-heavy parsing cost, frequency and size of save writes, number of scenes resident at once.
 - [ ] 3.3 Build the table: each demand vs. the budget → green / yellow / red, with the mitigation for every yellow/red (e.g. parse lazily per chapter, pre-compile data to a leaner format at build time, cache parsed scenes to disk).
 - [ ] 3.4 Decide whether runtime parsing is viable on-device or whether a build-time preprocessing step is needed — feed this into Phase 6.
@@ -138,6 +138,35 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 7) — Phase 2 done: KOReader platform analysed
+
+- Cloned KOReader source as a sibling checkout `../koreader` pinned to **`v2026.07.1`**
+  (commit `9192014`) — exactly the build the owner runs. Recorded in
+  [`reference/koreader-notes.md`](reference/koreader-notes.md); added to CLAUDE.md's
+  reference list. Not vendored — cite by `../koreader/path:line`.
+- Wrote [`03-koreader-platform.md`](docs/research/03-koreader-platform.md) from stub
+  to a full source-grounded draft covering all 10 tasks (2.1–2.10): plugin anatomy,
+  Lua env, UI toolkit, persistence, text rendering, e-ink, lifecycle, build/deploy,
+  i18n, distribution. Findings F-14…F-21.
+- Key results: **nothing the Magium UI needs is missing from KOReader** (F-14);
+  `kbarni/frotz.koplugin` already ships our exact UI shape — fullscreen styled
+  transcript + choice/input row on e-ink (F-15); **LuaJIT is 2.1.ROLLING
+  (`NUM 20199`), upstream not OpenResty** — closes the Phase 0 LuaJIT-build item
+  (F-16); the platform's sharpest constraint is the **single cooperative Lua
+  state** — blocking work must be sliced with `Trapper`/`scheduleIn` (F-17);
+  on-device debug = USB copy + `crash.log`, and the `kodev` emulator is
+  Linux/macOS-only so the Windows dev loop is a new open question (F-18, **OQ-012**);
+  `<br/>` is the only Magium markup → `TextBoxWidget` + `\n`, skip the doc renderer
+  (F-19); save model maps cleanly to `LuaSettings` + `Persist`, debounce autosave
+  (F-20); `KindlePaperWhite6` is a first-class KOReader target (F-21).
+- Updated [`04-constraints-budget.md`](docs/research/04-constraints-budget.md) §1
+  (Lua VM / threads / e-ink / save-write rows), [`07`](docs/research/07-risks-open-questions.md)
+  (OQ-012 added; OQ-002/OQ-007 gain platform context; OQ-010 LuaJIT tail closed),
+  `SUMMARY.md` (status + findings rows + OQ paragraph).
+- **Next:** Phase 3 (constraints budget → finish [`04`](docs/research/04-constraints-budget.md),
+  tasks 3.1–3.4) — the go/no-go table. Depends on Phases 1, 2 (both done); still
+  wants e-ink latency (spike A) and Lua-side memory (spike D) but can be drafted now.
 
 ### 2026-08-31 (session 6) — Phase 1 done: engine + format fully analysed
 
