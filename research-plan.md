@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phases 0–3 done; Phase 4 next
+- **Status:** active — Phases 0–4 done; Phase 5 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -78,12 +78,12 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Goal:** learn from comparable efforts; build the contacts map for later help.
 **Deliverable:** `docs/research/05-prior-art.md`.
 
-- [ ] 4.1 Interactive fiction on e-ink: existing Z-machine/Glulx/TADS interpreters on Kindle or KOReader (Frotz ports, `fabularium`, etc.), and what their authors say about UI and performance.
-- [ ] 4.2 Existing KOReader game / non-book plugins: survey the `kindlemodshelf` plugin list and the KOReader repo. Note any that render narrative + choices (gamebook / CYOA / Twine / Ink players, `rakuyomi` manga reader architecture as a "non-document fullscreen UI" example).
-- [ ] 4.3 Twine / Ink / ChoiceScript players on constrained hardware — do any run offline in a way we could target via format conversion?
-- [ ] 4.4 Past attempts to put Magium (or similar CYOA apps) on an e-reader — search r/Magium, r/koreader, MobileRead, the Magium Discord.
-- [ ] 4.5 Contacts map: a table of `OQ` venues — which kind of question goes to KOReader Discord vs. KOReader GitHub Discussions vs. MobileRead vs. r/koreader vs. Magium Discord vs. a specific plugin author (with handles/links).
-- [ ] 4.6 Reach out where it's cheap and useful; record responses as cited findings.
+- [x] 4.1 Interactive fiction on e-ink — [`05` §1](docs/research/05-prior-art.md#1-interactive-fiction-on-e-ink-41): `frotz.koplugin`/`kofrotz.koplugin` (KOReader, active), KIF and the Kindle Gargoyle port (2010–2012 native/KUAL, stalled at alpha), Fabularium (Android). All converge on native fullscreen text UI, not browser/document — F-26.
+- [x] 4.2 Existing KOReader game / non-book plugins — [`05` §2](docs/research/05-prior-art.md#2-existing-koreader-game--non-book-plugins-42): full `awesome-koreader` + ecosystem survey (puzzle plugins, `rakuyomi`'s external-server architecture) finds **zero** CYOA/gamebook plugins. **OQ-003 closed — no.** F-30.
+- [x] 4.3 Twine / Ink / ChoiceScript on constrained hardware — [`05` §3](docs/research/05-prior-art.md#3-twine--ink--choicescript-players-on-constrained-hardware-43): no e-ink player exists for any of them; KOReader's HTML path is MuPDF document rendering, not JS. Evidence against approach C. F-27/F-28.
+- [x] 4.4 Past Magium-on-e-reader attempts — [`05` §4](docs/research/05-prior-art.md#4-past-attempts-to-put-magium-or-a-similar-cyoa-on-an-e-reader-44): none found (web-search-indexed sources only). Two live Magium Discord invites discovered for OQ-004 follow-up. F-29.
+- [x] 4.5 Contacts map — [`05` §5](docs/research/05-prior-art.md#5-contacts-map-45): venue table with real links (KOReader GH Discussions, MobileRead, both Magium Discords, intfiction.org, named prior-art authors).
+- [x] 4.6 Outreach — three drafts prepared (OQ-004 permission ask, KOReader GH Discussions e-ink question, `frotz.koplugin` author question) but **not sent**: no Discord/Reddit/MobileRead account access this session, and posting externally under the owner's identity is a call for the owner to make. [`05` §6](docs/research/05-prior-art.md#6-outreach-46).
 
 ## Phase 5 — De-risking spikes (throwaway)
 
@@ -138,6 +138,58 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 10) — Phase 4 done: prior art surveyed, contacts map built
+
+- Wrote [`05-prior-art.md`](docs/research/05-prior-art.md) (tasks 4.1–4.6) from
+  web research: IF-on-e-ink history (Frotz forks, KIF, Kindle Gargoyle port,
+  Fabularium), a full KOReader plugin-ecosystem scan for narrative/CYOA
+  plugins, Twine/Ink/ChoiceScript-on-constrained-hardware precedent, and a
+  search for prior Magium-on-e-reader attempts. Findings F-26…F-30.
+- **OQ-003 closed — no.** No existing KOReader plugin plays gamebook/CYOA
+  content (full `awesome-koreader` + ecosystem survey: only IF interpreters
+  and generic puzzle games). This rules out **approach B** (extend an
+  existing plugin) as a shortcut for Phase 6 — whichever approach is chosen,
+  the Lua engine is written from scratch.
+- **Evidence against approach C** (convert to Twine/Ink + reuse a player):
+  no e-ink player exists for any of them. KOReader's HTML path is MuPDF
+  document rendering, not a JS runtime (confirms F-19); even PocketBook,
+  which has a real browser, shows RAM growth and refresh glitches running
+  Twine's HTML5 output over a session (MobileRead, *Trigaea* thread). If
+  approach C is spiked anyway (spike C, OQ-006), Ink is the better conversion
+  target than Twee — open-source runtime, no e-ink precedent either way.
+- **Prior-art pattern for the UI:** every Kindle IF interpreter that stuck
+  around (`frotz.koplugin`, active inside KOReader) converged on native
+  fullscreen text rendering, not a browser view; the ones that tried native
+  Kindle apps directly (KIF, Kindle Gargoyle, 2010–2012, pre-KOReader) stalled
+  at "alpha" on unfinished polish, not a fundamental blocker. Reinforces
+  F-14/F-15 — KOReader's plugin model is the platform where this genre of
+  project is currently alive, not a graveyard.
+- **One cautionary data point** for OQ-011: the one commercial CYOA-on-Kindle
+  precedent found (Fighting Fantasy, Worldweaver 2011) hit a CPU wall
+  specifically on a *redrawn map* feature, not core branching-text logic —
+  supports the existing "avoid per-render recomputation" mitigation stance
+  rather than raising a new concern.
+- **No prior Magium-on-e-reader attempt found** (web-search-indexed sources
+  only — absence of evidence, not evidence of absence; Discord history isn't
+  crawled). Found two live Magium Discord invites (Community `Aw5sEYPPXv`,
+  Writer Team `WWDCcyaspH`) for OQ-004 follow-up — neither yet cross-checked
+  against the `cF3EDRmK` invite already on record.
+- **Task 4.6 (outreach):** three message drafts prepared (redistribution-
+  permission ask for the Writer Team Discord, a KOReader GH Discussions
+  e-ink question, a targeted question for `frotz.koplugin`'s author) but
+  **not sent** — this session has no Discord/Reddit/MobileRead account
+  access, and posting externally under the owner's identity is the owner's
+  call, not an autonomous one. Drafts + an outreach log stub are in
+  [`05` §6](docs/research/05-prior-art.md#6-outreach-46) for the owner to use
+  when convenient.
+- Updated [`07`](docs/research/07-risks-open-questions.md) (OQ-003 closed;
+  OQ-004 gains the two Discord links; OQ-006 gains the Ink lead), `SUMMARY.md`
+  (status + findings rows 19–22 + early-read paragraph).
+- **Next:** Phase 5 (de-risking spikes — A/B/D at minimum; spike C now has a
+  slightly stronger case for targeting Ink over Twee if run). Phase 4 also
+  feeds Phase 6's decision matrix directly: OQ-003's "no" removes approach B
+  as a live option, and §3's findings weigh against approach C.
 
 ### 2026-08-31 (session 9) — Phase 3 done: constraints budget → conditional green light
 

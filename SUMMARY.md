@@ -1,6 +1,6 @@
 # SUMMARY — what we know so far
 
-- **Status:** in-progress (Phases 0–3 done; Phase 4 next)
+- **Status:** in-progress (Phases 0–4 done; Phase 5 next)
 - **Last updated:** 2026-08-31
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
@@ -50,6 +50,10 @@ be confirmed or overturned in Phase 6.
 | 16 | **Go/no-go: conditional green light.** Phase 3 constraints budget finds **no hard resource blocker** — RAM (~500 MB avail vs ~10–30 MB story), storage (10.6 GB vs 7.5 MB), save size (~12–15 KB), normal-case CPU all 🟢 with margin. Six 🟡s, all responsiveness/I-O-hygiene with named mitigations + a spike each; no 🔴. Feasibility is not capacity-bound. | high | [`04`](docs/research/04-constraints-budget.md) §3,§5; F-22 |
 | 17 | **Save-blob ≈ 12–15 KB** uncompressed for a 100%-progressed game — 491 writable vars (135 achievement flags), values all 1-digit/`±N` except `v_current_scene`. Maps to `LuaSettings`/`Persist` trivially; only autosave **write frequency** on flash needs care (debounce). | medium | [`04`](docs/research/04-constraints-budget.md) §2; F-23; `scan-save-footprint.js` |
 | 18 | **Cold parse ≈ 95–130 ms on desktop** → plausibly **~1–4 s** on the 1 GHz MTK ARM core under LuaJIT. This is the one number that decides parse-at-launch vs lazy-per-chapter vs build-time pre-parse ([`04` §4](docs/research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34)) — measure directly in spike B. Not a feasibility gate (all three strategies are scoped). | low | [`04`](docs/research/04-constraints-budget.md) §2,§4; F-24; `measure-story-size.js` |
+| 19 | **Every prior Kindle IF-interpreter effort converged on native fullscreen text UI, not a browser/document view** — `frotz.koplugin` (KOReader, active/maintained) is the closest direct precedent; KIF and the Kindle Gargoyle port (2010–2012, native/KUAL, pre-KOReader) both stalled at "alpha" on polish, not on a fundamental blocker. Reinforces F-14/F-15. | high | [`05-prior-art.md`](docs/research/05-prior-art.md) §1; F-26 |
+| 20 | **No browser-based Twine/Ink/ChoiceScript player is viable on this platform.** KOReader's HTML path is MuPDF document rendering, not a JS runtime; even PocketBook (which has a real browser) shows RAM growth and refresh glitches running Twine's HTML5 output over a session. Evidence against approach C (format-convert + reuse an existing player) — no existing player to target. | high | [`05`](docs/research/05-prior-art.md) §3; F-27 |
+| 21 | **No existing KOReader plugin plays CYOA/gamebook/narrative-choice content** (full `awesome-koreader` + ecosystem survey: only IF interpreters and generic puzzle games). Closes **OQ-003 (no)** and rules out approach B (extend an existing plugin) as a shortcut — the Lua engine has to be written from scratch either way. | high | [`05`](docs/research/05-prior-art.md) §2; F-30 |
+| 22 | **No prior Magium-on-e-reader attempt found** (web search; absence-of-evidence, Discord history unindexed). Two live Magium Discord invites found for OQ-004 outreach (Community, Writer Team) — not yet cross-checked against the invite already on record. Three outreach drafts prepared but **not sent** (no account access this session) — owner to post. | medium | [`05`](docs/research/05-prior-art.md) §4,§6; F-29 |
 
 ## Open questions
 
@@ -64,6 +68,10 @@ already resolved: OQ-012 (Windows dev loop — KOReader emulator now built and
 running in WSL2). **Phase 3:** no new OQs; OQ-001 further downgraded (spike D now
 only tunes the parse strategy, does not gate feasibility); OQ-011 gains an
 ordered mitigation list ([`04` §3 row 4](docs/research/04-constraints-budget.md#3-budget-table-33)).
+**Phase 4:** OQ-003 **closed (no)** — no existing plugin does this, rules out
+approach B; OQ-004 gains two candidate Discord invites + a prepared (unsent)
+outreach draft; OQ-006 gains a lead (Ink over Twee for spike C) and evidence
+against approach C generally. No new OQs opened.
 
 ## Decisions
 
