@@ -1,0 +1,22 @@
+{
+  "sceneId": "B2-Ch01a-Intro",
+  "header": "Book 2 - Chapter 1",
+  "checkpoint": true,
+  "statChecks": [],
+  "setVariables": [],
+  "paragraphs": [
+    "<br/><br/>\"Our first objectives?\" Hadrik asks. \"Did I hear him right?\"<br/><br/>\"That's right, you heard me!\" Golmyck, the gnome king says, as if he were responding to Hadrik's question. \"I am now going to announce the objectives of the tournament's first round, so you'd better pay attention, because I'm not planning to repeat myself. Are you ready?\"<br/><br/>Golmyck makes a short pause before he continues.<br/><br/>\"Very well, then!\" he says. \"Your first objectives are as follows. You will need to each find a glowing pinecone and bring it to the city of Galamir. Glowing pinecones grow only on the continent of Varathia, so most of you may not know much about them, but they basically look just like regular pinecones, except they start glowing brightly when you take them in your hand. There is no time limit for completing these objectives, but the earlier you bring the pinecones to their destination, the quicker you can begin your next objectives, which will give you a head start, compared to the latecomers. Lastly, I would like to mention that in this round you will be allowed to form teams with other participants. A team can have as many members as you want, and if you all confirm that you are part of the same team when you reach Galamir, you will pass the first round together, as long as you have at least one pinecone with you. That would be all for now. Good luck!\"<br/><br/>\"What?!\" Hadrik shouts. \"He can't be serious! How can they even call this a mage tournament with objectives like that? What's next, are they going to tell us to go pick some flowers?\"<br/><br/>"
+  ],
+  "choices": [
+    {
+      "text": "Continue",
+      "target": "B2-Ch01a-Intro2-dead",
+      "special": null,
+      "setVariables": {
+        "v_checkpoint_rich": "0",
+        "v_current_scene": "B2-Ch01a-Intro2-dead"
+      }
+    }
+  ],
+  "achievements": []
+}

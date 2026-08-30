@@ -1,0 +1,38 @@
+[
+  {
+    "name": "ch1-intro1",
+    "sceneId": "Ch1-Intro1",
+    "vars": {},
+    "why": "opening scene: no set(), three plain choices, single prose block"
+  },
+  {
+    "name": "ch1-dave-showmyself",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": { "v_ch1_show_yourself": "2", "v_ac_ch1_coward": "1" },
+    "why": "#if paragraph filtering by v_ch1_show_yourself; achievement modal for v_ac_ch1_coward; scene id with a space"
+  },
+  {
+    "name": "ch1-showmyself-quotequote",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": { "v_ch1_show_yourself": "3" },
+    "why": "the third branch reached via choice(\"\"I see no reason...\"\") - double-quote-wrapped choice text edge case"
+  },
+  {
+    "name": "ch3-vantage-statchecks",
+    "sceneId": "Ch3-Vantage",
+    "vars": { "v_perception": "2", "v_ancient_languages": "3" },
+    "why": "two stat checks (Observation, Ancient languages) from set(...) if conditions; conditional achievement A message in the sky; #if prose selection"
+  },
+  {
+    "name": "ch3-vantage-nostat",
+    "sceneId": "Ch3-Vantage",
+    "vars": {},
+    "why": "same scene with no stats: no stat-check lines, the v_perception < 1 prose branch, star message 0"
+  },
+  {
+    "name": "b2ch1-intro-checkpoint",
+    "sceneId": "B2-Ch01a-Intro",
+    "vars": { "v_ch11_saved_rose": "0" },
+    "why": "checkpoint banner: the visible Continue choice carries v_checkpoint_rich = 0, so renderScene sets scene.checkpoint"
+  }
+]

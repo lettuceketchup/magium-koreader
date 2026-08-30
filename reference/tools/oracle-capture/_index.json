@@ -1,0 +1,42 @@
+[
+  {
+    "name": "ch1-intro1",
+    "sceneId": "Ch1-Intro1",
+    "vars": {}
+  },
+  {
+    "name": "ch1-dave-showmyself",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-showmyself-quotequote",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch3-vantage-statchecks",
+    "sceneId": "Ch3-Vantage",
+    "vars": {
+      "v_perception": "2",
+      "v_ancient_languages": "3"
+    }
+  },
+  {
+    "name": "ch3-vantage-nostat",
+    "sceneId": "Ch3-Vantage",
+    "vars": {}
+  },
+  {
+    "name": "b2ch1-intro-checkpoint",
+    "sceneId": "B2-Ch01a-Intro",
+    "vars": {
+      "v_ch11_saved_rose": "0"
+    }
+  }
+]

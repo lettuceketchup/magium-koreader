@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phase 0 done bar the oracle diff-tool; Phases 1 & 2 next
+- **Status:** active — Phase 0 done; Phases 1 & 2 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -22,7 +22,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 - [x] 0.1 Device facts recorded (owner supplied on-device readings 2026-08-31): Kindle Paperwhite 12th gen (2024, B0DKTZ6592), FW **Kindle 5.19.5**, **956.9 MB RAM** (~497 available), 10.6 GB free, KOReader **v2026.07.1** release (`kindlehf`), idle RSS ~33 MB. OQ-010 closed. Only LuaJIT exact build string still TBD → folded into task 2.2.
 - [x] 0.2 Write `00-overview.md`: problem, goals/non-goals, "full parity" (links design doc §3), success criteria, glossary, device table. _Refine parity detail after Phase 1._
 - [x] 0.3 Get `magium-dev` running locally. `npm install` + `node main_node.js <port>` verified on Node v24.11.0 (2026-08-31).
-- [~] 0.4 `reference/magium-dev-notes.md`: run instructions + differential-oracle method **documented and proven** (`POST /` + `HX-Request` header + variable-map body). **TODO:** build the normalizer/diff script.
+- [x] 0.4 `reference/magium-dev-notes.md`: run instructions + differential-oracle method proven. Normalizer/diff harness built: [`reference/tools/oracle-diff.js`](reference/tools/oracle-diff.js) (`scene` / `capture` / `diff`), 6-case fixture set + committed goldens under `reference/tools/oracle-capture/`. Ready to diff the spike-B Lua port against.
 - [x] 0.5 Skimmed `magium-recrystallized` source; wrote `reference/magium-recrystallized-notes.md`. Confirms it's not a viable base: Rust/WASM engine, binary `.story` TLV format with no in-repo compiler, designed for HTTP range-streaming, AGPL, unfinished scripting layer. Save-model stores and the chunked/indexed format layout are worth borrowing if approach D (build-time preprocess) is chosen.
 - [x] 0.6 Sibling commit hashes recorded (design doc §4): `magium-dev` `51f5aa9`, `magium-recrystallized` `0dcfd2e`.
 
@@ -138,6 +138,13 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 5) — oracle diff harness built; Phase 0 closed
+- Built [`reference/tools/oracle-diff.js`](reference/tools/oracle-diff.js) (task 0.4): drives `magium-dev` over HTTP, normalizes each rendered scene to a canonical JSON shape (header, checkpoint, statChecks, setVariables, paragraphs, choices, achievements), and does a structural pairwise diff. Three subcommands: `scene`, `capture`, `diff`. No deps (global `fetch`).
+- Normalizer is coupled to `templates/main.ejs` @ `51f5aa9`: choices read from the `setResponseVariables({...})` button payload; checkpoint vs. stat-check disambiguated against `ui.json:mainCheckpointReachedText`. Caveat recorded in `magium-dev-notes.md`.
+- Wrote a 6-case fixture set ([`oracle-cases.json`](reference/tools/oracle-cases.json)) + committed goldens (`reference/tools/oracle-capture/`): opening scene, `#if` filtering + achievement + spaced scene-id, `choice(""quoted"")`, two stat checks, no-stat (still shows a failed check from `v_perception < 1`), checkpoint banner. Verified capture-vs-self = 6/6 and that a mutated golden is caught.
+- **Phase 0 complete.** Only the exact LuaJIT build string is still open (folded into task 2.2).
+- **Next:** Phase 1 (engine deep-dive, `01`/`02`) and Phase 2 (KOReader platform, `03`) — can run in parallel. The oracle is ready for spike B to diff against.
 
 ### 2026-08-31 (session 4) — owner-skill calibration corrected
 - Clarified owner background: experienced generalist programmer (JS, Python, C; light hobby 2D/puzzle game dev), **new to Lua** and to the KOReader API. Earlier "limited Lua" was underselling the general programming experience.

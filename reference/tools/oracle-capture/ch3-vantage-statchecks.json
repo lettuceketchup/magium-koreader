@@ -1,0 +1,61 @@
+{
+  "sceneId": "Ch3-Vantage",
+  "header": "Book 1 - Chapter 3",
+  "checkpoint": false,
+  "statChecks": [
+    {
+      "success": true,
+      "text": "[ Ancient languages check successful - level 2 ]"
+    },
+    {
+      "success": true,
+      "text": "[ Observation check successful - level 1 ]"
+    }
+  ],
+  "setVariables": [
+    {
+      "name": "v_ac_ch3_message",
+      "value": "1"
+    },
+    {
+      "name": "v_ch3_star_message",
+      "value": "2"
+    }
+  ],
+  "paragraphs": [
+    "<br/><br/>",
+    "<br/>I notice that the stars are not only unusually bright tonight, but there also seems to be a certain symmetry between them, almost as if they were forming symbols in the sky. <br/><br/>I suddenly realize that the symbols are from an ancient language that my stat device has taught me. If I read all of the signs together, then the sentence could roughly be translated as: \"The dragon knows where to find the source of all magic.\"<br/><br/>Does that mean that there's a dragon on this continent? And he knows the location of the Magium? I've heard about spells that brighten the stars in order to transmit information, but only in fairy tales. And the same goes for dragons. It must be a coincidence. I try to forget what I saw and focus on guarding the cave.<br/><br/>As we stand guard, Daren starts telling me stories about his travels around the world, and the adventures he's had. He tells me of the fifty foot giants that live in the far east of the Northern Continent. He tells me how he's cured the dreaded Iknar plague of the Eastern Continent by himself, and how he defeated the green wyvern of the north. <br/><br/>Listening to him tell me all these stories made me realize why I defended him instinctively from Cutthroat Dave yesterday. Even though I never really thought about it before, I guess I always kind of admired him. He's like all of those heroes from the fairy tales I used to read when I was a kid, and he's a living example of what I've always aspired to become.<br/><br/>\"I've been in a lot of places over the years, Barry. But everywhere I go, it's always the same. The weak are oppressed by the strong, the few are killed by the many. Everywhere I go, there's people dying from starvation, plague, war, or some monster invasion. I've seen death all my life, but I never get used to it. Seeing all of those dead bodies just lying there, lifeless, yesterday... It made me feel an intense pain in my chest. It was as though I could feel the suffering of each of them, and the fear that went through their hearts as they took their last breath. What about you, Barry? What did you feel when you saw all those dead people?\"<br/><br/>"
+  ],
+  "choices": [
+    {
+      "text": "\"I was just busy thinking of how to stay alive at the time.\"",
+      "target": "Ch3-Busy",
+      "special": null,
+      "setVariables": {
+        "v_current_scene": "Ch3-Busy"
+      }
+    },
+    {
+      "text": "\"I felt sorry for them, but I didn't let it affect me.\"",
+      "target": "Ch3-Sorry",
+      "special": null,
+      "setVariables": {
+        "v_current_scene": "Ch3-Sorry"
+      }
+    },
+    {
+      "text": "\"I was almost about to puke.\"",
+      "target": "Ch3-Puke",
+      "special": null,
+      "setVariables": {
+        "v_current_scene": "Ch3-Puke"
+      }
+    }
+  ],
+  "achievements": [
+    {
+      "variable": "v_ac_ch3_message",
+      "text": "A message in the sky"
+    }
+  ]
+}
