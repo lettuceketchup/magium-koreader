@@ -1,0 +1,13 @@
+{
+  "name": "magium-to-ink-spike",
+  "private": true,
+  "description": "Throwaway spike 05 — .magium to Ink conversion (research-plan.md task 5.3). Not a package to publish or depend on.",
+  "type": "commonjs",
+  "scripts": {
+    "convert": "node magium_to_ink.js /path/to/magium-dev/data/en/ch1.magium ch1.ink",
+    "play": "node play_test.mjs"
+  },
+  "dependencies": {
+    "inkjs": "2.4.0"
+  }
+}
