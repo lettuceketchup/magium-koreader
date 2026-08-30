@@ -11,9 +11,21 @@
 > commitment — an estimate with stated assumptions.
 
 ## Assumptions
-- Owner: reads code, limited Lua, ~N hours/week (fill in).
-- Community help expected for Lua-heavy and KOReader-specific parts.
+- Owner: experienced generalist programmer (JS, Python, C; light hobby 2D/puzzle
+  game dev). **New to Lua** — but for this background that's a days-not-weeks ramp
+  (small language, C-family control flow, one data structure). **New to the
+  KOReader plugin/widget API and e-ink idioms** — this is the actual learning
+  curve and where effort bands carry a ramp-up premium and community help.
+- Time budget: ~N hours/week (fill in).
+- Reference `magium-dev` (JS) reads directly for the owner — porting is
+  translation + API-mapping, not reverse-engineering from scratch.
 - Approach: _(from [`06`](06-approach-comparison.md))_.
+
+## Effort-band notes
+- Engine/logic port (parser, condition eval, state) → mostly mechanical JS→Lua
+  translation against the differential oracle; **Lua-newness adds little here**.
+- KOReader UI, persistence, lifecycle, packaging → **where the ramp is**; bands
+  here assume time spent reading KOReader source + asking the community.
 
 ## Roadmap *(8.1 / 8.2)*
 | Phase | Deliverable | Depends on | Effort band | Notes |

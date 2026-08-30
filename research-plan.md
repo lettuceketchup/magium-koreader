@@ -127,7 +127,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Depends on:** Phase 6.
 
 - [ ] 8.1 Phased implementation roadmap for the chosen approach: MVP (render + choose + conditions) → saves → stats/stat-checks → achievements → settings/themes → i18n → polish. Each phase: deliverables, dependencies.
-- [ ] 8.2 Effort band per phase (e.g. S/M/L or hour ranges), calibrated to "reads code, limited Lua" + community help. State assumptions.
+- [ ] 8.2 Effort band per phase (e.g. S/M/L or hour ranges). Calibrate to: experienced generalist programmer new to Lua (fast ramp) and new to the KOReader API (the real ramp — carry a premium on KOReader-facing work) + targeted community help. State assumptions.
 - [ ] 8.3 Sequencing / critical path; what unblocks what; what can be parallelised or handed to a contributor.
 - [ ] 8.4 Timeline sketch under a stated weekly-hours assumption.
 - [ ] 8.5 Handoff checklist (design doc §11 exit criteria): confirm all `docs/research/*` are `stable`, every `OQ` closed or deferred, recommendation recorded.
@@ -138,6 +138,11 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 4) — owner-skill calibration corrected
+- Clarified owner background: experienced generalist programmer (JS, Python, C; light hobby 2D/puzzle game dev), **new to Lua** and to the KOReader API. Earlier "limited Lua" was underselling the general programming experience.
+- Reframed effort assumptions across design doc §2/§12, `00-overview.md`, `SUMMARY.md` F-4, `09-roadmap-effort.md`, plan task 8.2: **Lua syntax is a fast ramp for this background; the KOReader plugin/widget API + e-ink idioms are the real learning curve** and carry the effort premium. Engine/logic port is mostly mechanical JS→Lua translation against the oracle.
+- No structural changes; no new OQs.
 
 ### 2026-08-31 (session 3) — real device facts; RAM concern retired
 - Owner supplied on-device readings: **FW Kindle 5.19.5**, **956.9 MB RAM** (220.8 free / 497.5 available), 10.6 GB free storage, **KOReader v2026.07.1 release** (`kindlehf`), KOReader idle RSS ~32.7 MB.

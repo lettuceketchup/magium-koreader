@@ -23,8 +23,10 @@ interaction model is a close match for existing reader/plugin behavior.
   all three books).
 - Recommended end-form among: standalone plugin / extend an existing plugin /
   format conversion.
-- Effort, risk, timeline calibrated to owner context (reads code, limited Lua,
-  community help expected).
+- Effort, risk, timeline calibrated to owner context: experienced generalist
+  programmer (JS, Python, C; light hobby 2D/puzzle game dev), **new to Lua and to
+  the KOReader plugin/widget API**. Lua is a fast pickup here; the KOReader API
+  and e-ink idioms are the real ramp. Community help expected for KOReader-specific parts.
 - Clean handoff: open questions tagged by venue; implementation roadmap.
 
 ## Non-goals

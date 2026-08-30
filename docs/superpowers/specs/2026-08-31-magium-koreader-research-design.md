@@ -36,7 +36,11 @@ phase is approved. Implementation, if it happens, lands in this same repo later.
 - Compare the viable end-forms (standalone plugin / extend an existing plugin /
   convert to a supported format) and recommend one.
 - Quantify effort, risk, and a rough timeline calibrated to the owner's context
-  ("can read code, limited Lua", expecting community help).
+  (experienced generalist programmer — JS, Python, C, light hobby 2D/puzzle game
+  dev — but **new to Lua and to KOReader's plugin/widget API**; expecting
+  community help for KOReader-specific parts). Lua itself is a small language and
+  a fast pickup for this background; the real learning curve is the KOReader API
+  and e-ink idioms.
 - Leave a clean handoff: a defined set of open questions, each tagged with where
   to ask it, and a roadmap the design phase can pick up.
 
@@ -299,5 +303,5 @@ At that point a new brainstorming/spec cycle starts for the implementation desig
 | Scope creep into implementation | HARD gate: spikes are throwaway and labeled; production code needs a new approved phase. |
 | Upstream repos change mid-research | Cite by commit hash; note commit at research start (§4). |
 | Volatile sources (forum posts, Discord) vanish | §8.2 requires archive links / saved screenshots. |
-| Owner's limited Lua time becomes the bottleneck | Effort bands in Phase 8 assume "read code, limited Lua" + community help; spikes are scoped small. |
+| KOReader-API learning curve becomes the bottleneck (Lua syntax is the easy part) | Effort bands in Phase 8 account for KOReader-API ramp-up, not Lua syntax; Phase 2 front-loads the platform study; spikes are scoped small; community help targeted at KOReader specifics. |
 | `.magium` format has undocumented edge cases | Phase 1 builds an exhaustive construct corpus from all 54 files, not a sample. |
