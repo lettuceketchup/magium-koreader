@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phases 0–4 done; Phase 5 next
+- **Status:** active — Phases 0–4 done; Phase 5 mostly done (spikes B/C/D confirmed, spike A blocked — see below); Phase 6 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -91,12 +91,12 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Deliverable:** `docs/spikes/*` (each: `HYPOTHESIS.md`, code, `FINDING.md`), feeding Phase 6.
 **Depends on:** Phases 1 and 2.
 
-- [ ] 5.1 Spike A — **UI feel:** fork the simplest existing plugin, hard-code one Magium scene (prose + 3 choices), render it on the Paperwhite, wire the choices to swap to another hard-coded scene. Judge: does the widget model fit? refresh feel? navigation?
-- [ ] 5.2 Spike B — **engine in Lua:** port `apply_condition`/`apply_conditions` + the scene parser for a 3-scene slice to Lua. Feed identical variable states to it and to `magium-dev`; diff the resulting text + choice list.
-- [ ] 5.3 Spike C — **format conversion:** write a `.magium` → Twee (or Ink) converter for one chapter; try the output in an existing player (desktop first, then on-device if a player exists). Judge conversion fidelity for conditions/stats.
-- [ ] 5.4 Spike D — **memory:** load all 54 files' text (and/or the fully parsed story) into memory on-device; watch RAM via KOReader's tools. Confirms/kills the "parse everything up front" approach.
-- [ ] 5.5 Spike E (only if a yellow/red from Phase 3 needs it) — targeted measurement of whatever that risk is.
-- [ ] 5.6 Write up each spike's verdict and roll the findings into `SUMMARY.md`.
+- [~] 5.1 Spike A — **UI feel:** fork the simplest existing plugin, hard-code one Magium scene (prose + 3 choices), render it on the Paperwhite, wire the choices to swap to another hard-coded scene. Judge: does the widget model fit? refresh feel? navigation? — [`docs/spikes/04-ui-plugin-skeleton/`](docs/spikes/04-ui-plugin-skeleton/): plugin code written, API-grounded against real `v2026.07.1` source, **never run** (KOReader emulator build blocked in this session — see 5.4). Widget-fit/feel judgment stays open for the owner on real hardware (or the already-working WSL2 emulator).
+- [x] 5.2 Spike B — **engine in Lua:** port `apply_condition`/`apply_conditions` + the scene parser for a 3-scene slice to Lua. Feed identical variable states to it and to `magium-dev`; diff the resulting text + choice list. — [`docs/spikes/02-engine-in-lua/`](docs/spikes/02-engine-in-lua/): **6/6 oracle-diff match** across 4 scenes/3 files (exceeds the planned 3-scene slice, reusing the existing fixture set); full 54-file structural parity confirmed as a bonus in 5.4. One real Lua-vs-JS pattern-syntax bug found+fixed (`%w` excludes `_`).
+- [x] 5.3 Spike C — **format conversion:** write a `.magium` → Twee (or Ink) converter for one chapter; try the output in an existing player (desktop first, then on-device if a player exists). Judge conversion fidelity for conditions/stats. — [`docs/spikes/05-magium-to-ink/`](docs/spikes/05-magium-to-ink/): `ch1.magium` (12 scenes) → Ink, compiled + played via `inkjs/full` (in-process JS compiler, no `inklecate`/.NET needed). Conditions/`set()` convert losslessly (verified against the oracle goldens); achievements/`special:` hooks/cross-chapter nav have no Ink primitive (documented, expected — doesn't change Phase 4's approach-C read since no e-ink Ink player exists regardless).
+- [x] 5.4 Spike D — **memory:** load all 54 files' text (and/or the fully parsed story) into memory on-device; watch RAM via KOReader's tools. Confirms/kills the "parse everything up front" approach. — [`docs/spikes/03-full-corpus-memory-parse/`](docs/spikes/03-full-corpus-memory-parse/): **not on-device** (see below) — desktop LuaJIT: full 54-file parse = **11.54 MB** heap delta (lower than the ~17.4 MB V8 estimate), **112–128 ms** parse time (same order of magnitude as the V8 anchor). Structural counts (2159 scenes/4880 paragraphs/3734 choices/594 `set()`) match the JS baseline exactly — a strong full-corpus fidelity check on spike B's port. **Blocked:** attempted building the `kodev` emulator in this cloud session to get a real on-device-equivalent number; `./kodev fetch-thirdparty`'s GitHub tarball downloads returned 403 under this session's network egress policy (confirmed non-transient via the proxy's own diagnostics, not retried) — a cloud/remote agent session cannot build the emulator, independent of CPU architecture. Real device or the owner's already-working WSL2 build remain the only ways to close the on-device number.
+- [-] 5.5 Spike E (only if a yellow/red from Phase 3 needs it) — not run: nothing from 5.1–5.4 surfaced a new 🟡/🔴 needing a dedicated follow-up measurement.
+- [x] 5.6 Write up each spike's verdict and roll the findings into `SUMMARY.md`. — done this session (see running log + `docs/spikes/README.md` index).
 
 ## Phase 6 — Approach comparison & recommendation
 
@@ -138,6 +138,93 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 11) — Phase 5: 3 of 4 spikes confirmed, 1 blocked by session network policy
+
+Run from a cloud/remote agent session (no physical Kindle, no owner's WSL2
+environment available to it) — scoped the four spikes to what that
+environment could and couldn't do, and reported the gap honestly rather
+than skipping it.
+
+- **Environment:** cloned `../magium-dev` @ `51f5aa9` and `../koreader` @
+  `v2026.07.1` (`9192014`) as sibling checkouts for source grounding + the
+  oracle; installed LuaJIT 2.1 + Lua 5.1 (Ubuntu packages) for spikes B/D;
+  `inkjs@2.4.0` (npm) for spike C.
+- **Spike B — engine in Lua** ([`02-engine-in-lua/`](docs/spikes/02-engine-in-lua/)):
+  ported `parser.js`'s parser + `utils.js`'s condition/stat-check logic to
+  Lua (hand-written boundary scans standing in for JS's named-capture
+  regexes, which Lua patterns don't have). **6/6 match** against
+  `reference/tools/oracle-diff.js`'s committed goldens, reusing the
+  existing 6-fixture set unmodified (covers 4 scenes / 3 files — more than
+  the planned 3-scene slice). One real bug found+fixed while porting: Lua's
+  `%w` pattern class excludes `_` (unlike JS `\w`), silently breaking every
+  condition match on `v_snake_case` variable names until caught via the
+  port's own "Condition fail" diagnostic (mirrors the JS fallback branch's
+  own `console.log`).
+- **Spike D — memory/parse-time** ([`03-full-corpus-memory-parse/`](docs/spikes/03-full-corpus-memory-parse/)):
+  reran spike B's parser, unmodified, over the **full 54-file corpus** —
+  structural counts (2159 scenes/4880 paragraphs/3734 choices/594 `set()`)
+  are **bit-for-bit identical** to the Phase 0 JS baseline, a much stronger
+  fidelity signal than the 6 diffed fixtures alone. Memory: **11.54 MB**
+  Lua GC-heap delta (below the ~17.4 MB V8 estimate). Parse time:
+  **112–128 ms** (LuaJIT, this x86 container) — same order of magnitude as
+  the V8 anchor, still not an on-device number. **Attempted to build the
+  KOReader `kodev` emulator** in-container (same recipe as
+  `reference/setup-koreader-wsl.sh`) to get a real koreader-base-LuaJIT
+  number for this and for spike A — **blocked**: `./kodev fetch-thirdparty`
+  needs `https://github.com/<org>/<repo>/archive/refs/tags/*.tar.gz`
+  downloads (leptonica, freetype2, md4c, …), and every one returned **403**
+  under this session's network egress policy. Confirmed via the proxy's own
+  diagnostics (`curl $HTTPS_PROXY/__agentproxy/status`,
+  `/root/.ccr/README.md`'s "403/407 from the proxy" section) that this is a
+  **policy denial, not a transient failure** — not retried. This is a new,
+  general finding: **a cloud/remote Claude Code session cannot build or run
+  the KOReader emulator**, independent of CPU architecture — orthogonal to
+  OQ-012 (which was specifically about the owner's Windows machine, already
+  resolved via WSL2) and not reopening it.
+- **Spike C — format conversion** ([`05-magium-to-ink/`](docs/spikes/05-magium-to-ink/)):
+  converted all of `ch1.magium` (12 scenes) to Ink source (reusing
+  `magium-dev`'s own parser, not re-deriving the grammar a third time),
+  compiled + played it via `inkjs@2.4.0`'s `inkjs/full` build — a
+  **JS-native in-process Ink compiler**, no `inklecate`/.NET dependency
+  discovered along the way. **Conditions and `set()`-equivalent state
+  convert losslessly** — verified by eye against `oracle-capture/ch1-dave-showmyself.json`,
+  not just "compiles". Fidelity gaps found and documented, all expected:
+  achievements and `special:` hooks have no Ink primitive (degrade to inert
+  tags); the "Load game" choice's *empty* target scene doesn't fit Ink's
+  choice model at all; cross-chapter diverts need stub knots (single-file
+  conversion, by design of a one-chapter spike). **Answers OQ-006's
+  fidelity half** — closed as "not lost, for the mechanics that matter" —
+  without changing Phase 4's deployability verdict against approach C (no
+  e-ink Ink player exists regardless, `05-prior-art.md` §3).
+- **Spike A — UI plugin skeleton** ([`04-ui-plugin-skeleton/`](docs/spikes/04-ui-plugin-skeleton/)):
+  wrote `magium_spike.koplugin/main.lua` — hard-codes `Ch1-Intro1`/`Ch1-Intro2`
+  (real prose, real 3-way branch), uses `TextViewer` + a `buttons_table`
+  (shape verified against a real caller,
+  `readerbookmark.lua:1267-1296`, not just the docstring), modeled on
+  `hello.koplugin`'s registration boilerplate. Lua syntax checks clean.
+  **Never run** — same emulator-build block as spike D. The actual
+  question (widget fit / e-ink refresh feel / navigation) needs a human at
+  the device regardless of the emulator; recommended next step is the
+  owner running this file in their already-working WSL2 `kodev` build, then
+  on the real Kindle — cheap, since that environment already exists.
+- **No spike E** — nothing above surfaced a new 🟡/🔴 needing one.
+- Updated [`SUMMARY.md`](SUMMARY.md) (findings 23–26 + current-recommendation
+  paragraph), [`07`](docs/research/07-risks-open-questions.md) (OQ-001
+  narrowed further — memory now strongly 🟢 from a real Lua measurement,
+  parse-time still open; OQ-002/OQ-007 unchanged, now with a concrete next
+  step; OQ-006 closed on fidelity; OQ-012 gains a note about the distinct
+  cloud-session emulator-build blocker), [`docs/spikes/README.md`](docs/spikes/README.md)
+  (index of all 4 spikes run).
+- **Next:** Phase 6 (approach comparison & recommendation) — Phase 5's
+  results (engine ports cleanly and fast to write; memory is a non-issue;
+  format conversion loses nothing on conditions but gains nothing on
+  deployability) all point the same direction the Phase 3/4 "early read"
+  already did. The one open thread worth closing first, cheaply, before or
+  during Phase 6: have the owner run spike 04's plugin file in their
+  existing WSL2 emulator (and ideally the real device) — it's a 5-minute
+  copy-and-run, not a new spike, and would close OQ-002/OQ-007 for real
+  rather than carrying them into Phase 6 as "still open."
 
 ### 2026-08-31 (session 10) — Phase 4 done: prior art surveyed, contacts map built
 
