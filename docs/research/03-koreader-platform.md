@@ -275,7 +275,7 @@ or a single `LuaSettings` file holding a `saves` sub-table. Sizes are small
 frequency**, not size — an autosave on every choice is many fsync'd writes on
 flash. Mitigation: debounce autosave (write on a timer / on background / on exit),
 keep manual slots explicit. This is the 🟡 "frequent small save writes" row in
-[`04` §3](04-constraints-budget.md#3-budget-table-33--updated-with-real-device-ram);
+[`04` §3](04-constraints-budget.md#3-budget-table-33);
 confirm the write cost in spike D.
 
 ---
@@ -474,7 +474,7 @@ listing is the low-friction path.
 | **F-17** | **Single Lua state, no threads, cooperative scheduling.** A blocking cold parse or the 490 KB condition eval (OQ-011) freezes the UI unless sliced with `UIManager:scheduleIn`/`nextTick` or run under `Trapper` (coroutine). This is the platform's sharpest constraint for the port. | high | `04` §1, `frontend/ui/trapper.lua`, `uimanager.lua` |
 | **F-18** | **On-device debug loop = USB copy to `koreader/plugins/` + restart + read `koreader/crash.log`** (all `logger` output + tracebacks, last 500 KB). No hot reload. The faster loop — the `kodev` **emulator — is built and running for the owner in WSL2/Ubuntu** ([`setup-koreader-wsl.sh`](../../reference/setup-koreader-wsl.sh), OQ-012 resolved): needs ninja ≥1.13.2 + make ≥4.4 (Ubuntu 24.04's are too old), WSLg supplies the display. | high | `platform/kindle/koreader.sh:323-334`, `doc/Building.md`, WSL2 build verified on-machine 2026-08-31 |
 | **F-19** | **Magium markup is a non-issue.** `<br/>` is the only in-prose markup; replace with `\n` and use `TextBoxWidget` — no need for the MuPDF HTML widget or the document renderer. Theme/font stay KOReader's. | high | [`02` §2.1](02-magium-format-spec.md#2-constructs-task-1111), `textboxwidget.lua`, `textviewer.lua` |
-| **F-20** | **Save model maps cleanly** onto one `LuaSettings` file (config + achievements + save index) plus optional `Persist` blobs per slot; both fsync on write. The open risk is autosave **write frequency** on flash, not blob size — debounce it. Feeds the 🟡 row in [`04` §3](04-constraints-budget.md#3-budget-table-33--updated-with-real-device-ram). | high | `luasettings.lua`, `persist.lua`; [`01` §8](01-magium-analysis.md#8-saves--settings-task-18) |
+| **F-20** | **Save model maps cleanly** onto one `LuaSettings` file (config + achievements + save index) plus optional `Persist` blobs per slot; both fsync on write. The open risk is autosave **write frequency** on flash, not blob size — debounce it. Feeds the 🟡 row in [`04` §3](04-constraints-budget.md#3-budget-table-33). | high | `luasettings.lua`, `persist.lua`; [`01` §8](01-magium-analysis.md#8-saves--settings-task-18) |
 | **F-21** | **`KindlePaperWhite6` is a first-class KOReader target** (MTK, `mxcfb` driver, fast-mode forced on, `canHWDither=no`, swipe animations). No device-support gap; the platform assumes ~957 MB RAM / ~497 MB free and only ~33 MB used by KOReader. | high | `frontend/device/kindle/device.lua:1129,1775-1790,2205`; [`00`](00-overview.md) |
 
 ---

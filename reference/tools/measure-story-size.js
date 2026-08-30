@@ -6,7 +6,10 @@
 // Recorded result 2026-08-31 (magium-dev @ 51f5aa9, Node v24.11.0):
 //   54 files, 7.50 MB disk, 2159 scenes, 4880 paragraphs, 3734 choices, 594 set()
 //   ~17.4 MB V8 heap for parsed objects, 8.16 MB JSON.stringify
-// See ../magium-dev-notes.md and ../../docs/research/01-magium-analysis.md §11.
+//   cold parse of all 54 files ~95-130 ms (x86 desktop) — a low-confidence anchor
+//   for the on-device (1 GHz MTK ARM / LuaJIT) parse-time question, spike B.
+// See ../magium-dev-notes.md and ../../docs/research/01-magium-analysis.md §11,
+// ../../docs/research/04-constraints-budget.md §2 (F-24).
 
 const path = require("node:path");
 const fs = require("node:fs");
@@ -27,8 +30,10 @@ const { globSync } = require(path.join(devDir, "node_modules", "glob"));
   if (global.gc) global.gc();
   const before = process.memoryUsage().heapUsed;
 
+  const t0 = process.hrtime.bigint();
   const story = {};
   for (const f of files) Object.assign(story, await parse(f));
+  const parseMs = Number(process.hrtime.bigint() - t0) / 1e6;
 
   let scenes = 0, paragraphs = 0, choices = 0, setVars = 0;
   for (const id in story) {
@@ -49,6 +54,7 @@ const { globSync } = require(path.join(devDir, "node_modules", "glob"));
   console.log(`paragraphs:         ${paragraphs}`);
   console.log(`choices:            ${choices}`);
   console.log(`set() directives:   ${setVars}`);
+  console.log(`cold parse time:    ${parseMs.toFixed(1)} ms  (this machine; desktop anchor only, not the Kindle)`);
   console.log(`parsed heap delta:  ${((after - before) / 1048576).toFixed(2)} MB  (V8; run with --expose-gc for accuracy)`);
   console.log(`JSON.stringify:     ${(json.length / 1048576).toFixed(2)} MB`);
 })();

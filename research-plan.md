@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phases 0, 1 & 2 done; Phase 3 next
+- **Status:** active — Phases 0–3 done; Phase 4 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -68,10 +68,10 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Deliverable:** `docs/research/04-constraints-budget.md`.
 **Depends on:** Phase 2 (and 1.12).
 
-- [~] 3.1 Enumerate device hard limits under KOReader: RAM, CPU, storage, no OS threads, e-ink refresh latency, battery, Lua GC behavior. [`04-constraints-budget.md`](docs/research/04-constraints-budget.md) §1 now has RAM/CPU/storage (on-device), threads/LuaJIT-version/refresh-mechanics/save-fsync (Phase 2). Still need: measured e-ink latency (spike A), Lua GC pause behaviour under load (spike D), battery.
-- [ ] 3.2 Enumerate Magium's demands: 7.7 MB text on disk, parsed-story memory footprint (1.12), regex-heavy parsing cost, frequency and size of save writes, number of scenes resident at once.
-- [ ] 3.3 Build the table: each demand vs. the budget → green / yellow / red, with the mitigation for every yellow/red (e.g. parse lazily per chapter, pre-compile data to a leaner format at build time, cache parsed scenes to disk).
-- [ ] 3.4 Decide whether runtime parsing is viable on-device or whether a build-time preprocessing step is needed — feed this into Phase 6.
+- [x] 3.1 Device + platform hard limits tabled — [`04` §1](docs/research/04-constraints-budget.md#1-device--platform-hard-limits-31): RAM/CPU/storage/battery, single cooperative Lua state, LuaJIT 2.1, e-ink refresh mechanics, fsync save writes. Three rows carry a measurement deferred to a named spike: `"ui"` refresh latency (A / OQ-007), LuaJIT GC pauses under load (D / OQ-001), on-device cold-parse time (B). None is a feasibility gate.
+- [x] 3.2 Magium's demands tabled — [`04` §2](docs/research/04-constraints-budget.md#2-magiums-demands-32): 7.5 MB text, ~10–30 MB parsed resident (est.), cold parse ~95–130 ms desktop → est. ~1–4 s on-device (F-24), **save-blob ≈ 12–15 KB / 491 writable vars** (F-23, [`scan-save-footprint.js`](reference/tools/scan-save-footprint.js)), autosave potentially per-choice, 1 scene resident + history stack.
+- [x] 3.3 Budget table built — [`04` §3](docs/research/04-constraints-budget.md#3-budget-table-33): 10 rows, **no 🔴**, four 🟢 (memory/storage/save-size/normal CPU), six 🟡 each with a named mitigation + the spike that closes it.
+- [x] 3.4 Runtime-parse vs build-time preprocess — [`04` §4](docs/research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34): preliminary lean = parse-all-at-launch if spike B cold parse < ~1 s, else lazy-per-chapter + disk cache; build-time pre-parse reserved; the 490 KB condition (OQ-011) may get a targeted pre-compile regardless. Confidence medium, feeds Phase 6 (not yet an ADR).
 
 ## Phase 4 — Prior art
 
@@ -138,6 +138,38 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 9) — Phase 3 done: constraints budget → conditional green light
+
+- Finished [`04-constraints-budget.md`](docs/research/04-constraints-budget.md)
+  (tasks 3.1–3.4): device + platform limits table, Magium demands table, a
+  10-row budget table with a mitigation + closing spike for every yellow, the
+  runtime-parse-vs-preprocess preliminary decision, and an explicit **go/no-go
+  verdict (§5)**. Findings F-22…F-25.
+- **Verdict: GO for continued research — feasibility is not resource-bound.**
+  No 🔴 in the budget table. Four 🟢 (memory ~500 MB avail vs ~10–30 MB story;
+  storage 10.6 GB vs 7.5 MB; save-blob ~12–15 KB; normal-case CPU). Six 🟡, all
+  responsiveness / I-O-hygiene items with named mitigations: chunk the cold
+  parse, memoise/precompile the 490 KB condition (OQ-011), debounce autosave,
+  `"ui"` refresh + periodic `"full"` (OQ-007), tune/limit the resident heap
+  (spike D), and the architectural "everything long must yield" rule (F-25).
+- **New measurement:** [`reference/tools/scan-save-footprint.js`](reference/tools/scan-save-footprint.js)
+  — 491 distinct writable variables (135 achievement flags); a 100%-progressed
+  save serialises to **≈ 12–15 KB uncompressed** (F-23). Only `v_current_scene`
+  holds a long value. Save concern is write *frequency* on flash, not size.
+- **Cold-parse anchor:** all 54 files parse in **~95–130 ms on desktop**
+  (Node 24, x86); est. ~1–4 s on the 1 GHz MTK ARM core under LuaJIT (F-24,
+  low confidence). This one number decides the §4 parse strategy → measure
+  directly in spike B. Not a feasibility gate — all three strategies are scoped.
+- No new OQs. OQ-001 further downgraded (spike D now only tunes the parse
+  strategy). OQ-011 gains an ordered mitigation list. Updated
+  [`07`](docs/research/07-risks-open-questions.md), `SUMMARY.md` (status +
+  rows 16–18 + early-read + OQ paragraph).
+- **Next:** Phase 4 (prior art → [`05-prior-art.md`](docs/research/05-prior-art.md),
+  tasks 4.1–4.6) — IF-on-e-ink, existing KOReader game/CYOA plugins, Twine/Ink
+  players, past Magium-on-e-reader attempts, and the OQ contacts map. Independent
+  of Phase 3; feeds Phase 6. Spikes A/B/D (Phase 5) still pending and now have
+  sharp, pre-scoped questions from this budget.
 
 ### 2026-08-31 (session 8) — infra: repo on GitHub + WSL2 emulator dev env (OQ-012 resolved)
 

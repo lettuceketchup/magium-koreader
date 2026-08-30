@@ -1,6 +1,6 @@
 # SUMMARY — what we know so far
 
-- **Status:** in-progress (Phases 0, 1 & 2 done; Phase 3 next)
+- **Status:** in-progress (Phases 0–3 done; Phase 4 next)
 - **Last updated:** 2026-08-31
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
@@ -14,15 +14,19 @@
 deliberately keeps the end-form open (standalone plugin / extend an existing
 plugin / convert to a supported format) until the evidence is in.
 
-**Early read (low→medium confidence):** the constraints picture favors a
+**Early read (medium confidence):** the constraints picture favors a
 **standalone Lua plugin that reimplements the small `magium-dev` engine and
 bundles the `.magium` data** — memory is a non-issue on this device, the engine is
 tiny, and Phase 2 confirms **KOReader provides every widget/API the Magium UI
 needs** with a shipping plugin (`frotz.koplugin`) already demonstrating the exact
-"fullscreen styled narrative + choice list on e-ink" shape. Remaining unknowns:
-the e-ink *feel* of the choice→page loop (spike A / OQ-007), redistribution
-permission (OQ-004), and the one 490 KB condition outlier (OQ-011). To be
-confirmed or overturned in Phase 6.
+"fullscreen styled narrative + choice list on e-ink" shape. **Phase 3 adds: no
+resource on the device is a hard blocker** — the go/no-go call is a *conditional
+green light* ([`04` §5](docs/research/04-constraints-budget.md#5-go--no-go-verdict)),
+with every yellow being a responsiveness/hygiene item that a spike settles.
+Remaining unknowns: the e-ink *feel* of the choice→page loop (spike A / OQ-007),
+cold-parse time on-device (spike B / affects the parse-strategy choice),
+redistribution permission (OQ-004), and the 490 KB condition outlier (OQ-011). To
+be confirmed or overturned in Phase 6.
 
 ## Established so far
 
@@ -43,6 +47,9 @@ confirmed or overturned in Phase 6.
 | 13 | **KOReader gives us everything the Magium UI needs** — plugin = `WidgetContainer:extend` + `UIManager:show` for a fullscreen non-document UI; `TextBoxWidget`/`ScrollTextWidget` (C-shaped reflowed prose), `ButtonTable`/`Menu` (choice list), `KeyValuePage` (stats), `LuaSettings`/`Persist` (saves), `Notification` (achievement toast). No missing capability. `kbarni/frotz.koplugin` already ships a fullscreen "styled transcript + choice/input row on e-ink" plugin — direct prior art. | high (capability); medium (fit/feel → spike A) | [`03-koreader-platform.md`](docs/research/03-koreader-platform.md) §1,§3,§7; F-14/F-15 |
 | 14 | **Platform facts:** LuaJIT **2.1.ROLLING** (`NUM 20199`, upstream `LuaJIT/LuaJIT@3c4f9fe`, not OpenResty), Lua 5.1 + FFI, patterns not regex, no `utf8` stdlib. **Single OS process / single Lua state / no threads** — blocking work (cold parse, the 490 KB condition) must be sliced via `Trapper`/`UIManager:scheduleIn`. `<br/>` is the only Magium markup → `TextBoxWidget` + `\n`. Saves fsync on write → debounce autosave. Closes the Phase 0 LuaJIT-build item. | high | [`03`](docs/research/03-koreader-platform.md) §2,§5,§6; F-16/F-17/F-19/F-20 |
 | 15 | **Dev loop:** on-device = USB copy to `koreader/plugins/` + restart + read `koreader/crash.log` (all `logger` output, last 500 KB); no hot reload. The `kodev` desktop emulator is **set up and running in WSL2 / Ubuntu** on the owner's machine ([`setup-koreader-wsl.sh`](reference/setup-koreader-wsl.sh)) — build ~7 min, WSLg supplies the display, needed ninja ≥1.13.2 + make ≥4.4. **OQ-012 resolved.** | high | [`03`](docs/research/03-koreader-platform.md) §8.2; F-18; WSL2 build 2026-08-31 |
+| 16 | **Go/no-go: conditional green light.** Phase 3 constraints budget finds **no hard resource blocker** — RAM (~500 MB avail vs ~10–30 MB story), storage (10.6 GB vs 7.5 MB), save size (~12–15 KB), normal-case CPU all 🟢 with margin. Six 🟡s, all responsiveness/I-O-hygiene with named mitigations + a spike each; no 🔴. Feasibility is not capacity-bound. | high | [`04`](docs/research/04-constraints-budget.md) §3,§5; F-22 |
+| 17 | **Save-blob ≈ 12–15 KB** uncompressed for a 100%-progressed game — 491 writable vars (135 achievement flags), values all 1-digit/`±N` except `v_current_scene`. Maps to `LuaSettings`/`Persist` trivially; only autosave **write frequency** on flash needs care (debounce). | medium | [`04`](docs/research/04-constraints-budget.md) §2; F-23; `scan-save-footprint.js` |
+| 18 | **Cold parse ≈ 95–130 ms on desktop** → plausibly **~1–4 s** on the 1 GHz MTK ARM core under LuaJIT. This is the one number that decides parse-at-launch vs lazy-per-chapter vs build-time pre-parse ([`04` §4](docs/research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34)) — measure directly in spike B. Not a feasibility gate (all three strategies are scoped). | low | [`04`](docs/research/04-constraints-budget.md) §2,§4; F-24; `measure-story-size.js` |
 
 ## Open questions
 
@@ -54,7 +61,9 @@ feel — spike A), OQ-004 (redistribution permission), OQ-003 (existing offline
 gamebook players — but `frotz.koplugin` is a strong lead). New from Phase 1:
 OQ-011 (per-render cost of the 490 KB condition outlier). New from Phase 2 and
 already resolved: OQ-012 (Windows dev loop — KOReader emulator now built and
-running in WSL2).
+running in WSL2). **Phase 3:** no new OQs; OQ-001 further downgraded (spike D now
+only tunes the parse strategy, does not gate feasibility); OQ-011 gains an
+ordered mitigation list ([`04` §3 row 4](docs/research/04-constraints-budget.md#3-budget-table-33)).
 
 ## Decisions
 

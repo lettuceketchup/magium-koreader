@@ -395,7 +395,7 @@ variable map.
 For a port on KOReader: theme/font are the platform's job (KOReader has its own
 font + night-mode); we need our own persistence for `currentState`, `checkpoint`,
 save slots, achievements, and `locale`. Save-blob size and write frequency feed
-[`04` §2–3](04-constraints-budget.md#2-magium-demands-32).
+[`04` §2–3](04-constraints-budget.md#2-magiums-demands-32).
 
 ---
 
@@ -475,7 +475,7 @@ Measured 2026-08-31 by parsing all 54 English files in Node
   costs ~10–30 MB depending on Lua table overhead. The device has ~1 GB
   (~500 MB available); this fits comfortably. Spike D confirms the Lua number
   and cold-parse time rather than gating the approach
-  ([`04` §3](04-constraints-budget.md#3-budget-table-33--updated-with-real-device-ram), OQ-001).
+  ([`04` §3](04-constraints-budget.md#3-budget-table-33), OQ-001).
 - **Parse cost (confidence: low):** 54 files, one regex-heavy pass, plus the one
   490 KB condition line. Needs timing on-device (spike B). If a cold parse blocks
   the UI too long, options are lazy per-chapter parsing or a build-time
