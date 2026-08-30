@@ -1,0 +1,15 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Scratch / local experiments not meant to be tracked
+/scratch/
+*.local.md
+
+# Spike build artifacts (spike source IS tracked; built output is not)
+docs/spikes/**/node_modules/
+docs/spikes/**/target/
+docs/spikes/**/*.zip
