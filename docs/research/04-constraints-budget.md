@@ -36,6 +36,7 @@ see [`00-overview.md`](00-overview.md).
 | Fully-parsed story in memory | ~17 MB in V8; **Lua figure unknown** | [`01`](01-magium-analysis.md) §11; needs spike D |
 | Flat serialized story | 8.16 MB (`JSON.stringify`) | measured |
 | Parse cost | 54 files, regex per line, done once at load | spike B/D to time on-device |
+| Condition-eval cost | ~tens of atoms/scene typically; **one outlier** at `b3ch4a.magium:251` — a ~490 KB condition, 2044 OR-clauses | [`01` §11](01-magium-analysis.md#11-parsed-story-size--memory-footprint-task-112), [`02` §4 R7](02-magium-format-spec.md#4-parser-risk-list), OQ-011 |
 | Save blob | full variable snapshot per slot — size TBD (hundreds of `v_*` keys) | [`01`](01-magium-analysis.md) §8 |
 | Save write frequency | potentially every choice (autosave) + manual slots | [`01`](01-magium-analysis.md) §7–8 |
 | Scenes resident at once | 1 active; history stack for back-navigation | design choice |

@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phase 0 done; Phases 1 & 2 next
+- **Status:** active — Phases 0 & 1 done; Phase 2 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -32,18 +32,18 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Deliverables:** `docs/research/01-magium-analysis.md`, `docs/research/02-magium-format-spec.md`.
 **Depends on:** Phase 0.
 
-- [ ] 1.1 Document the scene model: how `parser.js` turns a file into scenes (`id`, `paragraphs`, `choices`, `setVariables`, `achievements`, `statChecks`), including the quirky bits (blank line after `TEXT:`, `<br/>` joining, the leading empty scene that gets sliced off).
-- [ ] 1.2 Document the variable store: naming (`v_*`), types (everything is a string/number), defaulting to 0, where `v_current_scene` and `v_checkpoint_rich` come from.
-- [ ] 1.3 Document condition evaluation: DNF structure, `apply_condition` regex + operators, `"True"` literal, missing-variable behavior. Reference `utils.js:apply_condition`/`apply_conditions`.
-- [ ] 1.4 Document scene-effect ordering in `renderScene`: filter `setVariables` by condition → apply them → filter choices → filter paragraphs → compute stat checks → filter achievements. This order matters for a faithful port.
-- [ ] 1.5 Document the stats system: the 14 `stats_variables`, `parseStatCheck` success/failure logic, `statChecksToDisplay`, the `v_b3_ch1_unlock` lock special case, and stat-check de-duplication.
-- [ ] 1.6 Document achievements: JSON structure of `achievements{1,2,3}.json`, per-book/chapter grouping, the "always-visible" `v_ac_b3_ch9_prize` case, how `achievement(...)` lines gate on a `v_ac_*` flag.
-- [ ] 1.7 Document the `special:` hooks: `restart`, `saves`, `stats`, `checkpoint` — what each does in the web UI, and the `special:checkpoint` / `v_checkpoint_rich == 0` interaction.
-- [ ] 1.8 Document saves & settings: what the web build persists (cookies/localStorage), save slot shape (name + date + full variable snapshot), settings (theme, language, font?).
-- [ ] 1.9 Document i18n: `locales.json`, `ui.json` keys, `mainHeaderTemplate` EJS, `getHeaderFromId` regex, en vs. fr data differences.
-- [ ] 1.10 List every hardcoded scene-ID special case in `renderers.js` (`B3-Ch04a-Introduction2`, `Ch6-Eiden-vs-dragon`, `B3-Ch01`... ) and what each does.
-- [ ] 1.11 Write `02-magium-format-spec.md`: a formal-ish grammar for `.magium`, then a **construct corpus** — scan all 54 files and enumerate every distinct syntactic form actually used (all `special:` values, all operator types, nested `#if`, choices with empty target, multi-assignment choices, quoting edge cases like `choice(""I see no reason..."")`). Flag anything the parser regexes would mishandle.
-- [ ] 1.12 Estimate in-memory footprint of the parsed story (all scenes as JS/Lua objects) — rough number for the constraints budget.
+- [x] 1.1 Scene model documented — [`01`](docs/research/01-magium-analysis.md) §0–1, full grammar/quirks in [`02` §1–2](docs/research/02-magium-format-spec.md).
+- [x] 1.2 Variable store — [`01` §2](docs/research/01-magium-analysis.md#2-variable-store-task-12): flat `v_*` namespace, string values, unset→0, `v_current_scene` (only nav state), `v_checkpoint_rich`, `+N`/`-N` relative writes, two client buckets.
+- [x] 1.3 Condition evaluation — [`01` §3](docs/research/01-magium-analysis.md#3-condition-evaluation-task-13): DNF, `apply_condition` operators + coercion, `True`, unknown-atom→false, whitespace-sensitivity, single-paren stripping.
+- [x] 1.4 `renderScene` 12-step ordering — [`01` §0,§4](docs/research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14).
+- [x] 1.5 Stats system — [`01` §5](docs/research/01-magium-analysis.md#5-stats-system-task-15): 14 vars, `varToStat`, `parseStatCheck` 4 branches (cover 100% of corpus), `statChecksToDisplay` (fed by set∪paragraphs∪choices), lock filter, de-dup, stats screen.
+- [x] 1.6 Achievements — [`01` §6](docs/research/01-magium-analysis.md#6-achievements-task-16): in-story `achievement()` gates on flag `=== "1"`; toast shows JSON `title`; `achievements{1,2,3}.json` = 136 total, `b2ch41`-style group quirk; `v_ac_b3_ch9_prize` always-on.
+- [x] 1.7 `special:` hooks — [`01` §7](docs/research/01-magium-analysis.md#7-special-hooks-task-17): real values are `restart`/`saves`/`stats`/`checkpoint_load`/`checkpoint_save` (no bare `checkpoint`); checkpoint-banner ↔ `v_checkpoint_rich === "0"`.
+- [x] 1.8 Saves & settings — [`01` §8](docs/research/01-magium-analysis.md#8-saves--settings-task-18): 4 blobs (`currentState` autosave / `checkpoint` / `save0-49` / `achievements`), each a full var snapshot + `date`/`name`; theme/font/locale are KOReader's job.
+- [x] 1.9 i18n — [`01` §9](docs/research/01-magium-analysis.md#9-localization-task-19): `locales.json`, `ui.json` (incl. EJS micro-templates), `getHeaderFromId` regex; en/fr `.magium` structurally identical.
+- [x] 1.10 All 13 hardcoded special cases tabulated — [`01` §10](docs/research/01-magium-analysis.md#10-hardcoded-scene-id--variable-special-cases-task-110).
+- [x] 1.11 [`02-magium-format-spec.md`](docs/research/02-magium-format-spec.md) written: grammar + construct corpus (reproducible via [`reference/tools/scan-magium-constructs.js`](reference/tools/scan-magium-constructs.js)) + 10-item parser risk list. Key: nav via `v_current_scene` not `target`; 809 `choice(""…"")`; no multi-digit `set()`; conditions never have >1 paren; `#if` never nested; one 490 KB / 2044-clause condition outlier.
+- [x] 1.12 Footprint — [`01` §11](docs/research/01-magium-analysis.md#11-parsed-story-size--memory-footprint-task-112): ~17.4 MB V8 heap (Lua TBD spike D), 8.16 MB serialized; feeds [`04`](docs/research/04-constraints-budget.md).
 
 ## Phase 2 — KOReader platform
 
@@ -138,6 +138,39 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 6) — Phase 1 done: engine + format fully analysed
+
+- Read the whole `magium-dev` engine (`parser.js`, `utils.js`, `renderers.js`,
+  `main_setup.js`, all 11 EJS templates, the 4 client scripts, `ui.json` /
+  `locales.json` / `achievements1.json`) at `51f5aa9`.
+- Rewrote [`01-magium-analysis.md`](docs/research/01-magium-analysis.md) from stub
+  to a full source-grounded reference: data-flow diagram, the 12-step
+  `renderScene` pipeline, variable store, condition eval, stats, achievements,
+  `special:` hooks, saves/settings, i18n, and a table of **13 hardcoded special
+  cases**. Findings F-09…F-13.
+- Wrote [`02-magium-format-spec.md`](docs/research/02-magium-format-spec.md):
+  informal grammar + a **construct corpus** generated by a new reproducible
+  scanner [`reference/tools/scan-magium-constructs.js`](reference/tools/scan-magium-constructs.js)
+  (scanned all 54 en files), + a 10-item **parser risk list**. Findings F-04…F-08.
+- Key discoveries: navigation is driven by the `v_current_scene` *variable*, not
+  the `choice.target` field (which the engine never reads); `choice(""spoken"")`
+  doubled-quote labels are 809/3734 choices, not an edge case; no `set()` uses a
+  multi-digit value; no condition has >1 paren and no `#if` is nested (so the
+  naive parser regexes are safe *for this data*); `special:` values are
+  `restart`/`saves`/`stats`/`checkpoint_load`/`checkpoint_save` (CLAUDE.md's
+  "checkpoint" shorthand is imprecise); the in-story achievement toast shows the
+  JSON `title`; en/fr `.magium` are structurally identical (i18n = bundle swap).
+- **One performance flag:** `b3ch4a.magium:251` is a single ~490 KB
+  `choice … if (…)` line — a 2044-OR-clause pre-expanded DNF for the "Average
+  Joe" check. Per-render cost on the Kindle is untested → **new OQ-011**.
+- OQ-008 downgraded to "mostly resolved"; a few spot-checks run against the live
+  oracle (`#if(False)` hidden, stat-device lock, achievement gating, statChecks
+  suppression). Updated `SUMMARY.md` (rows 9–12), `04-constraints-budget.md`
+  (condition-eval demand row).
+- **Next:** Phase 2 (KOReader platform → `03-koreader-platform.md`, tasks
+  2.1–2.10) — the plugin API, widget toolkit, persistence, e-ink, build/deploy
+  loop. Independent of Phase 1; unblocks spikes A & B.
 
 ### 2026-08-31 (session 5) — oracle diff harness built; Phase 0 closed
 - Built [`reference/tools/oracle-diff.js`](reference/tools/oracle-diff.js) (task 0.4): drives `magium-dev` over HTTP, normalizes each rendered scene to a canonical JSON shape (header, checkpoint, statChecks, setVariables, paragraphs, choices, achievements), and does a structural pairwise diff. Three subcommands: `scene`, `capture`, `diff`. No deps (global `fetch`).
