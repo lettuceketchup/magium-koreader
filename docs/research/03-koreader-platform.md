@@ -387,19 +387,29 @@ Key facts for the tap-choice→new-page loop:
    thin and push logic into a `require`-able `engine.lua` that also runs under
    plain `luajit` on the desktop for unit tests against the oracle (spike B).
 
-### 8.2 Desktop emulator (faster, but Windows-hostile)
+### 8.2 Desktop emulator — set up and working on the owner's machine (WSL2)
 
 `./kodev build && ./kodev run` (screen size/DPI via `-w -h -d`, device presets via
-`-s=`) runs the full frontend on SDL3; `./kodev log` tails it; `./kodev test front`
-runs the busted suite; `./kodev wbuilder` is a widget playground
-(`../koreader/doc/Building.md:198-226`, `kodev` help block `:713-736`).
-**The toolchain is Linux/macOS only** — "Windows users are suggested to develop
-in a Linux VM or WSL" (`doc/Building.md:1-10`), or use the `koreader/virdevenv`
-Docker image, or just `--appimage-extract` a released Linux AppImage for
-pure-Lua work. There is a `win32` kodev target but it is not a documented release
-target. **The owner is on Windows** → the emulator loop needs WSL2 + an X server
-or Docker; pin down the least-friction option in spike A. Tracked as
-[OQ-012](07-risks-open-questions.md).
+`-s=`) runs the full frontend on SDL3; `./kodev log koreader` tails it;
+`./kodev test front` runs the busted suite; `./kodev wbuilder` is a widget
+playground (`../koreader/doc/Building.md:198-226`, `kodev` help block `:713-736`).
+The toolchain is Linux/macOS only (`doc/Building.md:1-10`).
+
+**The owner is on Windows 11 → done in WSL2 / Ubuntu 24.04 (2026-08-31), OQ-012
+resolved.** Reproducible installer:
+[`../../reference/setup-koreader-wsl.sh`](../../reference/setup-koreader-wsl.sh);
+details in [`../../reference/koreader-notes.md`](../../reference/koreader-notes.md).
+Two gotchas found and fixed there: (1) Ubuntu 24.04's **ninja 1.11.1 + GNU make
+4.3** have incompatible job-server implementations and the recursive-make
+thirdparty builds (`luajit`, `libunibreak`) die with `make[3]: *** read jobs
+pipe: Bad file descriptor` — fixed by putting **ninja ≥ 1.13.2 and make ≥ 4.4**
+in `/usr/local/bin` (KOReader's own `doc/Building.md` recommends exactly these
+minimums). (2) No X server needed — **WSLg** on Win 11 gives a display out of the
+box and SDL picks the `x11` driver. Full build ≈ 7 min; `./kodev run` then
+launches the emulator, loads all plugins, renders normally. Drop
+`magium.koplugin/` in `~/koreader/plugins/` (or symlink from the Windows side).
+Alternatives if ever needed: the `koreader/virdevenv` Docker image;
+`--appimage-extract` a Linux AppImage for pure-Lua work.
 
 ### 8.3 Differential testing
 
@@ -462,7 +472,7 @@ listing is the low-friction path.
 | **F-15** | **A shipping plugin already has our exact UI shape.** `kbarni/frotz.koplugin` renders a styled scrolling narrative transcript + an input/choice row as a fullscreen `FrameContainer`-based widget on e-ink, with `"ui"`/`"full"` refresh split and synchronous autosave on close. De-risks OQ-002/OQ-007 on paper; spike A confirms on our device. | medium | plugin source fetched 2026-08-31, not run |
 | **F-16** | **LuaJIT = Lua 5.1 + FFI, `2.1.ROLLING` (`NUM 20199`), upstream not OpenResty**, built by `koreader-base` @ `6e4bc81` from `LuaJIT/LuaJIT@3c4f9fe`. No `utf8` stdlib, no full regex (patterns only), all-double numbers. Closes the Phase 0 "exact LuaJIT build" item. | high | `koreader-base` + `luajit_rolling.h` at pinned commits |
 | **F-17** | **Single Lua state, no threads, cooperative scheduling.** A blocking cold parse or the 490 KB condition eval (OQ-011) freezes the UI unless sliced with `UIManager:scheduleIn`/`nextTick` or run under `Trapper` (coroutine). This is the platform's sharpest constraint for the port. | high | `04` §1, `frontend/ui/trapper.lua`, `uimanager.lua` |
-| **F-18** | **On-device debug loop = USB copy to `koreader/plugins/` + restart + read `koreader/crash.log`** (all `logger` output + tracebacks, last 500 KB). No hot reload. The `kodev` emulator is Linux/macOS-only; the owner (Windows) needs WSL2/Docker/AppImage — least-friction option is OQ-012. | high | `platform/kindle/koreader.sh:323-334`, `doc/Building.md:1-10`, `kodev` |
+| **F-18** | **On-device debug loop = USB copy to `koreader/plugins/` + restart + read `koreader/crash.log`** (all `logger` output + tracebacks, last 500 KB). No hot reload. The faster loop — the `kodev` **emulator — is built and running for the owner in WSL2/Ubuntu** ([`setup-koreader-wsl.sh`](../../reference/setup-koreader-wsl.sh), OQ-012 resolved): needs ninja ≥1.13.2 + make ≥4.4 (Ubuntu 24.04's are too old), WSLg supplies the display. | high | `platform/kindle/koreader.sh:323-334`, `doc/Building.md`, WSL2 build verified on-machine 2026-08-31 |
 | **F-19** | **Magium markup is a non-issue.** `<br/>` is the only in-prose markup; replace with `\n` and use `TextBoxWidget` — no need for the MuPDF HTML widget or the document renderer. Theme/font stay KOReader's. | high | [`02` §2.1](02-magium-format-spec.md#2-constructs-task-1111), `textboxwidget.lua`, `textviewer.lua` |
 | **F-20** | **Save model maps cleanly** onto one `LuaSettings` file (config + achievements + save index) plus optional `Persist` blobs per slot; both fsync on write. The open risk is autosave **write frequency** on flash, not blob size — debounce it. Feeds the 🟡 row in [`04` §3](04-constraints-budget.md#3-budget-table-33--updated-with-real-device-ram). | high | `luasettings.lua`, `persist.lua`; [`01` §8](01-magium-analysis.md#8-saves--settings-task-18) |
 | **F-21** | **`KindlePaperWhite6` is a first-class KOReader target** (MTK, `mxcfb` driver, fast-mode forced on, `canHWDither=no`, swipe animations). No device-support gap; the platform assumes ~957 MB RAM / ~497 MB free and only ~33 MB used by KOReader. | high | `frontend/device/kindle/device.lua:1129,1775-1790,2205`; [`00`](00-overview.md) |

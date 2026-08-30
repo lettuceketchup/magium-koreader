@@ -139,6 +139,29 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-08-31 (session 8) — infra: repo on GitHub + WSL2 emulator dev env (OQ-012 resolved)
+
+- Pushed the repo to **GitHub** (private): `github.com/lettuceketchup/magium-koreader`,
+  `main` tracking `origin/main`. For multi-device work.
+- Stood up the **KOReader emulator dev environment in WSL2 / Ubuntu 24.04** on the
+  owner's Windows 11 machine. `./kodev build` + `./kodev run` both working; WSLg
+  gives a display with no X server (SDL `x11` driver); the emulator launches,
+  loads all plugins, renders. Build ≈ 7 min.
+  - Two blockers hit and fixed: Ubuntu 24.04's **ninja 1.11.1 + GNU make 4.3**
+    have incompatible job-server implementations → the recursive-make thirdparty
+    builds (`luajit`, `libunibreak`) die with `make[3]: *** read jobs pipe: Bad
+    file descriptor`. Fixed by installing **ninja 1.13.2 + GNU make 4.4.1** into
+    `/usr/local/bin` (KOReader's `doc/Building.md` recommends exactly these
+    minimums; system apt packages untouched).
+  - Captured as a reproducible installer
+    [`reference/setup-koreader-wsl.sh`](reference/setup-koreader-wsl.sh); recipe +
+    `kodev` cheatsheet in [`reference/koreader-notes.md`](reference/koreader-notes.md).
+  - **OQ-012 resolved.** Updated [`03` §8.2](docs/research/03-koreader-platform.md#8-build--deploy--debug-loop-28),
+    F-18, [`07`](docs/research/07-risks-open-questions.md), `SUMMARY.md` row 15.
+- Note: WSL build checkout is `~/koreader` @ `v2026.07.1` — separate from the
+  `../koreader` citation checkout on the Windows drive (same tag).
+- **Next:** unchanged — Phase 3 (constraints budget, tasks 3.1–3.4).
+
 ### 2026-08-31 (session 7) — Phase 2 done: KOReader platform analysed
 
 - Cloned KOReader source as a sibling checkout `../koreader` pinned to **`v2026.07.1`**

@@ -42,7 +42,7 @@ confirmed or overturned in Phase 6.
 | 12 | **One performance outlier found:** `b3ch4a.magium:251` is a single ~490 KB `choice … if (…)` condition with 2044 OR-clauses (pre-expanded "Average Joe" check). Re-evaluating it per render on the Kindle CPU is untested → OQ-011. Mitigable (cache / pre-compile). | medium | [`01`](docs/research/01-magium-analysis.md) §11, [`02`](docs/research/02-magium-format-spec.md) §4, OQ-011 |
 | 13 | **KOReader gives us everything the Magium UI needs** — plugin = `WidgetContainer:extend` + `UIManager:show` for a fullscreen non-document UI; `TextBoxWidget`/`ScrollTextWidget` (C-shaped reflowed prose), `ButtonTable`/`Menu` (choice list), `KeyValuePage` (stats), `LuaSettings`/`Persist` (saves), `Notification` (achievement toast). No missing capability. `kbarni/frotz.koplugin` already ships a fullscreen "styled transcript + choice/input row on e-ink" plugin — direct prior art. | high (capability); medium (fit/feel → spike A) | [`03-koreader-platform.md`](docs/research/03-koreader-platform.md) §1,§3,§7; F-14/F-15 |
 | 14 | **Platform facts:** LuaJIT **2.1.ROLLING** (`NUM 20199`, upstream `LuaJIT/LuaJIT@3c4f9fe`, not OpenResty), Lua 5.1 + FFI, patterns not regex, no `utf8` stdlib. **Single OS process / single Lua state / no threads** — blocking work (cold parse, the 490 KB condition) must be sliced via `Trapper`/`UIManager:scheduleIn`. `<br/>` is the only Magium markup → `TextBoxWidget` + `\n`. Saves fsync on write → debounce autosave. Closes the Phase 0 LuaJIT-build item. | high | [`03`](docs/research/03-koreader-platform.md) §2,§5,§6; F-16/F-17/F-19/F-20 |
-| 15 | **Dev loop:** on-device = USB copy to `koreader/plugins/` + restart + read `koreader/crash.log` (all `logger` output, last 500 KB); no hot reload. The `kodev` desktop emulator is Linux/macOS-only → the owner (Windows) needs WSL2 / Docker / AppImage-extract → new **OQ-012**. | high | [`03`](docs/research/03-koreader-platform.md) §8; F-18 |
+| 15 | **Dev loop:** on-device = USB copy to `koreader/plugins/` + restart + read `koreader/crash.log` (all `logger` output, last 500 KB); no hot reload. The `kodev` desktop emulator is **set up and running in WSL2 / Ubuntu** on the owner's machine ([`setup-koreader-wsl.sh`](reference/setup-koreader-wsl.sh)) — build ~7 min, WSLg supplies the display, needed ninja ≥1.13.2 + make ≥4.4. **OQ-012 resolved.** | high | [`03`](docs/research/03-koreader-platform.md) §8.2; F-18; WSL2 build 2026-08-31 |
 
 ## Open questions
 
@@ -52,8 +52,9 @@ Narrowed by Phase 2: OQ-002 (widgets exist + prior art; only the "custom vs.
 off-the-shelf" call remains — spike A). Still blocking the verdict: OQ-007 (e-ink
 feel — spike A), OQ-004 (redistribution permission), OQ-003 (existing offline
 gamebook players — but `frotz.koplugin` is a strong lead). New from Phase 1:
-OQ-011 (per-render cost of the 490 KB condition outlier). New from Phase 2:
-OQ-012 (Windows dev loop for the emulator).
+OQ-011 (per-render cost of the 490 KB condition outlier). New from Phase 2 and
+already resolved: OQ-012 (Windows dev loop — KOReader emulator now built and
+running in WSL2).
 
 ## Decisions
 

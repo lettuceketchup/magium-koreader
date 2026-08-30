@@ -1,18 +1,22 @@
 # Reference: KOReader source checkout
 
-- **Status:** stable (checkout pinned + verified 2026-08-31)
+- **Status:** stable (citation checkout pinned + emulator dev env built & run 2026-08-31)
 - **Last updated:** 2026-08-31
 - **Phase:** 2
 - **Sources:** `github.com/koreader/koreader` — release tag **`v2026.07.1`**, commit
   `9192014d8bd82a91dc1012473be0f238dedfdb54`; `doc/*`, `frontend/**`, `plugins/**`,
-  `datastorage.lua`, `kodev`, `platform/kindle/koreader.sh`
-- **Related:** [`../docs/research/03-koreader-platform.md`](../docs/research/03-koreader-platform.md)
+  `datastorage.lua`, `kodev`, `platform/kindle/koreader.sh`; WSL2 build verified on-machine
+- **Related:** [`../docs/research/03-koreader-platform.md`](../docs/research/03-koreader-platform.md),
+  [`setup-koreader-wsl.sh`](setup-koreader-wsl.sh), [`07` OQ-012](../docs/research/07-risks-open-questions.md)
 
-> Phase 2 analyses the KOReader plugin platform. Like the Magium recreations, the
-> KOReader source is referenced as a **sibling checkout, not vendored** — cite it
-> by relative path + tag/commit so line numbers are reproducible.
+> Phase 2 analyses the KOReader plugin platform. Two checkouts:
+> 1. **`../koreader`** — a **citation checkout** pinned to the exact release the
+>    Kindle runs, so line numbers in the dossier are reproducible. Sibling of this
+>    repo, not vendored (same convention as `../magium-dev`).
+> 2. **`~/koreader` inside WSL2** — a separate **build/run checkout** for the
+>    emulator dev loop (see "Emulator dev environment" below). Also `v2026.07.1`.
 
-## The checkout
+## The citation checkout (`../koreader`)
 
 ```sh
 cd ".."                      # the "Magium - Kindle" folder, sibling to magium-koreader/
@@ -41,11 +45,44 @@ git checkout v2026.07.1      # -> detached HEAD at 9192014
 is likely to move between releases. The API doc mirror at
 <https://koreader.rocks/doc/> tracks `master`, not this tag; prefer source lines.
 
-## Running the emulator (owner is on Windows)
+## Emulator dev environment — WSL2 / Ubuntu (resolves OQ-012)
 
 `./kodev build && ./kodev run` needs a Linux/macOS toolchain
-(`../koreader/doc/Building.md:1-10`). On Windows: WSL2 + an X server, the premade
-Docker image (`koreader/virdevenv`), or extract the released Linux AppImage
-(`--appimage-extract`) for pure-Lua frontend work. Native on-device debugging is a
-USB copy to `koreader/plugins/` + reading `koreader/crash.log`
-(`platform/kindle/koreader.sh:323-334`). Confirm the fastest loop in spike A.
+(`../koreader/doc/Building.md:1-10`). **On this machine (Windows 11) it is set up
+and working in WSL2.** One-shot reproducible install:
+
+```sh
+wsl -d Ubuntu        # or run the script from inside the distro
+bash /mnt/f/Projects/Magium\ -\ Kindle/magium-koreader/reference/setup-koreader-wsl.sh
+```
+
+[`setup-koreader-wsl.sh`](setup-koreader-wsl.sh) installs the apt prerequisites,
+then **ninja 1.13.2 and GNU make 4.4.1 into `/usr/local/bin`** (Ubuntu 24.04's
+1.11.1 / 4.3 have incompatible job-server implementations — the recursive-make
+thirdparty builds fail with `make[3]: *** read jobs pipe: Bad file descriptor`),
+clones KOReader to `~/koreader` at `v2026.07.1`, and builds. ~7 min.
+
+Then, from `~/koreader`:
+
+| Command | Does |
+|---|---|
+| `./kodev run` | launches the emulator in a window (WSLg on Win 11 gives a display out of the box — SDL uses the `x11` driver) |
+| `./kodev run -s=kobo-aura-one` | run at a preset device size/DPI |
+| `./kodev log koreader` | tail the running app's log |
+| `./kodev build && ./kodev run` | rebuild + run after editing Lua |
+
+Verified 2026-08-31: build OK, `./kodev run` starts, loads all plugins, renders
+the quickstart doc. The emulator's own data dir (settings, plugins it loads,
+`crash.log`) is `~/koreader/koreader-emulator-x86_64-linux-gnu-debug/koreader/`.
+Drop `magium.koplugin/` in `~/koreader/plugins/` (or symlink from the Windows
+side) and it loads on the next `kodev run`.
+
+**Alternatives** (not needed now): the `koreader/virdevenv` Docker image; or
+`--appimage-extract` a released Linux AppImage for pure-Lua frontend work.
+
+## On-device debugging (the real target)
+
+USB copy the plugin to `koreader/plugins/` on the Kindle, restart KOReader, read
+`koreader/crash.log` — all `logger` output + tracebacks, last 500 KB
+(`../koreader/platform/kindle/koreader.sh:323-334`). No hot reload. Feel of the
+choice→page loop on real e-ink is still spike A / OQ-007.
