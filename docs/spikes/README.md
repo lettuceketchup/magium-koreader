@@ -25,7 +25,7 @@ related [`OQ-NNN`](../research/07-risks-open-questions.md).
 | A — UI feel | Does a KOReader widget combo give acceptable prose + choice-list UX on-device? | OQ-002, OQ-007 |
 | B — engine in Lua | Can the condition evaluator + parser be reproduced in Lua, matching the oracle? | OQ-008 |
 | C — format conversion | Can one chapter convert to Twee/Ink with conditions/stats intact? | OQ-006 |
-| D — memory | Does the full parsed story fit in a plugin's RAM budget on a PW4? | OQ-001 |
+| D — memory | Lua-side RAM cost of the full parsed story + cold-parse time at launch (memory fit already confirmed — device has ~1 GB) | OQ-001 |
 
 ## Index
 

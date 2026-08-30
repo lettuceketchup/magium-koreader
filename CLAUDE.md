@@ -5,7 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repo is
 
 A **feasibility study and design dossier** for porting *Magium* (a text-based CYOA
-game) to run on a **Kindle Paperwhite (PW4/PW5) via KOReader**. There is no
+game) to run on a **Kindle Paperwhite 12th gen (2024) via KOReader** (owner's
+device: FW 5.19.5, KOReader v2026.07.1 `kindlehf`, ~1 GB RAM). There is no
 application code here yet and none should be added until the research phase
 finishes and an implementation design is separately approved.
 

@@ -57,12 +57,11 @@ Measured 2026-08-31 by parsing all 54 English files in Node
 | Fully-parsed objects (V8 heap) | ~17.4 MB | `confidence: medium` — V8 object layout, not Lua |
 | `JSON.stringify` of the whole story | 8.16 MB | ~= a flat serialized form |
 
-**Implication (confidence: medium):** on a 512 MB-RAM device, holding the entire
-parsed story resident costs on the order of 10–30 MB depending on Lua table
-overhead. Not obviously fatal, not obviously safe — this is exactly what
-**spike D** must measure on-device, and what decides runtime-parse vs.
-build-time-preprocess ([`04-constraints-budget.md`](04-constraints-budget.md) §4,
-OQ-001).
+**Implication (confidence: medium):** holding the entire parsed story resident
+costs on the order of 10–30 MB depending on Lua table overhead. The target device
+has ~1 GB RAM (~500 MB available), so this fits comfortably — **spike D** now just
+confirms the Lua-side number and the cold-parse time, rather than gating the
+approach ([`04-constraints-budget.md`](04-constraints-budget.md) §4, OQ-001).
 
 ## Findings
 

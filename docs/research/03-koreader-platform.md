@@ -11,19 +11,17 @@
 > the Paperwhite. Anything device-dependent is confirmed by a [spike](../spikes/),
 > not by docs alone.
 
-## 0. Device baseline (from [`00-overview.md`](00-overview.md))
+## 0. Device baseline (confirmed on-device 2026-08-31 — [`00-overview.md`](00-overview.md))
 
-- **Target: Kindle Paperwhite 12th gen (2024)** — MediaTek dual-core 1 GHz, ~512 MB RAM,
-  16 GB storage, 7″ / 300 ppi e-ink, USB-C. Owner has KOReader installed & working.
-- **KOReader build: `koreader-kindlehf`** — the only build for FW ≥ 5.16.3, which
-  the 12th-gen requires. Newer arm hard-float build; ships LuaJIT. Install =
-  unzip archive to Kindle USB root; launch via KUAL / Kindle Package Manager.
-  Confirm exact KOReader version + firmware on-device (Phase 0.1).
-- **Known instability:** launch crashes reported on 12th-gen + some FW/build
-  combos ([issue #13307](https://github.com/koreader/koreader/issues/13307));
-  nightlies often cited as the fix. Tracked as OQ-009.
-- The 512 MB RAM figure is the hard ceiling that makes the constraints budget
-  ([`04-constraints-budget.md`](04-constraints-budget.md)) the decisive question.
+- **Kindle Paperwhite 12th gen (2024)**, FW **Kindle 5.19.5**, MediaTek dual-core
+  1 GHz, **956.9 MB RAM** (~497 MB available), 10.6 GB free storage, 7″ e-ink, USB-C.
+- **KOReader v2026.07.1, official release build**, `koreader-kindlehf` (build for
+  FW ≥ 5.16.3). Idle RSS ~32.7 MB. Ships LuaJIT (confirm exact version — task 2.2).
+- **Stability:** running fine on this device; the #13307-class launch crashes are
+  not occurring here (release build on 5.19.5). OQ-009 narrowed to "under plugin load".
+- **RAM is not the constraint** it was feared to be — see
+  [`04-constraints-budget.md`](04-constraints-budget.md). The platform study can
+  assume comfortable memory headroom and focus on UI fit and responsiveness.
 
 ## 1. Plugin anatomy *(2.1)*
 _Directory layout, `_meta.lua`, `main.lua`, `WidgetContainer`, `init()`, menu registration, dispatcher/events. Cite a real example plugin._

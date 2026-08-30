@@ -9,6 +9,9 @@ game code yet. Magium's interaction model (scrolling prose, a few choice buttons
 menus) lines up closely with what KOReader already does, which is what makes a
 port worth investigating.
 
+Reference device: **Kindle Paperwhite 12th gen (2024)**, firmware 5.19.5,
+KOReader v2026.07.1 (`kindlehf`), ~1 GB RAM.
+
 ## Status
 
 **Phase: RESEARCH.** Nothing is being implemented. See

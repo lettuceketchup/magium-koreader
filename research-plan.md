@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phase 0 in progress
+- **Status:** active — Phase 0 done bar the oracle diff-tool; Phases 1 & 2 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -19,7 +19,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Goal:** know exactly what we're targeting and have the reference oracle running.
 **Deliverables:** `docs/research/00-overview.md`, `reference/magium-dev-notes.md`.
 
-- [~] 0.1 Record exact device facts. **Done from public specs:** Kindle Paperwhite 12th gen (2024, B0DKTZ6592), MediaTek dual-core 1 GHz, ~512 MB RAM, 16 GB, 7″/300 ppi, `koreader-kindlehf` build. **Still needs owner on-device:** exact firmware, KOReader version + channel, LuaJIT build string, free RAM/storage (OQ-010).
+- [x] 0.1 Device facts recorded (owner supplied on-device readings 2026-08-31): Kindle Paperwhite 12th gen (2024, B0DKTZ6592), FW **Kindle 5.19.5**, **956.9 MB RAM** (~497 available), 10.6 GB free, KOReader **v2026.07.1** release (`kindlehf`), idle RSS ~33 MB. OQ-010 closed. Only LuaJIT exact build string still TBD → folded into task 2.2.
 - [x] 0.2 Write `00-overview.md`: problem, goals/non-goals, "full parity" (links design doc §3), success criteria, glossary, device table. _Refine parity detail after Phase 1._
 - [x] 0.3 Get `magium-dev` running locally. `npm install` + `node main_node.js <port>` verified on Node v24.11.0 (2026-08-31).
 - [~] 0.4 `reference/magium-dev-notes.md`: run instructions + differential-oracle method **documented and proven** (`POST /` + `HX-Request` header + variable-map body). **TODO:** build the normalizer/diff script.
@@ -68,7 +68,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Deliverable:** `docs/research/04-constraints-budget.md`.
 **Depends on:** Phase 2 (and 1.12).
 
-- [ ] 3.1 Enumerate PW4/PW5 hard limits under KOReader: usable RAM for a plugin, CPU class, storage, no OS threads, e-ink refresh latency, battery cost of heavy CPU use, any Lua memory ceiling / GC behavior.
+- [~] 3.1 Enumerate device hard limits under KOReader: RAM, CPU, storage, no OS threads, e-ink refresh latency, battery, Lua GC behavior. Core numbers already captured in [`04-constraints-budget.md`](docs/research/04-constraints-budget.md) §1 (2026-08-31); still need e-ink latency + LuaJIT specifics.
 - [ ] 3.2 Enumerate Magium's demands: 7.7 MB text on disk, parsed-story memory footprint (1.12), regex-heavy parsing cost, frequency and size of save writes, number of scenes resident at once.
 - [ ] 3.3 Build the table: each demand vs. the budget → green / yellow / red, with the mitigation for every yellow/red (e.g. parse lazily per chapter, pre-compile data to a leaner format at build time, cache parsed scenes to disk).
 - [ ] 3.4 Decide whether runtime parsing is viable on-device or whether a build-time preprocessing step is needed — feed this into Phase 6.
@@ -138,6 +138,14 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 3) — real device facts; RAM concern retired
+- Owner supplied on-device readings: **FW Kindle 5.19.5**, **956.9 MB RAM** (220.8 free / 497.5 available), 10.6 GB free storage, **KOReader v2026.07.1 release** (`kindlehf`), KOReader idle RSS ~32.7 MB.
+- **Big correction:** public reviews' "512 MB RAM" was wrong — it's ~1 GB. Updated `00-overview.md`, `03-koreader-platform.md` §0, `04-constraints-budget.md`.
+- **OQ-010 closed.** **OQ-001 downgraded** from blocking to a confirmation (memory fits with room; only launch parse-time matters now — spike B). **OQ-009 narrowed** to "stable under plugin load" (KOReader release build runs fine on 5.19.5).
+- Constraints budget re-scored: storage/CPU/memory 🟢; launch-parse/save-IO/e-ink 🟡 (responsiveness, not blockers).
+- Added a **low-confidence early read** to `SUMMARY.md`: constraints favor a standalone Lua plugin reimplementing the `magium-dev` engine + bundled data. To be confirmed in Phase 6.
+- **Next:** build the oracle diff-normalizer (0.4); then Phases 1 + 2 in parallel. Phase 0 is otherwise done.
 
 ### 2026-08-31 (session 2) — Phase 0 substantially done
 - **Device identified:** Amazon.in B0DKTZ6592 = **Kindle Paperwhite 12th gen (2024), 16 GB**. Public specs: MediaTek dual-core 1 GHz, ~512 MB RAM, 7″/300 ppi, USB-C. Requires the `koreader-kindlehf` KOReader build (FW ≥ 5.16.3). Filled into `00-overview.md` §"Target environment facts" and `03-koreader-platform.md` §0.

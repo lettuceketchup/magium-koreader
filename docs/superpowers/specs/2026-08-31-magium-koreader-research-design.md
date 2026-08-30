@@ -1,6 +1,6 @@
 # Design: Magium-on-KOReader Research & Design Phase
 
-- **Status:** Approved (2026-08-31)
+- **Status:** Approved (2026-08-31); device target updated to Paperwhite 12th gen after Phase 0
 - **Owner:** rishishwarmanu@gmail.com
 - **Type:** Architectural (new project) — this document governs the *research/design phase only*, not implementation.
 - **Related:** [`../../../research-plan.md`](../../../research-plan.md), [`../../../README.md`](../../../README.md), [`../../../SUMMARY.md`](../../../SUMMARY.md)
@@ -15,7 +15,7 @@ family's permission. It currently ships as HTML/web, Android, iOS, and desktop
 builds — but not for e-ink readers.
 
 The goal of this project is to determine whether Magium can be played on a
-**Kindle Paperwhite (PW4/PW5) running KOReader**, and if so, how. Magium's
+**Kindle Paperwhite 12th gen (2024) running KOReader**, and if so, how. Magium's
 interaction model (scrolling prose + a short list of choice buttons + menus) maps
 closely onto what KOReader and its plugins already do, which is what makes the
 port plausible.
@@ -121,7 +121,7 @@ Rejected alternatives:
 1. **Prior-art scan first** — find everyone who did the adjacent thing (IF/Glulx
    on e-ink, existing KOReader game/IF plugins, Twine/Ink players, past
    Magium-on-e-reader attempts) and record what broke + who to ask.
-2. **Constraints budget** — enumerate PW4/5 hard limits under KOReader, then
+2. **Constraints budget** — enumerate device hard limits under KOReader, then
    check Magium's demands against them before committing to an approach.
 3. **De-risking spikes, not just desk research** — the owner has a Kindle running
    KOReader, so the plan schedules named throwaway spikes (fork the simplest
@@ -154,7 +154,7 @@ magium-koreader/
       01-magium-analysis.md     engine semantics, state model, stats/achievements/saves, i18n
       02-magium-format-spec.md  .magium grammar + every construct found across the 54 files, with examples
       03-koreader-platform.md   plugin API, Lua env, UI widgets, persistence, lifecycle, deploy/debug loop
-      04-constraints-budget.md  PW4/5 hard limits vs. what Magium needs — the go/no-go table
+      04-constraints-budget.md  device hard limits vs. what Magium needs — the go/no-go table
       05-prior-art.md           IF-on-e-ink, existing KOReader game/IF plugins, past attempts, contacts map
       06-approach-comparison.md standalone plugin vs. extend existing vs. format conversion — decision matrix
       07-risks-open-questions.md risk register; every open question has a stable ID + venue tag

@@ -12,7 +12,7 @@
 
 Magium is a text-based CYOA game (prose + choice buttons + menus). It ships for
 web, Android, iOS, and desktop but not e-ink readers. This project investigates
-playing it on a **Kindle Paperwhite (PW4/PW5) via KOReader**, where the
+playing it on a **Kindle Paperwhite 12th gen (2024) via KOReader**, where the
 interaction model is a close match for existing reader/plugin behavior.
 
 ## Goals
@@ -42,32 +42,39 @@ recommendation with confidence, every `OQ-NNN` closed or deferred, roadmap writt
 
 ## Target environment facts
 
-*(Phase 0.1 — hardware/software pre-filled from public specs; rows marked
-**confirm on-device** still need to be read off the actual Kindle by the owner.)*
+*(Phase 0.1 — **confirmed on the owner's device 2026-08-31** via KOReader's
+System Info, except the few rows still marked otherwise.)*
 
 | Fact | Value | Confidence / how verified |
 |---|---|---|
-| Model | **Kindle Paperwhite, 12th generation (2024)**, 16 GB (non–Signature Edition) | high — Amazon.in ASIN B0DKTZ6592 |
+| Model | **Kindle Paperwhite, 12th generation (2024)**, 16 GB (non–Signature Edition) | high — Amazon.in ASIN B0DKTZ6592; device serial prefix `GN43…` |
 | Community shorthand | "PW6" / "PW12" / "Paperwhite 2024" (⚠️ *not* the same as "PW5" = 11th-gen 2021) | high |
-| Display | 7″ E Ink, 300 ppi, 16-level greyscale, adjustable warm light | medium — 300 ppi typical for the line; confirm |
-| SoC | MediaTek, **dual-core @ 1 GHz** (previous PW was single-core) | medium — goodereader review |
-| RAM | **512 MB** | medium — the-ebook-reader / goodereader; **confirm on-device** via KOReader |
-| Storage | 16 GB (~13–14 GB usable) | high |
+| Firmware | **Kindle 5.19.5** (build 4794310058) | high — on-device |
+| RAM | **956.9 MB total** — 220.8 MB free, **497.5 MB available** at the time of reading (KOReader running) | high — KOReader System Info, on-device. *(Public reviews claiming "512 MB" were wrong.)* |
+| Storage | **11.6 GB user partition, 10.6 GB free** (16 GB nominal; rest is system/reserved) | high — on-device |
+| SoC | MediaTek, dual-core @ 1 GHz | medium — goodereader review |
+| Display | 7″ E Ink, 300 ppi, 16-level greyscale, adjustable warm light | medium — confirm exact ppi in Phase 2 |
 | Battery | 1900 mAh | medium |
 | Connectivity | Wi-Fi, USB-C; no cellular, no Bluetooth audio on this SKU | medium |
-| Firmware version | **confirm on-device** (Settings → Device Options → Device Info); 12th-gen ships ≥ 5.16.x, seen up to 5.17.1.x | — |
-| KOReader package | **`koreader-kindlehf`** (required for FW ≥ 5.16.3; the 12th-gen only takes this build) | high — KOReader wiki + issue tracker |
-| KOReader version installed | **confirm on-device** (top menu → Help → About) | — |
-| KOReader release channel | **confirm** (stable vs. nightly — nightlies noted as the working option for newest hardware) | — |
-| Lua / LuaJIT | KOReader ships LuaJIT (arm) in the `kindlehf` build | medium — confirm exact build in Phase 2 |
-| Free RAM at rest (under KOReader) | **confirm on-device** — matters for [`04-constraints-budget.md`](04-constraints-budget.md) OQ-001 | — |
-| Free storage | **confirm on-device** | — |
+| KOReader version | **v2026.07.1**, official **release** build (not nightly) | high — on-device |
+| KOReader package | **`koreader-kindlehf`** (the build for FW ≥ 5.16.3; 5.19.5 qualifies) | high — KOReader wiki; matches FW |
+| KOReader process footprint (idle) | **~32.7 MB RSS**, 64.6 MB virtual | high — on-device, no book open |
+| Lua / LuaJIT | KOReader ships LuaJIT (arm) — assumed for `kindlehf`; confirm exact in Phase 2 | medium |
+| Jailbreak | present and working (owner installed it); 5.19.5 is a very recent FW, so the JB path is current as of mid-2026 | high — owner |
 
-**Note (risk):** KOReader on the 12th-gen Paperwhite has had launch-crash reports
-on some firmware/build combinations — see
-[`07-risks-open-questions.md`](07-risks-open-questions.md) OQ-009. Owner reports
-KOReader currently working, so confirm exact FW + KOReader build and whether it's
-fully stable.
+**Headroom summary:** with KOReader at ~33 MB and ~500 MB "available", a plugin
+holding the whole parsed story (~17–30 MB, [`01-magium-analysis.md`](01-magium-analysis.md) §11)
+has comfortable room. This is the single biggest de-risking fact so far — see
+[`04-constraints-budget.md`](04-constraints-budget.md) and OQ-001.
+
+**Note (risk):** KOReader has had launch-crash reports on the 12th-gen for some
+FW/build combos ([OQ-009](07-risks-open-questions.md)). This device runs a
+**release** build on **5.19.5** and the owner reports it working — confirm it
+stays stable under a memory-heavier plugin during spikes.
+
+**Privacy:** the full device serial is intentionally **not** recorded here (this
+dossier is meant to be shared publicly). Only the `GN43` model-identifying prefix
+is kept.
 
 ## "Full parity" checklist
 
