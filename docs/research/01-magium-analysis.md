@@ -41,9 +41,38 @@ _`locales.json`, `ui.json`, `mainHeaderTemplate`, `getHeaderFromId` regex, en vs
 ## 10. Hardcoded scene-ID special cases *(task 1.10)*
 _Every `id == "..."` check in `renderers.js` and what it does._
 
-## 11. Parsed-story memory footprint *(task 1.12)*
-_Rough size of all scenes held as objects — feeds [`04-constraints-budget.md`](04-constraints-budget.md)._
+## 11. Parsed-story size & memory footprint *(task 1.12 — partial)*
+
+Measured 2026-08-31 by parsing all 54 English files in Node
+(`../../reference/magium-dev-notes.md` → Measurements):
+
+| Metric | Value | Note |
+|---|---|---|
+| Files | 54 | English only; French is a separate equal-size set |
+| Disk size | 7.50 MB | raw `.magium` text |
+| Scenes | 2159 | keyed by scene ID |
+| Paragraphs | 4880 | after `#if` splitting |
+| Choices | 3734 | avg ~1.7 per scene |
+| `set(...)` directives | 594 | |
+| Fully-parsed objects (V8 heap) | ~17.4 MB | `confidence: medium` — V8 object layout, not Lua |
+| `JSON.stringify` of the whole story | 8.16 MB | ~= a flat serialized form |
+
+**Implication (confidence: medium):** on a 512 MB-RAM device, holding the entire
+parsed story resident costs on the order of 10–30 MB depending on Lua table
+overhead. Not obviously fatal, not obviously safe — this is exactly what
+**spike D** must measure on-device, and what decides runtime-parse vs.
+build-time-preprocess ([`04-constraints-budget.md`](04-constraints-budget.md) §4,
+OQ-001).
 
 ## Findings
 
-_(none yet)_
+- **F-01 (confidence: high):** The `magium-dev` server is a pure function of the
+  posted variable map — `POST /` with `{v_current_scene, ...}` renders that scene.
+  This makes it a clean differential oracle. Method:
+  [`../../reference/magium-dev-notes.md`](../../reference/magium-dev-notes.md).
+- **F-02 (confidence: high):** Variable values are strings everywhere
+  (`"2"`, not `2`); conditions coerce via `parseInt`. A port must match this or
+  comparisons like `v_x == 0` on an unset var will diverge.
+- **F-03 (confidence: medium):** Story scale — ~2160 scenes / ~3700 choices —
+  rules out any approach that needs per-scene hand-authoring (e.g. a naive full
+  Twine conversion would produce ~2160 passages; check tooling limits in spike C).

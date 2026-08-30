@@ -3,7 +3,7 @@
 - **Status:** draft
 - **Last updated:** 2026-08-31
 - **Phase:** 0 (Baseline & setup)
-- **Sources:** project brief (2026-08-31); [design doc](../superpowers/specs/2026-08-31-magium-koreader-research-design.md)
+- **Sources:** project brief (2026-08-31); [design doc](../superpowers/specs/2026-08-31-magium-koreader-research-design.md); device: Amazon.in ASIN [B0DKTZ6592](https://www.amazon.in/All-new-Amazon-Kindle-Paperwhite/dp/B0DKTZ6592); [blog.the-ebook-reader.com 12th-gen specs](https://blog.the-ebook-reader.com/2024/10/16/new-12th-gen-kindle-paperwhite-specs-and-features-summary/); [goodereader 12th-gen review](https://goodereader.com/blog/electronic-readers/amazon-kindle-paperwhite-12th-generation-e-reader-review-2024); [KOReader Kindle install wiki](https://github.com/koreader/koreader/wiki/Installation-on-Kindle-devices)
 - **Related:** [`../../research-plan.md`](../../research-plan.md), [`../../SUMMARY.md`](../../SUMMARY.md), [`01-magium-analysis.md`](01-magium-analysis.md)
 
 ## Problem statement
@@ -42,17 +42,32 @@ recommendation with confidence, every `OQ-NNN` closed or deferred, roadmap writt
 
 ## Target environment facts
 
-*(Phase 0.1 — fill in from the actual device.)*
+*(Phase 0.1 — hardware/software pre-filled from public specs; rows marked
+**confirm on-device** still need to be read off the actual Kindle by the owner.)*
 
-| Fact | Value | How verified |
+| Fact | Value | Confidence / how verified |
 |---|---|---|
-| Kindle model / generation | TBD | |
-| Firmware version | TBD | |
-| KOReader version | TBD | |
-| KOReader release channel | TBD | |
-| Lua / LuaJIT build | TBD | |
-| Free RAM at rest | TBD | |
-| Free storage | TBD | |
+| Model | **Kindle Paperwhite, 12th generation (2024)**, 16 GB (non–Signature Edition) | high — Amazon.in ASIN B0DKTZ6592 |
+| Community shorthand | "PW6" / "PW12" / "Paperwhite 2024" (⚠️ *not* the same as "PW5" = 11th-gen 2021) | high |
+| Display | 7″ E Ink, 300 ppi, 16-level greyscale, adjustable warm light | medium — 300 ppi typical for the line; confirm |
+| SoC | MediaTek, **dual-core @ 1 GHz** (previous PW was single-core) | medium — goodereader review |
+| RAM | **512 MB** | medium — the-ebook-reader / goodereader; **confirm on-device** via KOReader |
+| Storage | 16 GB (~13–14 GB usable) | high |
+| Battery | 1900 mAh | medium |
+| Connectivity | Wi-Fi, USB-C; no cellular, no Bluetooth audio on this SKU | medium |
+| Firmware version | **confirm on-device** (Settings → Device Options → Device Info); 12th-gen ships ≥ 5.16.x, seen up to 5.17.1.x | — |
+| KOReader package | **`koreader-kindlehf`** (required for FW ≥ 5.16.3; the 12th-gen only takes this build) | high — KOReader wiki + issue tracker |
+| KOReader version installed | **confirm on-device** (top menu → Help → About) | — |
+| KOReader release channel | **confirm** (stable vs. nightly — nightlies noted as the working option for newest hardware) | — |
+| Lua / LuaJIT | KOReader ships LuaJIT (arm) in the `kindlehf` build | medium — confirm exact build in Phase 2 |
+| Free RAM at rest (under KOReader) | **confirm on-device** — matters for [`04-constraints-budget.md`](04-constraints-budget.md) OQ-001 | — |
+| Free storage | **confirm on-device** | — |
+
+**Note (risk):** KOReader on the 12th-gen Paperwhite has had launch-crash reports
+on some firmware/build combinations — see
+[`07-risks-open-questions.md`](07-risks-open-questions.md) OQ-009. Owner reports
+KOReader currently working, so confirm exact FW + KOReader build and whether it's
+fully stable.
 
 ## "Full parity" checklist
 

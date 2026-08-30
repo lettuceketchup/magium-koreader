@@ -1,15 +1,29 @@
 # 03 — KOReader plugin platform & constraints
 
-- **Status:** stub (not started)
+- **Status:** stub (device baseline added 2026-08-31; platform study not started)
 - **Last updated:** 2026-08-31
 - **Phase:** 2
-- **Sources:** https://kindlemodshelf.me/koreaderplugindev (+ archive) ; https://github.com/koreader/koreader (cite files by path@ref) ; on-device observation
-- **Related:** [`04-constraints-budget.md`](04-constraints-budget.md), [`05-prior-art.md`](05-prior-art.md)
+- **Sources:** https://kindlemodshelf.me/koreaderplugindev (+ archive) ; https://github.com/koreader/koreader (cite files by path@ref) ; [KOReader Kindle install wiki](https://github.com/koreader/koreader/wiki/Installation-on-Kindle-devices) ; [KOReader issue #13307](https://github.com/koreader/koreader/issues/13307) ; on-device observation
+- **Related:** [`00-overview.md`](00-overview.md), [`04-constraints-budget.md`](04-constraints-budget.md), [`05-prior-art.md`](05-prior-art.md)
 
 > Goal: know what the plugin platform provides for rendering prose + choice lists +
 > menus + a stats panel, how persistence works, and how to build/deploy/debug on
 > the Paperwhite. Anything device-dependent is confirmed by a [spike](../spikes/),
 > not by docs alone.
+
+## 0. Device baseline (from [`00-overview.md`](00-overview.md))
+
+- **Target: Kindle Paperwhite 12th gen (2024)** — MediaTek dual-core 1 GHz, ~512 MB RAM,
+  16 GB storage, 7″ / 300 ppi e-ink, USB-C. Owner has KOReader installed & working.
+- **KOReader build: `koreader-kindlehf`** — the only build for FW ≥ 5.16.3, which
+  the 12th-gen requires. Newer arm hard-float build; ships LuaJIT. Install =
+  unzip archive to Kindle USB root; launch via KUAL / Kindle Package Manager.
+  Confirm exact KOReader version + firmware on-device (Phase 0.1).
+- **Known instability:** launch crashes reported on 12th-gen + some FW/build
+  combos ([issue #13307](https://github.com/koreader/koreader/issues/13307));
+  nightlies often cited as the fix. Tracked as OQ-009.
+- The 512 MB RAM figure is the hard ceiling that makes the constraints budget
+  ([`04-constraints-budget.md`](04-constraints-budget.md)) the decisive question.
 
 ## 1. Plugin anatomy *(2.1)*
 _Directory layout, `_meta.lua`, `main.lua`, `WidgetContainer`, `init()`, menu registration, dispatcher/events. Cite a real example plugin._

@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active
+- **Status:** active — Phase 0 in progress
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -19,12 +19,12 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Goal:** know exactly what we're targeting and have the reference oracle running.
 **Deliverables:** `docs/research/00-overview.md`, `reference/magium-dev-notes.md`.
 
-- [ ] 0.1 Record exact device facts: Kindle model + generation, firmware version, KOReader version + release channel (stable/nightly), Lua/LuaJIT build, free RAM at rest, free storage. Put in `00-overview.md`.
-- [ ] 0.2 Write `00-overview.md`: problem statement, goals/non-goals (from design doc §2), the "full parity" definition (design doc §3), success criteria, and a starter glossary.
-- [ ] 0.3 Get `magium-dev` running locally (`npm install && npm run start:electron`, or the node server). Confirm it plays.
-- [ ] 0.4 Write `reference/magium-dev-notes.md`: how to run it, how to reach an arbitrary scene, and a repeatable way to capture a scene's rendered text + available choices for a given variable state (the differential-oracle method).
-- [ ] 0.5 Skim `magium-recrystallized` enough to write `reference/magium-recrystallized-notes.md`: how its binary `.story` pipeline works, where the engine logic lives (`wasm_module/src/`), and what (if anything) is worth borrowing (save model, decoder).
-- [ ] 0.6 Note the commit hash of each sibling repo as of research start (done in design doc §4 — verify still current).
+- [~] 0.1 Record exact device facts. **Done from public specs:** Kindle Paperwhite 12th gen (2024, B0DKTZ6592), MediaTek dual-core 1 GHz, ~512 MB RAM, 16 GB, 7″/300 ppi, `koreader-kindlehf` build. **Still needs owner on-device:** exact firmware, KOReader version + channel, LuaJIT build string, free RAM/storage (OQ-010).
+- [x] 0.2 Write `00-overview.md`: problem, goals/non-goals, "full parity" (links design doc §3), success criteria, glossary, device table. _Refine parity detail after Phase 1._
+- [x] 0.3 Get `magium-dev` running locally. `npm install` + `node main_node.js <port>` verified on Node v24.11.0 (2026-08-31).
+- [~] 0.4 `reference/magium-dev-notes.md`: run instructions + differential-oracle method **documented and proven** (`POST /` + `HX-Request` header + variable-map body). **TODO:** build the normalizer/diff script.
+- [x] 0.5 Skimmed `magium-recrystallized` source; wrote `reference/magium-recrystallized-notes.md`. Confirms it's not a viable base: Rust/WASM engine, binary `.story` TLV format with no in-repo compiler, designed for HTTP range-streaming, AGPL, unfinished scripting layer. Save-model stores and the chunked/indexed format layout are worth borrowing if approach D (build-time preprocess) is chosen.
+- [x] 0.6 Sibling commit hashes recorded (design doc §4): `magium-dev` `51f5aa9`, `magium-recrystallized` `0dcfd2e`.
 
 ## Phase 1 — Magium analysis
 
@@ -139,7 +139,16 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
-### 2026-08-31 — project initialized
+### 2026-08-31 (session 2) — Phase 0 substantially done
+- **Device identified:** Amazon.in B0DKTZ6592 = **Kindle Paperwhite 12th gen (2024), 16 GB**. Public specs: MediaTek dual-core 1 GHz, ~512 MB RAM, 7″/300 ppi, USB-C. Requires the `koreader-kindlehf` KOReader build (FW ≥ 5.16.3). Filled into `00-overview.md` §"Target environment facts" and `03-koreader-platform.md` §0.
+- **Noted risk OQ-009:** KOReader launch-crash reports on 12th-gen for some FW/build combos (issue #13307). Owner says it works — needs exact-version confirmation. Added OQ-010 for the remaining on-device facts.
+- **`magium-dev` running** (Node v24.11.0). Confirmed it works as a stateless differential oracle: `POST /` + `HX-Request: true` + variable-map JSON → rendered scene. Documented in `reference/magium-dev-notes.md`.
+- **Measured story scale** (`scratchpad/measure.js`): 54 files / 7.50 MB / 2159 scenes / 4880 paragraphs / 3734 choices; ~17 MB parsed in V8, 8.16 MB serialized. Into `01-magium-analysis.md` §11 and `04-constraints-budget.md`.
+- **Preliminary constraints budget** drafted: storage & CPU 🟢; RAM headroom, blocking parse, save-write frequency, e-ink refresh all 🟡 pending on-device measurement. OQ-001 sharpened with real numbers.
+- **Decisions:** none new (magium-dev-as-base already recorded).
+- **Next:** owner to supply on-device facts (OQ-010) + confirm KOReader stability (OQ-009); build the oracle diff-normalizer (0.4); then start Phase 1 (engine deep-dive) and Phase 2 (KOReader platform), which can run in parallel.
+
+### 2026-08-31 (session 1) — project initialized
 - Explored both sibling repos. Confirmed `magium-dev` (MIT, ~650 LOC JS, runtime `.magium` parser, 54 files / 7.7 MB) is the sensible porting base over `magium-recrystallized` (AGPL, Rust/WASM, binary `.story`).
 - Brainstormed and approved the research-phase design: modular dossier layout, traceability conventions, methods (prior-art scan / constraints budget / de-risking spikes / differential oracle / data-format-first), 9-phase plan.
 - Wrote the governing design doc, scaffolded the repo (`README`, `SUMMARY`, this plan, `CLAUDE.md`, `docs/research/*` stubs, `docs/decisions/` + ADR-001, `docs/spikes/README`, `reference/*` stubs).
