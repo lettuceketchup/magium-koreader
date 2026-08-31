@@ -9,6 +9,9 @@ Thumbs.db
 /scratch/
 *.local.md
 
+# Subagent-driven-development workspace (ledger, briefs, review packages — scratch)
+/.superpowers/
+
 # Spike build artifacts (spike source IS tracked; built output is not)
 docs/spikes/**/node_modules/
 docs/spikes/**/target/
