@@ -1,6 +1,6 @@
 # SUMMARY — what we know so far
 
-- **Status:** in-progress (Phases 0–4 done; Phase 5 mostly done — 3 of 4 spikes confirmed, 1 blocked; Phase 6 next)
+- **Status:** in-progress (Phases 0–4 done; **Phase 5 done** — all 4 spikes confirmed; Phase 6 next)
 - **Last updated:** 2026-08-31
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
@@ -28,21 +28,27 @@ cold-parse time on-device (spike B / affects the parse-strategy choice),
 redistribution permission (OQ-004), and the 490 KB condition outlier (OQ-011). To
 be confirmed or overturned in Phase 6.
 
-**Phase 5 update (de-risking spikes): the early read holds up, more strongly.**
-A Lua port of the engine's condition evaluator + parser matched `magium-dev`'s
-own output exactly across every diffed fixture *and* the full 54-file corpus
-(spike 02/03) — the engine is not just "should be small" (F-9), it's now a
-working, corpus-validated translation. The same spike's real LuaJIT memory
-measurement (11.5 MB for the full parsed story) came in *under* the earlier
+**Phase 5 update (de-risking spikes): the early read holds up, more strongly —
+and now with all four spikes actually run.** A Lua port of the engine's
+condition evaluator + parser matched `magium-dev`'s own output exactly across
+every diffed fixture *and* the full 54-file corpus (spike 02/03) — the engine
+is not just "should be small" (F-9), it's now a working, corpus-validated
+translation, re-confirmed under koreader-base's own bundled LuaJIT build (F-27).
+The same spike's real LuaJIT memory measurement (~11.5 MB for the full parsed
+story, confirmed under two different LuaJIT builds) came in *under* the earlier
 V8-based estimate, making memory an even stronger 🟢 than Phase 3 already had
 it. A `.magium`→Ink conversion (spike 05) confirmed conditions/stats survive
 format conversion losslessly, closing OQ-006's fidelity half — but this doesn't
 help approach C, since Phase 4 already found no e-ink player exists for Ink
-regardless. The one Phase 5 spike that *didn't* land (spike 04, UI widget fit)
-was blocked by this session's own environment (no device, and the KOReader
-emulator couldn't be built under this session's network policy — see F-34) —
-not by anything about KOReader or the device itself; OQ-002/OQ-007 stay open
-pending a run in the owner's already-working WSL2 setup or on the real Kindle.
+regardless. Spike 04 (UI widget fit) was initially thought blocked by this
+session's own environment (no device, and an earlier attempt to build the
+KOReader emulator hit a 403 on GitHub thirdparty-tarball downloads) — that
+turned out to be a narrower, fixable problem than first reported (F-27): a
+working emulator build was obtained, and the plugin was actually run under
+real KOReader v2026.07.1, confirming the widget model fits (F-26). Only the
+inherently-device-only half — e-ink refresh feel, OQ-007 — stays open, and
+was never going to close from any non-e-ink display regardless of build
+tooling; it needs the owner's WSL2 setup or the real Kindle.
 
 ## Established so far
 
@@ -71,9 +77,10 @@ pending a run in the owner's already-working WSL2 setup or on the real Kindle.
 | 21 | **No existing KOReader plugin plays CYOA/gamebook/narrative-choice content** (full `awesome-koreader` + ecosystem survey: only IF interpreters and generic puzzle games). Closes **OQ-003 (no)** and rules out approach B (extend an existing plugin) as a shortcut — the Lua engine has to be written from scratch either way. | high | [`05`](docs/research/05-prior-art.md) §2; F-30 |
 | 22 | **No prior Magium-on-e-reader attempt found** (web search; absence-of-evidence, Discord history unindexed). Two live Magium Discord invites found for OQ-004 outreach (Community, Writer Team) — not yet cross-checked against the invite already on record. Three outreach drafts prepared but **not sent** (no account access this session) — owner to post. | medium | [`05`](docs/research/05-prior-art.md) §4,§6; F-29 |
 | 23 | **The engine ports to Lua cleanly and fast.** A Lua translation of the parser + condition/stat-check evaluator matched `magium-dev`'s own output on **6/6** diffed fixtures, and reproduced the exact scene/paragraph/choice/`set()` counts (2159/4880/3734/594) on the **full 54-file corpus** — not just the diffed slice. One real porting bug found+fixed: Lua's `%w` pattern class excludes `_` (unlike JS `\w`), which silently broke every `v_snake_case` condition match until caught by the port's own diagnostic. | high | [spike 02](docs/spikes/02-engine-in-lua/FINDING.md) |
-| 24 | **Lua-side memory for the full parsed story: 11.54 MB** (real LuaJIT measurement, not just the V8 estimate) — *below* the ~17.4 MB V8 figure Phase 0 used. Parse time 112–128 ms on this session's x86 container (same order of magnitude as the 95–130 ms V8 anchor) — still a desktop number, not the Kindle's ARM core; attempting to build the KOReader emulator in-session to get a real on-device-equivalent number was **blocked by network egress policy** (GitHub tarball downloads 403, confirmed non-transient) — a cloud/remote agent session cannot build/run the emulator at all, a new and general finding, orthogonal to OQ-012. | high (memory); low (on-device parse time, unchanged) | [spike 03](docs/spikes/03-full-corpus-memory-parse/FINDING.md) |
+| 24 | **Lua-side memory for the full parsed story: ~11.5 MB** (real LuaJIT measurement, not just the V8 estimate) — *below* the ~17.4 MB V8 figure Phase 0 used. Confirmed twice: 11.54 MB under stock LuaJIT, 11.48 MB under koreader-base's own bundled build once a working `./kodev build` was obtained in-session (see F-31). Parse time 112–205 ms across both runs on this session's x86 container (same order of magnitude as the 95–130 ms V8 anchor) — still a desktop number, not the Kindle's ARM core; that gap is unchanged. | high (memory); low (on-device parse time, unchanged) | [spike 03](docs/spikes/03-full-corpus-memory-parse/FINDING.md) |
 | 25 | **`.magium` conditions/`set()` convert to Ink losslessly.** One chapter (`ch1.magium`, 12 scenes) converted, compiled, and played via `inkjs`'s in-process JS compiler (`inkjs/full` — no `inklecate`/.NET needed); conditional branching and variable state matched the oracle goldens. Fidelity gaps found are all orthogonal to conditions/stats: achievements and `special:` hooks have no Ink primitive (host-script territory regardless of engine), cross-chapter navigation needs multi-file handling (one-chapter scope). Closes OQ-006's fidelity question without changing the case against approach C (no e-ink Ink player exists, F-27). | medium-high | [spike 05](docs/spikes/05-magium-to-ink/FINDING.md) |
-| 26 | **A KOReader-widget plugin skeleton was written but never run.** `TextViewer` + a `buttons_table` (verified against a real caller, not just its docstring) hard-codes `Ch1-Intro1`/`Ch1-Intro2` with real prose and 3-way branching; syntactically valid Lua, modeled on `hello.koplugin`. Blocked from running by the same emulator-build-unavailable-in-cloud-sessions finding as row 24 — the widget-fit/e-ink-feel judgment (OQ-002/OQ-007) stays open, needs the owner at a real or WSL2-emulated device. | medium (design); n/a (unrun) | [spike 04](docs/spikes/04-ui-plugin-skeleton/FINDING.md) |
+| 26 | **A KOReader-widget plugin skeleton was written and confirmed working under a real build.** `TextViewer` + a `buttons_table` (verified against a real caller, not just its docstring) hard-codes `Ch1-Intro1`/`Ch1-Intro2` with real prose and 3-way branching, modeled on `hello.koplugin`. Run under KOReader **v2026.07.1** itself (see F-31): loads with zero errors, both scenes render correctly (real prose, correct chapter header, working choice buttons), navigation between them works — screenshotted. **Widget fit: confirmed.** E-ink refresh feel (OQ-007) is unaffected — unanswerable from any non-e-ink display — and stays open for the owner at a real device. | high (functional widget fit); n/a (e-ink feel) | [spike 04](docs/spikes/04-ui-plugin-skeleton/FINDING.md) |
+| 27 | **A cloud/remote session CAN build and run the KOReader emulator** — corrects F-24/F-26's earlier "cannot" claim. The actual constraint is narrower: `github.com/*/archive/*` (GitHub's dynamic tarball-from-ref endpoint) is blocked for repos outside the session's attached scope, but plain `git clone` and `github.com/*/releases/download/*` are not. 17 of koreader-base's ~50 thirdparty C-library fetches used the blocked pattern; swapping them for a `git clone` at the same tag (content-identical; already-existing `DOWNLOAD GIT` mechanism, not new code) let `./kodev build` complete end to end. Reproducible: [`reference/koreader-base-thirdparty-git-fetch.patch`](reference/koreader-base-thirdparty-git-fetch.patch), [`reference/setup-koreader-cloud-session.sh`](reference/setup-koreader-cloud-session.sh). | high | [spike 04](docs/spikes/04-ui-plugin-skeleton/FINDING.md) |
 
 ## Open questions
 

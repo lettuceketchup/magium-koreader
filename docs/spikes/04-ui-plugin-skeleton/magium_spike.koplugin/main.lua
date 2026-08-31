@@ -19,12 +19,14 @@ Text is the REAL prose from ../../../../magium-dev/data/en/ch1.magium
 whether paragraph-length real prose fits/reads well in this widget, so
 shortening it would defeat the purpose.
 
-NOT RUN. See FINDING.md — building/running the KOReader emulator in this
-session is blocked by network egress policy (confirmed in spike 03's
-FINDING.md), and there is no real device available to a cloud agent
-session either. This is a reviewable design artifact, not a verified one:
-the widget-fit and e-ink-feel judgment calls (OQ-002, OQ-007) this spike
-was meant to answer are still open, owner-only.
+RUN, functionally confirmed. See FINDING.md — a working `./kodev build` +
+`./kodev run --simulate=kindle-paperwhite` was obtained in a later pass of
+this same session (the earlier network-egress block only affected one
+GitHub download endpoint and turned out to be fixable). Both hard-coded
+scenes render correctly under real KOReader v2026.07.1 with zero errors,
+screenshotted. Widget fit (OQ-002) is confirmed; e-ink refresh feel
+(OQ-007) is unaffected by any of this — unanswerable from a non-e-ink
+display regardless — and stays open, owner-only.
 --]]--
 
 local Dispatcher = require("dispatcher")  -- luacheck:ignore

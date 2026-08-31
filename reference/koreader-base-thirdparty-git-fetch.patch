@@ -1,0 +1,290 @@
+diff --git a/thirdparty/brotli/CMakeLists.txt b/thirdparty/brotli/CMakeLists.txt
+index 6b095ca..772783d 100644
+--- a/thirdparty/brotli/CMakeLists.txt
++++ b/thirdparty/brotli/CMakeLists.txt
+@@ -12,8 +12,8 @@ list(APPEND BUILD_CMD COMMAND ninja)
+ list(APPEND INSTALL_CMD COMMAND ${CMAKE_COMMAND} --install .)
+ 
+ external_project(
+-    DOWNLOAD URL 3a6a3dba82a3604792d3cb0bd41bca60
+-    https://github.com/google/brotli/archive/refs/tags/v1.1.0.tar.gz
++    DOWNLOAD GIT v1.1.0
++    https://github.com/google/brotli
+     PATCH_FILES ${PATCH_FILES}
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
+diff --git a/thirdparty/cmake_modules/koreader_external_project.cmake b/thirdparty/cmake_modules/koreader_external_project.cmake
+index bdcfb59..70b4022 100644
+--- a/thirdparty/cmake_modules/koreader_external_project.cmake
++++ b/thirdparty/cmake_modules/koreader_external_project.cmake
+@@ -382,11 +382,25 @@ function(luarocks_external_project URL MD5)
+     list(APPEND INSTALL_CMD COMMAND ${CMAKE_COMMAND} -E copy_directory ${BINARY_DIR}/dist ${_TREE})
+ 
+     # External project.
+-    external_project(
+-        DOWNLOAD URL ${MD5} ${URL}
+-        BUILD_COMMAND ${BUILD_CMD}
+-        INSTALL_COMMAND ${INSTALL_CMD}
+-    )
++    # NOTE: this session's proxy blocks github.com/*/archive/* (dynamic
++    # tarball-from-ref), but not plain `git clone` of public repos nor
++    # github.com/*/releases/download/* (published release assets) — see
++    # docs/spikes/04-ui-plugin-skeleton/FINDING.md. Swap such URLs for an
++    # equivalent DOWNLOAD GIT fetch (same content: the archive endpoint is
++    # just a zip of the git tree at that ref).
++    if(URL MATCHES "^https://github\\.com/([^/]+/[^/]+)/archive/(refs/(tags|heads)/)?(.+)\\.tar\\.gz$")
++        external_project(
++            DOWNLOAD GIT ${CMAKE_MATCH_4} https://github.com/${CMAKE_MATCH_1}
++            BUILD_COMMAND ${BUILD_CMD}
++            INSTALL_COMMAND ${INSTALL_CMD}
++        )
++    else()
++        external_project(
++            DOWNLOAD URL ${MD5} ${URL}
++            BUILD_COMMAND ${BUILD_CMD}
++            INSTALL_COMMAND ${INSTALL_CMD}
++        )
++    endif()
+ 
+ endfunction()
+ 
+diff --git a/thirdparty/cpu_features/CMakeLists.txt b/thirdparty/cpu_features/CMakeLists.txt
+index f420059..8491378 100644
+--- a/thirdparty/cpu_features/CMakeLists.txt
++++ b/thirdparty/cpu_features/CMakeLists.txt
+@@ -11,8 +11,8 @@ list(APPEND BUILD_CMD COMMAND ninja)
+ list(APPEND INSTALL_CMD COMMAND ${CMAKE_COMMAND} --install .)
+ 
+ external_project(
+-    DOWNLOAD URL 32f6f561c24dce66ed4bc0384b22c026
+-    https://github.com/google/cpu_features/archive/refs/tags/v0.10.1.tar.gz
++    DOWNLOAD GIT v0.10.1
++    https://github.com/google/cpu_features
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
+     INSTALL_COMMAND ${INSTALL_CMD}
+diff --git a/thirdparty/dropbear/CMakeLists.txt b/thirdparty/dropbear/CMakeLists.txt
+index 5e8282e..0b9d310 100644
+--- a/thirdparty/dropbear/CMakeLists.txt
++++ b/thirdparty/dropbear/CMakeLists.txt
+@@ -78,8 +78,8 @@ list(APPEND BUILD_CMD make ${PROGRAMS})
+ append_binary_install_command(INSTALL_CMD ${PROGRAMS})
+ 
+ external_project(
+-    DOWNLOAD URL 26c3e2ea61a8f3bc5b19c78e697ec42c
+-    https://github.com/mkj/dropbear/archive/refs/tags/DROPBEAR_2026.92.tar.gz
++    DOWNLOAD GIT DROPBEAR_2026.92
++    https://github.com/mkj/dropbear
+     PATCH_FILES ${PATCH_FILES}
+     CONFIGURE_COMMAND ${CFG_CMD}
+     BUILD_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/localoptions.h
+diff --git a/thirdparty/freetype2/CMakeLists.txt b/thirdparty/freetype2/CMakeLists.txt
+index 2c6d5c8..af3e168 100644
+--- a/thirdparty/freetype2/CMakeLists.txt
++++ b/thirdparty/freetype2/CMakeLists.txt
+@@ -26,8 +26,8 @@ if(NOT MONOLIBTIC)
+ endif()
+ 
+ external_project(
+-    DOWNLOAD URL 0f816defb4d1d7dd274df0937431916f
+-    https://github.com/freetype/freetype/archive/refs/tags/VER-2-14-3.tar.gz
++    DOWNLOAD GIT VER-2-14-3
++    https://github.com/freetype/freetype
+     PATCH_FILES ${PATCH_FILES}
+     CONFIGURE_COMMAND ${CFG_CMD}
+     BUILD_COMMAND ${BUILD_CMD}
+diff --git a/thirdparty/leptonica/CMakeLists.txt b/thirdparty/leptonica/CMakeLists.txt
+index ad60424..2b9f5a6 100644
+--- a/thirdparty/leptonica/CMakeLists.txt
++++ b/thirdparty/leptonica/CMakeLists.txt
+@@ -57,8 +57,8 @@ endif()
+ external_project(
+     # NOTE: Needs to match the version used by whatever version of libk2pdfopt we're currently using...
+     #       Probably applies to mupdf & tesseract, too...
+-    DOWNLOAD URL 1f66c425c270e9793982289e1ff9634a
+-    https://github.com/DanBloomberg/leptonica/archive/refs/tags/1.87.0.tar.gz
++    DOWNLOAD GIT 1.87.0
++    https://github.com/DanBloomberg/leptonica
+     PATCH_FILES ${PATCH_FILES}
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
+diff --git a/thirdparty/libpng/CMakeLists.txt b/thirdparty/libpng/CMakeLists.txt
+index 83b0b07..fb931e5 100644
+--- a/thirdparty/libpng/CMakeLists.txt
++++ b/thirdparty/libpng/CMakeLists.txt
+@@ -22,8 +22,8 @@ if(NOT MONOLIBTIC)
+ endif()
+ 
+ external_project(
+-    DOWNLOAD URL 92972b05f1895240139f749ff24afce8
+-    https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.58.tar.gz
++    DOWNLOAD GIT v1.6.58
++    https://github.com/pnggroup/libpng
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
+     INSTALL_COMMAND ${INSTALL_CMD}
+diff --git a/thirdparty/lpeg/CMakeLists.txt b/thirdparty/lpeg/CMakeLists.txt
+index 99471d4..7a4bc55 100644
+--- a/thirdparty/lpeg/CMakeLists.txt
++++ b/thirdparty/lpeg/CMakeLists.txt
+@@ -15,8 +15,8 @@ endif()
+ append_install_commands(INSTALL_CMD ${SOURCE_DIR}/re.lua DESTINATION common)
+ 
+ external_project(
+-    DOWNLOAD URL c9914cc6036d4afa2f49e5c659a214a5
+-    https://github.com/roberto-ieru/LPeg/archive/refs/tags/v1.1.0.tar.gz
++    DOWNLOAD GIT v1.1.0
++    https://github.com/roberto-ieru/LPeg
+     PATCH_OVERLAY overlay
+     PATCH_FILES ${PATCH_FILES}
+     CMAKE_ARGS ${CMAKE_ARGS}
+diff --git a/thirdparty/luarocks/CMakeLists.txt b/thirdparty/luarocks/CMakeLists.txt
+index 019a917..8d2098e 100644
+--- a/thirdparty/luarocks/CMakeLists.txt
++++ b/thirdparty/luarocks/CMakeLists.txt
+@@ -30,8 +30,8 @@ if(EMULATE_READER AND NOT APPLE)
+ endif()
+ 
+ external_project(
+-    DOWNLOAD URL 56d10945997f2eab5922f24195550a1d
+-    https://github.com/luarocks/luarocks/archive/refs/tags/v3.12.2.tar.gz
++    DOWNLOAD GIT v3.12.2
++    https://github.com/luarocks/luarocks
+     CONFIGURE_COMMAND ${CFG_CMD}
+     BUILD_COMMAND ${BUILD_CMD}
+     INSTALL_COMMAND ${INSTALL_CMD}
+diff --git a/thirdparty/md4c/CMakeLists.txt b/thirdparty/md4c/CMakeLists.txt
+index f767e38..5a656c6 100644
+--- a/thirdparty/md4c/CMakeLists.txt
++++ b/thirdparty/md4c/CMakeLists.txt
+@@ -11,8 +11,8 @@ list(APPEND BUILD_CMD COMMAND ninja)
+ list(APPEND INSTALL_CMD COMMAND ${CMAKE_COMMAND} --install .)
+ 
+ external_project(
+-    DOWNLOAD URL 04b54eb032d324be3d9307bda1125320
+-    https://github.com/mity/md4c/archive/refs/tags/release-0.5.3.tar.gz
++    DOWNLOAD GIT release-0.5.3
++    https://github.com/mity/md4c
+     PATCH_FILES ${PATCH_FILES}
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
+diff --git a/thirdparty/miniconv/CMakeLists.txt b/thirdparty/miniconv/CMakeLists.txt
+index 9214577..16ab754 100644
+--- a/thirdparty/miniconv/CMakeLists.txt
++++ b/thirdparty/miniconv/CMakeLists.txt
+@@ -15,8 +15,8 @@ list(APPEND BUILD_CMD COMMAND ninja)
+ list(APPEND INSTALL_CMD COMMAND ${CMAKE_COMMAND} --install .)
+ 
+ external_project(
+-    DOWNLOAD URL 5871dfaced0f3d5f96c032f30b0590ae
+-    https://github.com/malord/miniconv/archive/170ddcb9ac8eda1e08e7426acecb6a5733cf1d36.tar.gz
++    DOWNLOAD GIT 170ddcb9ac8eda1e08e7426acecb6a5733cf1d36
++    https://github.com/malord/miniconv
+     PATCH_FILES ${PATCH_FILES}
+     PATCH_OVERLAY overlay
+     PATCH_COMMAND ${PATCH_CMD}
+diff --git a/thirdparty/proxy-libintl/CMakeLists.txt b/thirdparty/proxy-libintl/CMakeLists.txt
+index 6addc56..0a3b301 100644
+--- a/thirdparty/proxy-libintl/CMakeLists.txt
++++ b/thirdparty/proxy-libintl/CMakeLists.txt
+@@ -10,8 +10,8 @@ list(APPEND BUILD_CMD COMMAND ninja)
+ list(APPEND BUILD_CMD COMMAND ${MESON_INSTALL})
+ 
+ external_project(
+-    DOWNLOAD URL 7cc93d2fec98a5b9820888135d2e8844
+-    https://github.com/frida/proxy-libintl/archive/refs/tags/0.4.tar.gz
++    DOWNLOAD GIT 0.4
++    https://github.com/frida/proxy-libintl
+     CONFIGURE_COMMAND ${CFG_CMD}
+     BUILD_COMMAND ${BUILD_CMD}
+ )
+diff --git a/thirdparty/sdcv/CMakeLists.txt b/thirdparty/sdcv/CMakeLists.txt
+index d5d3b94..80fcd09 100644
+--- a/thirdparty/sdcv/CMakeLists.txt
++++ b/thirdparty/sdcv/CMakeLists.txt
+@@ -62,8 +62,8 @@ list(APPEND BUILD_CMD COMMAND ninja)
+ append_binary_install_command(INSTALL_CMD sdcv)
+ 
+ external_project(
+-    DOWNLOAD URL 265dbfda83a57810595d156877f3e6fd
+-    https://github.com/Dushistov/sdcv/archive/refs/tags/v0.5.5.tar.gz
++    DOWNLOAD GIT v0.5.5
++    https://github.com/Dushistov/sdcv
+     CMAKE_ARGS ${CMAKE_ARGS}
+     PATCH_FILES ${PATCH_FILES}
+     BUILD_COMMAND ${BUILD_CMD}
+diff --git a/thirdparty/tesseract/CMakeLists.txt b/thirdparty/tesseract/CMakeLists.txt
+index 9a63e27..31bea36 100644
+--- a/thirdparty/tesseract/CMakeLists.txt
++++ b/thirdparty/tesseract/CMakeLists.txt
+@@ -24,8 +24,8 @@ list(APPEND BUILD_CMD COMMAND ninja)
+ list(APPEND INSTALL_CMD COMMAND ${CMAKE_COMMAND} --install .)
+ 
+ external_project(
+-    DOWNLOAD URL ee8efb2b71dc79eb56cd02ced84a31d5
+-    https://github.com/tesseract-ocr/tesseract/archive/refs/tags/5.5.2.tar.gz
++    DOWNLOAD GIT 5.5.2
++    https://github.com/tesseract-ocr/tesseract
+     PATCH_FILES ${PATCH_FILES}
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
+diff --git a/thirdparty/tree-sitter-c/CMakeLists.txt b/thirdparty/tree-sitter-c/CMakeLists.txt
+index d7f974b..f62b08f 100644
+--- a/thirdparty/tree-sitter-c/CMakeLists.txt
++++ b/thirdparty/tree-sitter-c/CMakeLists.txt
+@@ -15,8 +15,8 @@ list(APPEND INSTALL_CMD COMMAND ${CMAKE_COMMAND} --install .)
+ append_shared_lib_install_commands(INSTALL_CMD tree-sitter-c VERSION 15.0)
+ 
+ external_project(
+-    DOWNLOAD URL 02c27c7a6f92ff9b3e201358d614a78d
+-    https://github.com/tree-sitter/tree-sitter-c/archive/refs/tags/v0.24.2.tar.gz
++    DOWNLOAD GIT v0.24.2
++    https://github.com/tree-sitter/tree-sitter-c
+     PATCH_FILES ${PATCH_FILES}
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
+diff --git a/thirdparty/tree-sitter/CMakeLists.txt b/thirdparty/tree-sitter/CMakeLists.txt
+index 3acf8db..f7f6202 100644
+--- a/thirdparty/tree-sitter/CMakeLists.txt
++++ b/thirdparty/tree-sitter/CMakeLists.txt
+@@ -11,8 +11,8 @@ list(APPEND INSTALL_CMD COMMAND ${CMAKE_COMMAND} --install .)
+ append_shared_lib_install_commands(INSTALL_CMD tree-sitter VERSION 0.26)
+ 
+ external_project(
+-    DOWNLOAD URL d98afafe16c700b75df5cab113fc471b
+-    https://github.com/tree-sitter/tree-sitter/archive/refs/tags/v0.26.10.tar.gz
++    DOWNLOAD GIT v0.26.10
++    https://github.com/tree-sitter/tree-sitter
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
+     INSTALL_COMMAND ${INSTALL_CMD}
+diff --git a/thirdparty/utf8proc/CMakeLists.txt b/thirdparty/utf8proc/CMakeLists.txt
+index 1ffb4df..a220b4d 100644
+--- a/thirdparty/utf8proc/CMakeLists.txt
++++ b/thirdparty/utf8proc/CMakeLists.txt
+@@ -12,8 +12,8 @@ if(NOT MONOLIBTIC)
+ endif()
+ 
+ external_project(
+-    DOWNLOAD URL 09773a9a9c4029b1e547fe398e555411
+-    https://github.com/JuliaStrings/utf8proc/archive/refs/tags/v2.11.3.tar.gz
++    DOWNLOAD GIT v2.11.3
++    https://github.com/JuliaStrings/utf8proc
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
+     INSTALL_COMMAND ${INSTALL_CMD}
+diff --git a/thirdparty/xxhash/CMakeLists.txt b/thirdparty/xxhash/CMakeLists.txt
+index 5a997d4..27ca370 100644
+--- a/thirdparty/xxhash/CMakeLists.txt
++++ b/thirdparty/xxhash/CMakeLists.txt
+@@ -12,8 +12,8 @@ if(NOT MONOLIBTIC)
+ endif()
+ 
+ external_project(
+-    DOWNLOAD URL 599804eb9555e51c05f1b821f9212a07
+-    https://github.com/Cyan4973/xxHash/archive/refs/tags/v0.8.3.tar.gz
++    DOWNLOAD GIT v0.8.3
++    https://github.com/Cyan4973/xxHash
+     PATCH_OVERLAY overlay
+     CMAKE_ARGS ${CMAKE_ARGS}
+     BUILD_COMMAND ${BUILD_CMD}
