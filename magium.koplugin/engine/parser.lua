@@ -46,18 +46,19 @@ end
 
 -- set\((?<varName>.*),(?<value>[+\-]?[0-9])\)( if (?<condition>.*))?
 -- varName is greedy .* → JS backtracks to the LAST comma leaving a valid
--- "<sign?><one-digit>)" tail. Scan commas from the right.
+-- "<sign?><one-digit>)" tail. Scan commas from the right. Corpus set() has NO
+-- space after the comma, matching the JS regex; do not tolerate one.
 function M._match_set(line)
   if line:sub(1, 4) ~= "set(" then return nil end
   local body = line:sub(5)
   for i = #body, 1, -1 do
     if body:sub(i, i) == "," then
       local after_comma = body:sub(i + 1)
-      -- Check for multi-digit first (pattern that would fail due to extra digit)
-      if after_comma:match("^%s*[%+%-]?%d%d") then
+      -- R3: a multi-digit numeric literal must abort, not silently truncate.
+      if after_comma:match("^[%+%-]?%d%d") then
         error("_match_set: multi-digit set() literal (02 R3): " .. line)
       end
-      local ws, sign, digit, after = after_comma:match("^(%s*)([%+%-]?)(%d)%)(.*)$")
+      local sign, digit, after = after_comma:match("^([%+%-]?)(%d)%)(.*)$")
       if digit then
         local cond = nil
         if after:sub(1, 4) == " if " then cond = after:sub(5) end
