@@ -1,14 +1,17 @@
 # Finding — Spike 04 (UI plugin skeleton)
 
-- **Status:** stable (functional result confirmed; perceptual/e-ink-feel half still open — see below)
+- **Status:** stable (functional/data-fit result confirmed; e-ink-feel half still open; **final UI chrome/navigation now a separate open question, OQ-013** — see below)
 - **Last updated:** 2026-08-31
 - **Phase:** 5 (task 5.1)
 - **Sources:** this spike's `magium_spike.koplugin/main.lua`; a real `./kodev build`
   + `./kodev run --simulate=kindle-paperwhite` of KOReader **v2026.07.1** (commit
   `9192014`) in this cloud session, per
-  [`reference/setup-koreader-cloud-session.sh`](../../../reference/setup-koreader-cloud-session.sh)
+  [`reference/setup-koreader-cloud-session.sh`](../../../reference/setup-koreader-cloud-session.sh);
+  `../../../../koreader/frontend/ui/widget/textviewer.lua`,
+  `../../../../koreader/frontend/ui/widget/scrolltextwidget.lua`
 - **Related:** [`HYPOTHESIS.md`](HYPOTHESIS.md), [`OQ-002`](../research/07-risks-open-questions.md),
-  [`OQ-007`](../research/07-risks-open-questions.md), [`OQ-012`](../research/07-risks-open-questions.md)
+  [`OQ-007`](../research/07-risks-open-questions.md), [`OQ-012`](../research/07-risks-open-questions.md),
+  [`OQ-013`](../research/07-risks-open-questions.md)
 
 ## Result: **runs cleanly under the real KOReader runtime — widget-fit confirmed; e-ink feel still open**
 
@@ -96,8 +99,8 @@ gesture) captured both frames —
 
 - **`intro1.png`**: `TextViewer` header reads **"Book 1 - Chapter 1"**
   (`getHeaderFromId` on `Ch1-Intro1`, matching `01-magium-analysis.md` §9),
-  real prose from `ch1.magium` wraps and paginates correctly (scrollbar
-  visible, text not clipped or overflowing), and the `buttons_table` choice
+  real prose from `ch1.magium` wraps correctly and fits with a scrollbar
+  (text not clipped or overflowing), and the `buttons_table` choice
   row renders "Excited" / "Calm" / "Afraid" as three full-width tappable
   rows below a divider — visually matches Phase 2's prediction
   (`03-koreader-platform.md` §3, F-14/F-15) of what this widget combo
@@ -108,15 +111,65 @@ gesture) captured both frames —
   asserting *which* branch, only that the swap itself renders cleanly with
   its own single choice, "Back to Intro1 (spike loop)").
 
+## Caveat: the screenshots show API/data fit, not the final UI (new — OQ-013)
+
+Reviewing these two screenshots (owner feedback, 2026-08-31) surfaced two
+things `TextViewer` gets wrong for a finished Magium reading screen, both
+visible directly in the images and confirmed against source:
+
+- **Not fullscreen.** `TextViewer` sizes itself to `screen_w/h -
+  Screen:scaleBySize(30)` by default (`textviewer.lua:107-108`) and wraps
+  its content in a `FrameContainer` with `radius = Size.radius.window`
+  (rounded corners) plus a `TitleBar` row carrying the **✕ close button**
+  (`textviewer.lua:469-474`) — a padded dialog/window look, not the
+  edge-to-edge fullscreen presentation the owner wants (closer to the web
+  version, or to `frotz.koplugin`'s actual `GameView`, which *does* flag
+  itself fullscreen). This was documented incorrectly in
+  [`03-koreader-platform.md`](../research/03-koreader-platform.md) §7 prior
+  to this session ("`TextViewer` fills the screen") — corrected there now.
+- **Continuous scroll, not paginated.** The prose area is a
+  `ScrollTextWidget` (`textviewer.lua:416`) — a scrollbar + pan/tap
+  scrolling, no page-number or "screen full of text" concept anywhere in
+  its API (`scrolltextwidget.lua`). On e-ink, continuous small-delta
+  scrolling is exactly the pattern that accumulates ghosting fastest and
+  gives the reader no sense of position/progress within a long scene — a
+  discrete page-turn (whole-screen swap + a page indicator) is the better
+  match for the platform, not just a stylistic preference. Note this isn't
+  unique to `TextViewer`'s specific choice: `frotz.koplugin`'s `GameView`
+  (the other cited prior art, F-15) *also* scrolls (`StyledScroll`) — no
+  KOReader prior art found so far already does "fullscreen + paginated"
+  together. That combination would need a small custom widget: e.g. a
+  fullscreen `FrameContainer` (no titlebar) hosting a plain
+  `TextBoxWidget` chunked into screen-sized pages (using its line/height
+  measurement API) with manual page-turn + indicator logic — buildable on
+  what Phase 2 already catalogued, but genuinely new work, not a reuse.
+  Not attempted here — this spike's job was proving the *data* (real
+  scenes, real choices, real conditional branching) drives the widget
+  cleanly, which it does; the *chrome* choice is now tracked separately as
+  [`OQ-013`](../research/07-risks-open-questions.md), feeding Phase 6/8
+  rather than Phase 5.
+
+Net effect on this spike's own verdict: **unchanged for what it actually
+tested** (the plugin loads, the data/API shape fits, navigation works,
+zero errors) — but the screenshots should not be read as "this is roughly
+what the finished screen will look like." They're closer to a functional
+proof-of-wiring than a UI mockup.
+
 ## What this answers
 
-- **The "does an existing widget combo fit?" half of OQ-002 is now a
-  confirmed *yes*, not just a structural read of the API.** `TextViewer` +
-  `buttons_table` renders real Magium prose and a real choice list
-  correctly under KOReader **v2026.07.1** itself, with the plugin
-  registered exactly the way a shipping plugin is (`hello.koplugin`
+- **The "does the data/API shape fit an off-the-shelf widget?" half of
+  OQ-002 is now a confirmed *yes*, not just a structural read of the API.**
+  `TextViewer` + `buttons_table` renders real Magium prose and a real
+  choice list correctly under KOReader **v2026.07.1** itself, with the
+  plugin registered exactly the way a shipping plugin is (`hello.koplugin`
   boilerplate, `Dispatcher:registerAction`, `more_tools` menu entry) — no
-  crash, no layout error, no missing-widget-feature surprise.
+  crash, no layout error, no missing-widget-feature surprise. **But
+  `TextViewer` itself is now understood to be the wrong final widget** —
+  see the caveat above — so this doesn't mean "ship `TextViewer`
+  as-is"; it means the underlying data (parsed scenes, choice lists,
+  conditional prose) is easy to drive through *any* reasonable widget,
+  `TextViewer` included, which is what actually needed proving. The chrome
+  question moves to OQ-013.
 - **OQ-007 (e-ink refresh feel) is still open, unavoidably.** SDL renders
   instantly on Xvfb exactly as it would on a real X server or WSL2 — a
   desktop/container build was *never* going to answer "does the `tap
@@ -137,18 +190,29 @@ gesture) captured both frames —
 
 ## Confidence
 
-**High** that the widget model fits functionally (real run, real KOReader
-version, zero errors, visually-inspected correct rendering — not just
-source-grounded code review). **Unchanged: no confidence claim on e-ink
+**High** that the underlying data/API shape fits KOReader's widget toolkit
+functionally (real run, real KOReader version, zero errors,
+visually-inspected correct rendering — not just source-grounded code
+review). **High** (source-grounded + visually confirmed) that `TextViewer`
+specifically is the wrong widget for the finished screen (padded dialog,
+continuous scroll — OQ-013). **Unchanged: no confidence claim on e-ink
 feel** — that dimension was never in scope for any build running on a
 non-e-ink display, this session's included.
 
 ## Next step
 
-Widget-fit is closed. What's left for OQ-007 is exactly what it always
-was: a human judging refresh latency/ghosting on the real Paperwhite (or,
-short of that, the owner's WSL2 `kodev run` — same instant-refresh caveat
-as this session's build, so it doesn't add anything past what's already
-confirmed here; only real e-ink settles OQ-007). Copying
-`magium_spike.koplugin/` to the device via USB
-(`reference/koreader-notes.md`'s on-device section) is the direct path.
+Widget/data fit is closed. Two separate threads remain, feeding different
+phases:
+
+- **OQ-007** (e-ink refresh feel, Phase 6/8): a human judging refresh
+  latency/ghosting on the real Paperwhite (or, short of that, the owner's
+  WSL2 `kodev run` — same instant-refresh caveat as this session's build,
+  so it doesn't add anything past what's already confirmed here; only real
+  e-ink settles OQ-007). Copying `magium_spike.koplugin/` to the device via
+  USB (`reference/koreader-notes.md`'s on-device section) is the direct
+  path.
+- **OQ-013** (fullscreen + paginated UI, Phase 6/8): not spiked here — no
+  off-the-shelf widget or cited prior art does both together (see the
+  caveat above), so it's a design/build decision for the approach
+  comparison and roadmap phases, not something a quick follow-up spike
+  would settle on its own.

@@ -233,6 +233,32 @@ container over `ScrollTextWidget` + `ButtonTable` is the likely Magium shape.
 Whether to reuse off-the-shelf `TextViewer`+`ButtonDialog` or build a `GameView`
 -style container is a **spike A** call.
 
+**Spike A's verdict (Phase 5, updated after a real run — see
+[`OQ-013`](07-risks-open-questions.md)): lean toward a `GameView`-style bespoke
+container, not off-the-shelf `TextViewer`.** Running the spike's `TextViewer`
+-based plugin under a real KOReader build and reviewing the screenshots surfaced
+two off-the-shelf-`TextViewer` properties easy to miss from source-reading alone:
+it renders as a **padded dialog, not true fullscreen** (`self.width/height =
+screen_w/h - 30px`, `textviewer.lua:107-108`; rounded-corner frame via
+`radius = Size.radius.window`, `textviewer.lua:469`; a `TitleBar` row with a
+close button, `textviewer.lua:470-474` — all visible in
+[spike 04's screenshots](../spikes/04-ui-plugin-skeleton/screenshots/)), and its
+prose area (`ScrollTextWidget`) is a **continuous vertical scroll** with no
+page-number/pagination concept at all (`scrolltextwidget.lua`'s API is
+`scrollText`/`scrollToRatio`/a scrollbar — no `getPageCount`/page state). Note
+that reusing `frotz.koplugin`'s own `GameView` wouldn't fix the second point on
+its own — its `StyledScroll` transcript scrolls too, it just does so inside a
+true fullscreen frame instead of a padded one. A finished Magium UI closer to
+"fullscreen, like the web version" *and* free of continuous-scroll's e-ink
+downsides (partial-refresh ghosting, no natural page/position sense) likely
+needs a **custom fullscreen container with real pagination** — chunk each
+scene's paragraphs into screen-sized pages (measurable via `TextBoxWidget`'s
+line/height API), swap whole pages on turn (clean `"ui"`/`"partial"` full-widget
+refresh, not scroll deltas), and show a page indicator. Not spiked — this is a
+build-vs-reuse call for Phase 6's approach comparison / Phase 8's roadmap, not a
+feasibility blocker (nothing here says pagination *can't* be built, only that no
+off-the-shelf widget or cited prior art already does it).
+
 ---
 
 ## 4. Persistence *(2.4)*
@@ -345,11 +371,19 @@ Key facts for the tap-choice→new-page loop:
 
 ## 7. Lifecycle & integration *(2.7)*
 
-- **A plugin can absolutely present a fullscreen non-document UI.** `UIManager:show`
-  on a screen-sized widget covers whatever is beneath (File Manager or reader);
-  `Menu` has a `fullscreen` path (`menu.lua:714`), `TextViewer` fills the screen,
-  and `frotz.koplugin`'s `GameView` is a bespoke fullscreen container. No
-  "document" object is required.
+- **A plugin can absolutely present a fullscreen non-document UI** — but
+  **not by default from `TextViewer`**, corrected after Phase 5's actual run
+  (see `OQ-013`): `UIManager:show` on a screen-sized widget covers whatever is
+  beneath (File Manager or reader), and that's the mechanism a true fullscreen
+  widget uses — `Menu` has a `fullscreen` path (`menu.lua:714`), other widgets
+  flag it via `covers_fullscreen = true` (`bookstatuswidget.lua:91`,
+  `imageviewer.lua:139` when `fullscreen=true`), and `frotz.koplugin`'s
+  `GameView` is a bespoke fullscreen `FrameContainer`. `TextViewer`, left at its
+  defaults, is **not** one of these — it sizes itself to `screen_w/h - 30px`
+  with a rounded-corner dialog frame and a titlebar/close button
+  (`textviewer.lua:107-108,469-474`), confirmed visually in
+  [spike 04's screenshots](../spikes/04-ui-plugin-skeleton/screenshots/). No
+  "document" object is required for a real fullscreen widget either way.
 - **Where it launches from:** with `is_doc_only = false` the plugin instance
   exists in the **File Manager** context, so a `more_tools` main-menu item (§1.3)
   opens the story straight from the home screen with no book open. A `Dispatcher`
