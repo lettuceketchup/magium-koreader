@@ -38,4 +38,116 @@ function M.parse_conditions(str)
   return dnf
 end
 
+-- ------------------------------------------------------------- construct matchers
+-- Each anchors to the line as given (callers pass an already-rtrimmed line).
+-- Hand tokenizers, because Lua patterns have no named groups / alternation and
+-- these JS regexes rely on greedy backtracking. Each reproduces the SPECIFIC
+-- result the JS regex yields for this grammar (02 §3 corpus scan: no ambiguity).
+
+-- set\((?<varName>.*),(?<value>[+\-]?[0-9])\)( if (?<condition>.*))?
+-- varName is greedy .* → JS backtracks to the LAST comma leaving a valid
+-- "<sign?><one-digit>)" tail. Scan commas from the right.
+function M._match_set(line)
+  if line:sub(1, 4) ~= "set(" then return nil end
+  local body = line:sub(5)
+  for i = #body, 1, -1 do
+    if body:sub(i, i) == "," then
+      local after_comma = body:sub(i + 1)
+      -- Check for multi-digit first (pattern that would fail due to extra digit)
+      if after_comma:match("^%s*[%+%-]?%d%d") then
+        error("_match_set: multi-digit set() literal (02 R3): " .. line)
+      end
+      local ws, sign, digit, after = after_comma:match("^(%s*)([%+%-]?)(%d)%)(.*)$")
+      if digit then
+        local cond = nil
+        if after:sub(1, 4) == " if " then cond = after:sub(5) end
+        return body:sub(1, i - 1), sign .. digit, cond
+      end
+    end
+  end
+  return nil
+end
+
+-- achievement\("(?<text>.*)",(?<variable>.*)\)  — text greedy to LAST '",'.
+function M._match_achievement(line)
+  if line:sub(1, 12) ~= "achievement(" then return nil end
+  local body = line:sub(13)
+  if body:sub(1, 1) ~= '"' or body:sub(-1) ~= ")" then return nil end
+  local core = body:sub(2, #body - 1)
+  local idx, from = nil, 1
+  while true do
+    local i = core:find('",', from, true)
+    if not i then break end
+    idx, from = i, i + 1
+  end
+  if not idx then return nil end
+  return core:sub(1, idx - 1), core:sub(idx + 2)
+end
+
+-- choice("<text>", <target>, <setvars>[, special:<s>])[ if <cond>]
+function M._match_choice(line)
+  if line:sub(1, 7) ~= "choice(" then return nil end
+  local rest = line:sub(8)
+  if rest:sub(1, 1) ~= '"' then return nil end
+  rest = rest:sub(2)
+
+  -- text: greedy .* up to the LAST '", ' (handles ""spoken"" labels).
+  local idx, idx_end, from = nil, nil, 1
+  while true do
+    local i, j = rest:find('", ', from, true)
+    if not i then break end
+    idx, idx_end, from = i, j, i + 1
+  end
+  if not idx then return nil end
+  local text = rest:sub(1, idx - 1)
+  local after_text = rest:sub(idx_end + 1)
+
+  -- target: [\w\-\s]* — cannot contain ',', so it ends at the first comma.
+  local comma = after_text:find(",", 1, true)
+  if not comma then return nil end
+  local target = after_text:sub(1, comma - 1)
+  local remainder = after_text:sub(comma + 1)
+  if remainder:sub(1, 1) == " " then remainder = remainder:sub(2) end
+
+  -- setvars/special never contain parens in this grammar → first ')' closes the call.
+  local close = remainder:find(")", 1, true)
+  if not close then return nil end
+  local core = remainder:sub(1, close - 1)
+  local after_close = remainder:sub(close + 1)
+  local cond = nil
+  if after_close:sub(1, 4) == " if " then cond = after_close:sub(5) end
+
+  local set_vars, special = {}, nil
+  if core ~= "" then
+    for _, tok in ipairs(M._split_plain(core, ", ")) do
+      if tok ~= "" then
+        if tok:sub(1, 8) == "special:" then
+          special = tok:sub(9)
+        else
+          local eq = tok:find(" = ", 1, true)
+          if eq then set_vars[tok:sub(1, eq - 1)] = tok:sub(eq + 3) end
+        end
+      end
+    end
+  end
+
+  return {
+    text = text,
+    target = target,
+    set_vars = set_vars,
+    special = special,
+    conditions = M.parse_conditions(cond),
+  }
+end
+
+-- #if\((?<condition>.*)\)  — greedy to the LAST ')' on the line.
+function M._match_if(line)
+  if line:sub(1, 4) ~= "#if(" then return nil end
+  local body = line:sub(5)
+  for i = #body, 1, -1 do
+    if body:sub(i, i) == ")" then return body:sub(1, i - 1) end
+  end
+  return nil
+end
+
 return M
