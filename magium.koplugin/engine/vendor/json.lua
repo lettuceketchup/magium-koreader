@@ -2,8 +2,8 @@
 -- https://github.com/rxi/json.lua  (_version 0.1.2)
 -- Pure Lua 5.1 JSON encode/decode. Used by engine/locale.lua (decode ui.json)
 -- and spec/oracle_diff.lua (encode). NOT unmodified upstream: a `json.null`
--- sentinel is added below (2 lines, each marked "LOCAL ADDITION"); everything
--- else is upstream.
+-- sentinel and a `json.object` marker are added below (each marked "LOCAL
+-- ADDITION"); everything else is upstream.
 --
 -- json.lua
 --
@@ -33,6 +33,11 @@ local json = { _version = "0.1.2" }
 -- LOCAL ADDITION (not upstream): a sentinel for JSON null in a table slot.
 -- Lua nil in a table just deletes the key; this keeps "present but null".
 json.null = setmetatable({}, { __name = "json.null" })
+
+-- LOCAL ADDITION (not upstream): mark a table so encode always emits a JSON
+-- object, even when empty ({}) — upstream encodes an empty table as [].
+json._object_mt = { __name = "json.object" }
+function json.object(t) return setmetatable(t or {}, json._object_mt) end
 
 -------------------------------------------------------------------------------
 -- Encode
@@ -75,7 +80,8 @@ local function encode_table(val, stack)
 
   stack[val] = true
 
-  if rawget(val, 1) ~= nil or next(val) == nil then
+  if getmetatable(val) ~= json._object_mt   -- LOCAL ADDITION (not upstream)
+     and (rawget(val, 1) ~= nil or next(val) == nil) then
     -- Treat as array -- check keys are valid and it is not sparse
     local n = 0
     for k in pairs(val) do
