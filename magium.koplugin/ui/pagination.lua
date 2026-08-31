@@ -16,6 +16,24 @@ local function prose_blocks(paragraphs)
   return blocks
 end
 
+-- Largest leading run of whitespace-delimited words of `text` that fits in
+-- `budget` px at `width`. Always returns at least one word so pagination makes
+-- progress on any budget. Returns head_text, rest_text; rest_text is nil when
+-- the whole text fit (and then head_text is the ORIGINAL text, internal \n and
+-- all — only a split tail is re-joined on spaces).
+local function fit_words(text, width, budget, measure_fn)
+  local words = {}
+  for w in text:gmatch("%S+") do words[#words + 1] = w end
+  if #words == 0 then return text, nil end
+  local n = 1
+  while n < #words do
+    if measure_fn(table.concat(words, " ", 1, n + 1), width) > budget then break end
+    n = n + 1
+  end
+  if n >= #words then return text, nil end
+  return table.concat(words, " ", 1, n), table.concat(words, " ", n + 1)
+end
+
 function M.paginate(render_model, geometry, measure_fn)
   local pages = {}
   local width = geometry.width
@@ -42,11 +60,22 @@ function M.paginate(render_model, geometry, measure_fn)
     local placed_any = false
     while i <= #blocks do
       local h = measure_fn(blocks[i], width)
-      if used + h > budget and placed_any then break end
-      page.blocks[#page.blocks + 1] = { type = "prose", text = blocks[i] }
-      used = used + h
-      placed_any = true
-      i = i + 1
+      if used + h <= budget then
+        page.blocks[#page.blocks + 1] = { type = "prose", text = blocks[i] }
+        used = used + h
+        placed_any = true
+        i = i + 1
+      elseif placed_any then
+        break   -- doesn't fit here; retry it whole on a fresh page
+      else
+        -- this block alone exceeds the page: split at word boundaries, the
+        -- tail rides the next page(s). (placed_any is false here => used == 0.)
+        local htext, rest = fit_words(blocks[i], width, budget, measure_fn)
+        page.blocks[#page.blocks + 1] = { type = "prose", text = htext }
+        placed_any = true
+        if rest then blocks[i] = rest else i = i + 1 end
+        break
+      end
     end
     pages[#pages + 1] = page
     first = false
