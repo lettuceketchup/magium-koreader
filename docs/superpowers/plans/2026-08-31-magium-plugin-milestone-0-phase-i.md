@@ -417,12 +417,13 @@ require("spec/spec_helper")
 local parser = require("engine/parser")
 
 describe("_match_set", function()
+  -- Corpus format has NO space after the comma: `set(v_x,1)` (594 lines checked).
   it("matches a plain set", function()
-    local n, v, c = parser._match_set("set(v_is_dead, 1)")
+    local n, v, c = parser._match_set("set(v_is_dead,1)")
     assert.are.equal("v_is_dead", n); assert.are.equal("1", v); assert.is_nil(c)
   end)
   it("matches a relative set with a condition", function()
-    local n, v, c = parser._match_set("set(v_ac_x, +3) if (v_a > 1)")
+    local n, v, c = parser._match_set("set(v_ac_x,+3) if (v_a > 1)")
     assert.are.equal("v_ac_x", n); assert.are.equal("+3", v)
     assert.are.equal("(v_a > 1)", c)
   end)
@@ -430,7 +431,7 @@ describe("_match_set", function()
     assert.is_nil(parser._match_set("He drew set(the) blade"))
   end)
   it("errors on a multi-digit literal (02 R3)", function()
-    assert.has_error(function() parser._match_set("set(v_x, 12)") end)
+    assert.has_error(function() parser._match_set("set(v_x,12)") end)
   end)
 end)
 
@@ -486,19 +487,22 @@ Append to `magium.koplugin/engine/parser.lua`, before `return M`:
 
 -- set\((?<varName>.*),(?<value>[+\-]?[0-9])\)( if (?<condition>.*))?
 -- varName is greedy .* → JS backtracks to the LAST comma leaving a valid
--- "<sign?><one-digit>)" tail. Scan commas from the right.
+-- "<sign?><one-digit>)" tail. Scan commas from the right. Corpus set() has NO
+-- space after the comma, matching the JS regex; do not tolerate one.
 function M._match_set(line)
   if line:sub(1, 4) ~= "set(" then return nil end
   local body = line:sub(5)
   for i = #body, 1, -1 do
     if body:sub(i, i) == "," then
-      local sign, digit, after = body:sub(i + 1):match("^([%+%-]?)(%d)%)(.*)$")
+      local after_comma = body:sub(i + 1)
+      -- R3: a multi-digit numeric literal must abort, not silently truncate.
+      -- (The JS regex would simply not match and the line would fall to prose;
+      --  we assert instead. Corpus has 0 multi-digit set() values.)
+      if after_comma:match("^[%+%-]?%d%d") then
+        error("_match_set: multi-digit set() literal (02 R3): " .. line)
+      end
+      local sign, digit, after = after_comma:match("^([%+%-]?)(%d)%)(.*)$")
       if digit then
-        -- R3: reject a multi-digit literal rather than silently truncate.
-        local next_char = body:sub(i + 1 + #sign + 1, i + 1 + #sign + 1)
-        if next_char:match("%d") then
-          error("_match_set: multi-digit set() literal (02 R3): " .. line)
-        end
         local cond = nil
         if after:sub(1, 4) == " if " then cond = after:sub(5) end
         return body:sub(1, i - 1), sign .. digit, cond
