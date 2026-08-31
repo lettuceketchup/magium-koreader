@@ -2132,35 +2132,67 @@ for _, case in ipairs(cases) do
 end
 ```
 
-Note: rxi/json.lua encodes `json.null` correctly and preserves array vs object; if the vendored copy lacks `json.null`, add `json.null = json.null or setmetatable({}, {__tostring=function() return "null" end})` and ensure the encoder emits `null` for it — or emit the string `"null"`? No: check `oracle-diff.js` — `special` is `choice.special ?? null` and `header` can be `null`. The diff compares JSON values, so our output must contain literal JSON `null`. rxi/json.lua maps Lua `nil` in a table to *absent key*, so use its sentinel. Verify with a one-off `luajit -e 'print(require("engine/vendor/json").encode({a=require("engine/vendor/json").null}))'` → expect `{"a":null}`.
+**Required first: patch `engine/vendor/json.lua` for a `null` sentinel.** The vendored
+rxi/json.lua has none — Lua `nil` in a table just drops the key, and
+`reference/tools/oracle-diff.js`'s `diffCanonical` treats `null` (in the golden's
+`choices[].special`) versus a missing key as a **type mismatch**. Add these two lines,
+clearly marked as a local addition (and update the file's header comment — it is no
+longer "unmodified upstream"):
 
-- [ ] **Step 2: Start the oracle and capture fresh goldens**
+- right after `local json = { _version = "0.1.2" }`:
+  ```lua
+  -- LOCAL ADDITION (not upstream): a sentinel for JSON null in a table slot.
+  -- Lua nil in a table just deletes the key; this keeps "present but null".
+  json.null = setmetatable({}, { __name = "json.null" })
+  ```
+- as the **first** statement inside the `encode = function(val, stack)` body:
+  ```lua
+    if val == json.null then return "null" end
+  ```
+
+Verify: `luajit -e 'local j=require("engine/vendor/json"); print(j.encode({a=j.null, b={1,2}}))'`
+→ `{"a":null,"b":[1,2]}` (key order may vary — `oracle-diff.js diff` parses + compares structurally, so order is irrelevant).
+
+Note: rxi/json.lua encodes an empty Lua table `{}` as `[]` (array), not `{}`. Every ch1
+choice carries at least `v_current_scene`, so `choices[].setVariables` is never empty in
+Phase I. If a later phase hits a choice with no set-vars, `to_canonical` must force an
+object there (e.g. a `__object` marker or a non-empty guard) — not needed now.
+
+- [ ] **Step 2: Re-capture the goldens from the live oracle (drift check)**
 
 ```bash
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-dev" && (npm ls >/dev/null 2>&1 || npm install) && (node main_node.js 3000 &) && sleep 2'
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-koreader" && node reference/tools/oracle-diff.js capture'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh diff capture'
 ```
-This regenerates `reference/tools/oracle-capture/*.json` from the live oracle (6 files). Review `git diff reference/tools/oracle-capture/` — it should be empty or trivially whitespace (the goldens are already committed from Phase 0). If it's non-empty and non-trivial, the oracle version drifted — stop and reconcile before trusting the diff.
+`mgm.sh diff` starts the magium-dev oracle (polling up to 25 s), runs
+`node reference/tools/oracle-diff.js capture`, then tears the oracle down. It
+regenerates `reference/tools/oracle-capture/*.json` (6 files) from the live
+oracle. Then review `git diff reference/tools/oracle-capture/` — it should be
+empty (the goldens are committed from Phase 0, and `magium-dev` is still at
+`51f5aa9` = the spec's pin). **If the diff is non-empty and non-trivial, the
+oracle drifted — STOP and report; do not trust the comparison.**
 
-- [ ] **Step 3: Run the port and diff**
+- [ ] **Step 3: Render the port and diff**
 
 ```bash
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-koreader/magium.koplugin" && luajit spec/oracle_diff.lua ../reference/tools/oracle-cases.json spec/out/goldens6'
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-koreader" && node reference/tools/oracle-diff.js diff reference/tools/oracle-capture magium.koplugin/spec/out/goldens6'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh oracle-diff-lua ../reference/tools/oracle-cases.json spec/out/goldens6'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh diff diff reference/tools/oracle-capture magium.koplugin/spec/out/goldens6'
 ```
-Expected: `6/6 match`. Any `DIFF` line names the exact JSON path — fix the engine module it points to (paragraph text → `scene.lua` / `parser.lua`; stat-check text → `locale.lua` / `stats.lua`; choice set-vars → `parser.lua`).
-
-- [ ] **Step 4: Kill the oracle**
-
-```bash
-wsl bash -lc 'pkill -f "node main_node.js" || true'
-```
+`mgm.sh oracle-diff-lua <args>` runs `luajit spec/oracle_diff.lua <args>` from
+`magium.koplugin/` (oracle live for the duration, though the render step doesn't
+need it). The second line runs `node reference/tools/oracle-diff.js diff <a> <b>`.
+Expected: **`6/6 match`**. Any `DIFF` line names the exact JSON path — fix the
+engine module it points to (paragraph text → `scene.lua`/`parser.lua`; stat-check
+text → `locale.lua`/`stats.lua`/`scene.lua` key→label swap; choice set-vars →
+`parser.lua`; `special: null` → the `json.null` patch). **Do not edit a golden to
+match the port.**
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add magium.koplugin/spec/oracle_diff.lua
+git add magium.koplugin/spec/oracle_diff.lua magium.koplugin/engine/vendor/json.lua
 git commit -m "spec/oracle_diff: engine renders match the 6 committed goldens (Task 13)
+
+Adds a json.null sentinel to the vendored rxi/json.lua (2 lines, marked local).
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
