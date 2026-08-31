@@ -19,6 +19,7 @@ local Screen = Device.screen
 local pagination = require("ui/pagination")
 local refresh = require("ui/refresh")
 local Choices = require("ui/choices")
+local trace = require("util/trace")
 
 local Reader = InputContainer:extend{
   render_model = nil,
@@ -185,6 +186,7 @@ function Reader:_turn(delta)
   local next_idx = self.page_idx + delta
   if next_idx < 1 or next_idx > #self.pages then return end
   self.page_idx = next_idx
+  trace.event("page_turn", { from = self.page_idx - delta, to = self.page_idx, total = #self.pages })
   self:_render()
   UIManager:setDirty(self, refresh.on_page_turn())
 end
