@@ -2227,14 +2227,18 @@ const ids = fs.readFileSync(CH1, "utf8")
   .split(/\r?\n/).filter(l => l.startsWith("ID: ")).map(l => l.slice(4));
 
 // ch1 branch variables (from reading ch1.magium — keep this list in sync if the
-// upstream file changes).
+// upstream file changes). ch1 branches on v_ch1_intro_feeling (1/2/3) and
+// v_ch1_show_yourself (1/2/3 — #if == 1/2/3 and != 1/2), and displays three
+// achievements (v_ac_ch1_coward / v_ac_ch1_die / v_ac_ch1_honesty).
 const MATRIX = [
-  {},
+  {},                                        // all unset (0) — covers the != branches
   { v_ch1_intro_feeling: "1" },
   { v_ch1_intro_feeling: "2" },
   { v_ch1_intro_feeling: "3" },
+  { v_ch1_show_yourself: "1" },               // #if(v_ch1_show_yourself == 1) ×5
   { v_ch1_show_yourself: "2", v_ac_ch1_coward: "1" },
   { v_ch1_show_yourself: "3" },
+  { v_ac_ch1_coward: "1", v_ac_ch1_die: "1", v_ac_ch1_honesty: "1" },  // all achievement displays
 ];
 
 const cases = [];
@@ -2257,18 +2261,26 @@ console.log(`${cases.length} cases for ${ids.length} ch1 scenes`);
 - [ ] **Step 2: Generate cases and capture goldens**
 
 ```bash
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-koreader" && node tools/gen-ch1-cases.js'
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-dev" && (node main_node.js 3000 &) && sleep 2'
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-koreader" && node reference/tools/oracle-diff.js capture --cases reference/tools/oracle-cases-ch1.json --out reference/tools/oracle-capture'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh with-oracle node tools/gen-ch1-cases.js'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh diff capture --cases reference/tools/oracle-cases-ch1.json --out reference/tools/oracle-capture'
 ```
+(`gen-ch1-cases.js` doesn't need the oracle, but `mgm.sh with-oracle <cmd>` is a
+convenient no-op wrapper. `mgm.sh diff <args>` starts the oracle, runs
+`node reference/tools/oracle-diff.js <args>`, tears it down.)
+`gen-ch1-cases.js` prints e.g. `96 cases for 12 ch1 scenes` (8 matrix rows × 12 scenes).
 
 - [ ] **Step 3: Run the port and diff the full ch1 set**
 
 ```bash
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-koreader/magium.koplugin" && luajit spec/oracle_diff.lua ../reference/tools/oracle-cases-ch1.json spec/out/ch1'
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-koreader" && node reference/tools/oracle-diff.js diff reference/tools/oracle-capture/ magium.koplugin/spec/out/ch1/ ; pkill -f "node main_node.js" || true'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh oracle-diff-lua ../reference/tools/oracle-cases-ch1.json spec/out/ch1'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh diff diff reference/tools/oracle-capture magium.koplugin/spec/out/ch1'
 ```
-The `diff` compares pairwise by filename, so it will also re-check the 6 original goldens (fine). Expected: `N/N match` where N = 6 + (12 × 6). If any `DIFF`, fix the engine — never edit a golden to match the port.
+`oracle-diff.js diff <dir_a> <dir_b>` compares pairwise by **common** filename.
+`spec/out/ch1/` holds only the generated ch1 cases, so the count is **the number
+of generated cases** (e.g. `96/96`) — the 6 hand goldens live only in
+`oracle-capture/` and are validated by Task 13 + re-checked in Task 21. If any
+`DIFF`: it names the exact JSON path — **fix the engine, never a golden.** A
+per-branch divergence here (that the 6 goldens didn't catch) is a real bug.
 
 - [ ] **Step 4: Add a busted wrapper so the diff runs in CI-style**
 
@@ -2318,9 +2330,9 @@ end)
 - [ ] **Step 5: Run the full engine spec suite**
 
 ```bash
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-koreader/magium.koplugin" && busted spec/engine'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh test-engine'
 ```
-Expected: all green.
+Expected: all green (the new offline-goldens `it` now runs against the committed ch1 goldens).
 
 - [ ] **Step 6: Commit**
 
