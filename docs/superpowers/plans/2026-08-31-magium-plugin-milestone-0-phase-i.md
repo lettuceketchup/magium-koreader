@@ -1264,7 +1264,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Produces: `local Store = require("engine/store")`:
   - `Store.new(initial_table | nil) -> store` — copies `initial_table`.
   - `store:get(name) -> string|nil`
-  - `store:set(name, value)` — value is a string. `"+N"`/`"-N"` resolve against the current numeric value and store the resolved decimal string. The `"2"`-sticky latch: if the current value is `"2"` and the incoming value is `"1"`, the write is ignored. Applying `v_ac_b3_ch9_consolation` and reaching `"5"` also sets `v_ac_b3_ch9_prize = "1"` (special case #12).
+  - `store:set(name, value)` — value is a string. `"+N"`/`"-N"` resolve against the current numeric value and store the resolved decimal string. **The `v_ac_*` "seen" freeze:** for any `name` starting `v_ac_`, if the current value is (numerically) `2`, the write is **ignored entirely** — regardless of the incoming value (matches `magium-dev/public/scripts/utils.js` `storeVariable`: `if (data[key] != 2) storeItem(...)`). Non-`v_ac_` names are never frozen. Writing `v_ac_b3_ch9_consolation` and reaching exactly `5` also sets `v_ac_b3_ch9_prize = "1"` (special case #12 — `storeItem`'s `data[key] == 5`; in practice the freeze caps this counter at 2 so it never fires, but keep it for faithful parity).
   - `store:view() -> table` — a fresh shallow copy `{ [name] = value }` for passing to `conditions.eval` / `scene.render`.
   - `store:snapshot() -> table` — deep-ish copy for saves.
   - `store:restore(t)` — replace all state from `t`.
@@ -1300,15 +1300,25 @@ describe("Store", function()
     assert.are.equal("2", s:get("v_new"))
   end)
 
-  it("does not lower a '2' achievement flag to '1'", function()
+  it("freezes a v_ac_* flag once it reaches 2 (any incoming value)", function()
     local s = Store.new({ v_ac_x = "2" })
     s:set("v_ac_x", "1")
     assert.are.equal("2", s:get("v_ac_x"))
-    s:set("v_ac_x", "2")               -- idempotent re-write is fine
+    s:set("v_ac_x", "3")
+    assert.are.equal("2", s:get("v_ac_x"))
+    s:set("v_ac_x", "+5")
     assert.are.equal("2", s:get("v_ac_x"))
   end)
 
-  it("triggers the consolation prize at 5 (special case #12)", function()
+  it("does not freeze a non-v_ac_ variable at 2", function()
+    local s = Store.new({ v_ch1_show_yourself = "2" })
+    s:set("v_ch1_show_yourself", "1")
+    assert.are.equal("1", s:get("v_ch1_show_yourself"))
+  end)
+
+  it("triggers the consolation prize at exactly 5 (special case #12)", function()
+    -- Seeded at 4 to bypass the v_ac_ freeze (which otherwise caps this counter
+    -- at 2, exactly as magium-dev does). `storeItem`: data[key] == 5.
     local s = Store.new({ v_ac_b3_ch9_consolation = "4" })
     s:set("v_ac_b3_ch9_consolation", "+1")
     assert.are.equal("5", s:get("v_ac_b3_ch9_consolation"))
@@ -1357,20 +1367,28 @@ end
 function Store:get(name) return self.v[name] end
 
 function Store:set(name, value)
-  -- "seen" latch: once a flag is "2" it never drops to "1".
-  if self.v[name] == "2" and value == "1" then return end
+  value = tostring(value)
 
-  if type(value) == "string" and (value:sub(1, 1) == "+" or value:sub(1, 1) == "-") then
+  -- v_ac_* "seen" freeze: once the flag is (numerically) 2, no further write
+  -- lands — for ANY incoming value. magium-dev storeVariable: if (data[key] != 2).
+  if name:sub(1, 5) == "v_ac_" and (tonumber(self.v[name] or 0) or 0) == 2 then
+    return
+  end
+
+  -- +N / -N resolve on write against the current numeric value.
+  local sign = value:sub(1, 1)
+  if sign == "+" or sign == "-" then
     local delta = tonumber(value)
     if delta then
-      local cur = tonumber(self.v[name] or 0) or 0
-      value = tostring(cur + delta)
+      value = tostring((tonumber(self.v[name] or 0) or 0) + delta)
     end
   end
   self.v[name] = value
 
-  -- special case #12: consolation counter hits 5 → prize flag.
-  if name == "v_ac_b3_ch9_consolation" and (tonumber(value) or 0) >= 5 then
+  -- special case #12: consolation counter reaches exactly 5 → prize flag.
+  -- (storeItem: data[key] == 5. In practice the freeze above caps this counter
+  --  at 2, so this never fires in real play — kept for faithful parity.)
+  if name == "v_ac_b3_ch9_consolation" and tonumber(value) == 5 then
     self.v.v_ac_b3_ch9_prize = "1"
   end
 end
