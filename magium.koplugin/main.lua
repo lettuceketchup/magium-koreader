@@ -56,6 +56,10 @@ end
 -- for a normal choice), dispatch `special` (only `restart` is wired in Phase I —
 -- saves/stats/checkpoint are inert), then re-render whatever v_current_scene now
 -- points at. Task 20 replaces this with the real plugin flow (+ resume/autosave).
+--
+-- Returns ONLY the reader — the store is captured in the `advance` closure and
+-- nothing outside needs it. (A second return value would spread into
+-- `UIManager:show(make_reader(...))` as the refreshtype arg and crash _repaint.)
 local function make_reader(base_path)
   local Locale = require("engine/locale")
   local scenemod = require("engine/scene")
@@ -86,7 +90,7 @@ local function make_reader(base_path)
       return render_current()
     end,
   }
-  return reader, store
+  return reader
 end
 
 local Magium = WidgetContainer:extend{ name = "magium", is_doc_only = false }
