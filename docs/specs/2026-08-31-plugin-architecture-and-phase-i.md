@@ -278,8 +278,14 @@ achievement toasts fire on the render right after the unlocking choice
 
 ## 7. The parse-strategy seam (`engine/story.lua`)
 
-One interface, two implementations. **Milestone 0 picks the default**; the other
-stays built and switchable (a plugin setting).
+One interface, two implementations. **Milestone 0 picked the default: `lazy`**
+(the other stays built and switchable via a plugin setting).
+
+> **Milestone 0 result (2026-08-31):** on the owner's Kindle Paperwhite 12th gen,
+> cold parse of all 54 files = **≈ 2.2 s** (2282 / 2215 / 2186 ms across three
+> restarts) — over the ~1 s gate, so **`strategy` defaults to `lazy`**. Emulator
+> x86 was 411 ms (~5.6× faster). See [spike 06](../spikes/06-ondevice-parse-timing/FINDING.md).
+> `Task 20`'s `main.lua` sets `PARSE_STRATEGY = "lazy"`.
 
 ```lua
 Story.new{
@@ -301,14 +307,14 @@ injected `cache_store` adapter: `main.lua` backs it with KOReader `Persist`
 temp-dir fake. Same injected-seam pattern as `pagination.measure_fn` and
 `save/manager`'s writer.
 
-### 7.1 `eager`
-
-> **Milestone 0 (pending):** emulator (x86) cold parse measured 411 ms; the on-device ARM number that sets the default is pending the owner's Kindle run — see [spike 06](../spikes/06-ondevice-parse-timing/FINDING.md).
+### 7.1 `eager` (not the default — see the Milestone 0 result above)
 
 `preload` parses all 54 files now, under a `Trapper` coroutine with a progress
 bar so the UI stays responsive (C3). Holds every `scene_table` resident
 (~11.5 MB measured, [spike 03](../spikes/03-full-corpus-memory-parse/) — a
-non-issue against ~497 MB free). `get_scene` is a table lookup.
+non-issue against ~497 MB free). `get_scene` is a table lookup. On the target
+Kindle this blocks ~2.2 s at launch (Milestone 0), which is why it is not the
+default; it stays available for a plugin setting and for desktop/faster devices.
 
 ### 7.2 `lazy`
 

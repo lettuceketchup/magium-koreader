@@ -3401,8 +3401,8 @@ local specials = require("engine/specials")
 local Reader = require("ui/reader")
 local SaveManager = require("save/manager")
 
--- Milestone 0 result (Task 6): set the measured default here.
-local PARSE_STRATEGY = "eager"
+-- Milestone 0 result (Task 6, 2026-08-31): device cold parse ≈ 2.2 s > ~1 s gate → lazy.
+local PARSE_STRATEGY = "lazy"
 
 local Magium = WidgetContainer:extend{ name = "magium", is_doc_only = false }
 
@@ -3659,7 +3659,7 @@ Gaps deliberately deferred (spec §1.2 / §12, not this plan): stats/saves/achie
 ### 2. Placeholder scan
 
 - No "TBD"/"TODO"/"implement later" in task steps. The one `pending(...)` call in Task 14 Step 4 is a real busted primitive (skips gracefully if Task 14's fixtures aren't generated yet), not a plan placeholder.
-- `PARSE_STRATEGY = "eager"` in Task 20 is a real default with a comment pointing to Task 6 where the measurement sets it — not a placeholder.
+- `PARSE_STRATEGY = "lazy"` in Task 20 — Milestone 0 measured ≈ 2.2 s cold on the Kindle (over the ~1 s gate). `lazy` is now load-bearing for Phase I, so Task 15 + Task 20's `cache_store` adapter are on the launch hot path.
 - Every code step has a full code block. Every test step has real assertions.
 - Task 17's `reader.lua` lists helper methods in a comment then defines every one below it — verified each referenced method (`_zone`, `_header_height`, `_indicator_height`, `_head_offset`, `_build_header`, `_build_indicator`, `_build_page`, `_render`, `_turn`) has a body.
 
