@@ -4,14 +4,17 @@ autosave/resume. Later phases add saves UI, stats, achievements, i18n.
 --]]--
 
 local DataStorage = require("datastorage")
+local Device = require("device")
 local Dispatcher = require("dispatcher")
 local InfoMessage = require("ui/widget/infomessage")
 local Persist = require("persist")
 local Trapper = require("ui/trapper")
 local UIManager = require("ui/uimanager")
+local Version = require("version")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
+local time = require("ui/time")
 local _ = require("gettext")
 
 local Story = require("engine/story")
@@ -21,6 +24,7 @@ local Store = require("engine/store")
 local specials = require("engine/specials")
 local Reader = require("ui/reader")
 local SaveManager = require("save/manager")
+local trace = require("util/trace")
 
 -- Milestone 0 (Task 6, 2026-08-31): device cold parse ≈ 2.2 s. Over the ~1 s
 -- gate — but the owner chose `eager` with the parse **deferred to the first
@@ -99,6 +103,52 @@ function Magium:init()
   -- NOTE: no parse here. init() runs at KOReader startup for every plugin; the
   -- ~2.2 s eager parse happens in openReader() the first time the user actually
   -- opens Magium (Milestone 0 decision).
+  self:_configureTrace()   -- optional action trace; a no-op unless the debug toggle is on
+end
+
+-- Configure the optional action trace (util/trace, spec §9.2 / ADR-005). OFF
+-- unless the "Record debug log" menu checkbox (G_reader_settings "magium_trace")
+-- is set. Its own method — cheap + idempotent (trace.configure resets the
+-- buffer) — so the Task 23 emu test can re-run it after flipping the setting.
+function Magium:_configureTrace()
+  local on = G_reader_settings:isTrue("magium_trace")
+  trace.configure{
+    enabled = on,
+    writer = on and self:_trace_writer() or nil,
+    log = logger.info,
+    -- time.now() is an fts (fixed-point µs), NOT a seconds number — time.to_ms()
+    -- is its documented converter. Monotonic (CLOCK_MONOTONIC_COARSE), ms res;
+    -- right for the relative deltas the trace records.
+    clock = function() return time.to_ms(time.now()) end,
+  }
+  if on then
+    trace.event("session", {
+      plugin = "magium",
+      kover = Version:getCurrentRevision() or tostring(Version:getNormalizedCurrentVersion()),
+      device = Device.model or "?",
+      ts = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+    })
+  end
+end
+
+-- Open this session's trace file under <datadir>/magium/ and prune old ones:
+-- keep only the newest 4 pre-existing trace-*.jsonl (this run's new file makes
+-- 5). Returns a line writer (fsynced per line); the file is left open for the
+-- process lifetime — the OS closes it on exit.
+function Magium:_trace_writer()
+  local dir = save_dir()   -- lfs.mkdir'd, no trailing slash
+  local existing = {}
+  for name in lfs.dir(dir) do
+    if name:match("^trace%-.*%.jsonl$") then existing[#existing + 1] = name end
+  end
+  table.sort(existing)   -- trace-YYYYmmdd-HHMMSS names sort chronologically
+  for i = 1, #existing - 4 do
+    os.remove(dir .. "/" .. existing[i])
+  end
+  local f = io.open(dir .. "/trace-" .. os.date("!%Y%m%d-%H%M%S") .. ".jsonl", "w")
+  return function(line)
+    if f then f:write(line); f:write("\n"); f:flush() end
+  end
 end
 
 -- Parse all 54 files once per KOReader session, the first time the reader is
@@ -111,6 +161,8 @@ function Magium:_ensureLoaded()
     -- failure (disk error / truncated file on device) must start clean.
     local story = new_story(self.data_dir)
     local ok = false
+    trace.event("preload_start")
+    local t0 = time.now()
     Trapper:wrap(function()
       story:preload(function(done, total)
         -- skip_dismiss_check = true (Trapper:info's 3rd arg) is load-bearing: on
@@ -132,6 +184,11 @@ function Magium:_ensureLoaded()
       shared_story, shared_loaded = story, true
     end
     -- on failure: shared_loaded stays false → the next open retries from scratch.
+    trace.event("preload_done", {
+      scenes = shared_story and shared_story:count() or 0,
+      ok = ok,
+      ms = time.to_ms(time.now() - t0),
+    })
   end
   self.story = shared_story
 end
@@ -146,7 +203,18 @@ function Magium:addToMainMenu(menu_items)
   menu_items.magium = {
     text = _("Magium"),
     sorting_hint = "more_tools",
-    callback = function() self:openReader() end,
+    sub_item_table = {
+      {
+        text = _("Open Magium"),
+        callback = function() self:openReader() end,
+      },
+      {
+        text = _("Record debug log"),
+        help_text = _("Writes a trace-*.jsonl of your play session under koreader/magium/ for bug reports. Takes effect the next time you open Magium."),
+        checked_func = function() return G_reader_settings:isTrue("magium_trace") end,
+        callback = function() G_reader_settings:flipNilOrTrue("magium_trace") end,
+      },
+    },
   }
 end
 
@@ -154,6 +222,7 @@ function Magium:onMagiumOpen() self:openReader(); return true end
 
 function Magium:openReader()
   self:_ensureLoaded()   -- first open this session: ~2.2 s parse behind a progress bar
+  trace.event("open")
 
   -- Real precondition for everything below: the opening scene must exist. Guards
   -- a swallowed preload() throw / a partial parse (ch1.magium sorts 42nd of 54,
@@ -161,12 +230,14 @@ function Magium:openReader()
   -- render_current() feeds nil to scene.render() → traceback in crash.log.
   if not self.story or not self.story:get_scene(specials.DEFAULT_SCENE) then
     logger.warn("Magium: story data unavailable — cannot open reader")
+    trace.event("error", { msg = "story unavailable" })
     UIManager:show(InfoMessage:new{ text = _("Magium: could not load the story data.") })
     return
   end
 
   -- resume, or start fresh (keeping achievements — reset_to_intro, not a wipe)
   local resume = self.save:load()
+  trace.event("resume", { scene = resume or "fresh" })
   self._loaded = true   -- this instance's store now mirrors disk; lifecycle flushes may run
   if not resume or not self.story:get_scene(resume) then
     reset_to_intro(self.store)
@@ -177,16 +248,30 @@ function Magium:openReader()
     local st = self.story:get_scene(id)
     if not st then
       logger.warn("Magium: unknown scene", id, "— resetting to intro")
+      trace.event("warn", { msg = "unknown scene", scene = id })
       self.store:set("v_current_scene", specials.DEFAULT_SCENE)
       st = self.story:get_scene(specials.DEFAULT_SCENE)
     end
-    return scene.render(st, self.store:view(), self.locale)
+    local rm = scene.render(st, self.store:view(), self.locale)
+    trace.event("render", {
+      scene = rm.scene_id,
+      paras = #rm.paragraphs,
+      choices = #rm.choices,
+      checks = #rm.stat_checks,
+      checkpoint = rm.checkpoint,
+    })
+    return rm
   end
 
   self.reader = Reader:new{
     render_model = render_current(),
     locale = self.locale,
-    on_close = function() self.save:flush_now("close") end,
+    on_close = function()
+      self.save:flush_now("close")
+      trace.event("save", { op = "flush", reason = "close" })
+      trace.event("close", { reason = "reader" })
+      trace.flush()
+    end,
     advance = function(button)
       local touched_ac = false
       for k, v in pairs(button.set_vars) do
@@ -197,10 +282,18 @@ function Magium:openReader()
         reset_to_intro(self.store)   -- keep achievements (parity: clearState)
       end
       -- special:saves / :stats / :checkpoint_* are Phase II/III — no-op nav for now
+      trace.event("choice", {
+        label = button.label,
+        target = button.target or "",
+        special = button.special or "",
+        ac = touched_ac,
+      })
       if touched_ac then
         self.save:on_achievement_unlocked()   -- spec §9: immediate flush on unlock
+        trace.event("save", { op = "achievement" })
       else
         self.save:touch()
+        trace.event("save", { op = "touch" })
       end
       return render_current()
     end,
@@ -212,8 +305,26 @@ end
 -- (self._loaded, set after save:load()). Before that self.store is the empty
 -- Store.new() from init() and an unconditional flush would overwrite the
 -- player's real saved position — and achievements — with {}.
-function Magium:onSuspend() if self._loaded then self.save:flush_now("suspend") end end
-function Magium:onClose() if self._loaded then self.save:flush_now("close-broadcast") end end
-function Magium:onCloseWidget() if self._loaded then self.save:flush_now("close-widget") end end
+function Magium:onSuspend()
+  if self._loaded then
+    self.save:flush_now("suspend")
+    trace.event("save", { op = "flush", reason = "suspend" })
+    trace.flush()
+  end
+end
+function Magium:onClose()
+  if self._loaded then
+    self.save:flush_now("close-broadcast")
+    trace.event("save", { op = "flush", reason = "close-broadcast" })
+    trace.flush()
+  end
+end
+function Magium:onCloseWidget()
+  if self._loaded then
+    self.save:flush_now("close-widget")
+    trace.event("save", { op = "flush", reason = "close-widget" })
+    trace.flush()
+  end
+end
 
 return Magium
