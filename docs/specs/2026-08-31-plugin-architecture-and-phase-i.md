@@ -116,7 +116,7 @@ apples-to-apples.
 | `store.lua` | The flat `v_*` variable map. `get(k) → string`, `set(k, v)` with **`+N`/`−N` resolve-on-write** and the **`v_ac_*` "seen" latch** (never lower `"2"`→`"1"`); `snapshot()` / `restore(t)`; a cheap read-only `view()` for render. The `v_ac_b3_ch9_consolation == 5 → v_ac_b3_ch9_prize = 1` rule lives here (special case #12). | `utils.js:13–24,29–31`; [`01` §2](../research/01-magium-analysis.md#2-variable-store-task-12) |
 | `scene.lua` | `render(scene_table, store_view, locale) → render_model`. The fixed 12-step pipeline (§6). Pure. | `renderers.js:renderScene`; [`01` §4](../research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14); [spike 02 `render_scene.lua`](../spikes/02-engine-in-lua/render_scene.lua) |
 | `specials.lua` | The 13 hardcoded special cases ([`01` §10](../research/01-magium-analysis.md#10-hardcoded-scene-id--variable-special-cases-task-110)) as a data table + small apply-hooks called at fixed points in `scene.render` and (later) in the stats screen. Phase I implements the render-time ones (#1–#4, #6–#8, #12; #13's unset→0 is in `conditions`/`store`); stats-screen ones (#5, #9–#11) are declared but inert until Phase IV. | `renderers.js` / `utils.js` / templates, per the §10 table |
-| `locale.lua` | Loads `data/<lang>/ui.json`; `str(key)`; `header(scene_id)` = `getHeaderFromId` + the `<%= book %>/<%= chapter %>` micro-interpolator; the `mainStat{Success,Failed}Template` interpolation. JSON via bundled `rapidjson` on-device, a vendored pure-Lua decoder for desktop specs (or `rapidjson` if present). | `utils.js` `getHeaderFromId` / `getLocaleData`; [`01` §9](../research/01-magium-analysis.md#9-localization-task-19) |
+| `locale.lua` | Loads `data/<lang>/ui.json` via `engine/vendor/json.lua` (pure Lua, same under `luajit` and KOReader); `str(key)`; `header(scene_id)` = `getHeaderFromId` + the `<%= book %>/<%= chapter %>` micro-interpolator; the `mainStat{Success,Failed}Template` interpolation. | `utils.js` `getHeaderFromId` / `getLocaleData`; [`01` §9](../research/01-magium-analysis.md#9-localization-task-19) |
 | `story.lua` | **The parse-strategy seam.** `Story.new{ data_dir, locale, strategy } → story`; `story:preload(on_progress)`; `story:get_scene(id) → scene_table`; `story:scene_ids()`. Two impls behind one interface (§7). | new; [`04` §4](../research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34) |
 
 `engine/` has **no** `init.lua` facade object — the modules are mostly pure
@@ -154,7 +154,8 @@ magium.koplugin/
     parser.lua  conditions.lua  stats.lua  store.lua
     scene.lua   specials.lua     locale.lua  story.lua
     vendor/
-      json.lua                -- pure-Lua JSON decode, desktop-spec fallback for locale.lua
+      json.lua                -- vendored rxi/json.lua (MIT), pure-Lua encode+decode;
+                              --   used by locale.lua (decode ui.json) and spec/oracle_diff.lua (encode)
 
   ui/
     reader.lua  pagination.lua  choices.lua  refresh.lua
@@ -281,11 +282,24 @@ One interface, two implementations. **Milestone 0 picks the default**; the other
 stays built and switchable (a plugin setting).
 
 ```lua
-Story.new{ data_dir = "…/data", locale = "en", strategy = "eager" | "lazy" }
+Story.new{
+  data_dir    = "…/data",
+  locale      = "en",
+  strategy    = "eager" | "lazy",
+  cache_store = <adapter> | nil,    -- get(key)→table|nil, set(key, table); lazy only
+}
 story:preload(on_progress)          -- called once, off the init hot path
 story:get_scene(scene_id)           -- returns the scene_table; caches parsed scenes
 story:scene_ids()                   -- iterator over all known ids (for full-corpus QA)
 ```
+
+`data_dir` is read with the Lua stdlib `io` (core, available under both plain
+`luajit` and KOReader) — so `story` stays engine-pure (C5). The **only**
+KOReader-specific concern, disk caching of parsed blobs (lazy path), is behind an
+injected `cache_store` adapter: `main.lua` backs it with KOReader `Persist`
+(`luajit` codec) under the data-dir `cache/`; specs back it with an in-memory or
+temp-dir fake. Same injected-seam pattern as `pagination.measure_fn` and
+`save/manager`'s writer.
 
 ### 7.1 `eager`
 
@@ -297,14 +311,14 @@ non-issue against ~497 MB free). `get_scene` is a table lookup.
 ### 7.2 `lazy`
 
 `preload` builds only a **scene-id → file index**: scan every `data/<lang>/*.magium`
-for `^ID: ` lines (no construct parsing — milliseconds). Persist the index to
-`cache/magium-index-<lang>.blob` (`Persist`, `luajit` codec), keyed by the set of
-`(filename, mtime, size)` — rebuild only when that changes.
+for `^ID: ` lines (no construct parsing — milliseconds). Store the index via
+`cache_store:set("index-<lang>", …)`, keyed by the set of `(filename, size)` —
+rebuild only when that changes.
 
 `get_scene(miss)` → look up the file, parse that **whole chapter file**, cache all
-its scenes in memory, and write the parsed chapter to
-`cache/magium-chapter-<file>.blob` (invalidated on mtime). Every later launch
-reads the blob instead of re-parsing. Bounded working set also eases GC
+its scenes in memory, and `cache_store:set("chapter-<file>", parsed)`. Every later
+launch reads it back via `cache_store:get` instead of re-parsing. Bounded working
+set also eases GC
 ([`04` §3 row 7](../research/04-constraints-budget.md#3-budget-table-33)).
 
 ### 7.3 Shared
