@@ -2212,7 +2212,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 Reference: spec §11.1 ("a new fixture set covering every branch, `#if`, and `set()` in `ch1.magium`"). ch1 has 12 scenes; the branching var is `v_ch1_intro_feeling` (1/2/3) plus `v_ch1_show_yourself` and a couple of achievement flags.
 
-- [ ] **Step 1: Write the case generator**
+- [x] **Step 1: Write the case generator**
 
 `tools/gen-ch1-cases.js`:
 ```js
@@ -2258,7 +2258,7 @@ fs.writeFileSync(
 console.log(`${cases.length} cases for ${ids.length} ch1 scenes`);
 ```
 
-- [ ] **Step 2: Generate cases and capture goldens**
+- [x] **Step 2: Generate cases and capture goldens**
 
 ```bash
 wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh with-oracle node tools/gen-ch1-cases.js'
@@ -2269,7 +2269,7 @@ convenient no-op wrapper. `mgm.sh diff <args>` starts the oracle, runs
 `node reference/tools/oracle-diff.js <args>`, tears it down.)
 `gen-ch1-cases.js` prints e.g. `96 cases for 12 ch1 scenes` (8 matrix rows × 12 scenes).
 
-- [ ] **Step 3: Run the port and diff the full ch1 set**
+- [x] **Step 3: Run the port and diff the full ch1 set**
 
 ```bash
 wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh oracle-diff-lua ../reference/tools/oracle-cases-ch1.json spec/out/ch1'
@@ -2282,9 +2282,18 @@ of generated cases** (e.g. `96/96`) — the 6 hand goldens live only in
 `DIFF`: it names the exact JSON path — **fix the engine, never a golden.** A
 per-branch divergence here (that the 6 goldens didn't catch) is a real bug.
 
-- [ ] **Step 4: Add a busted wrapper so the diff runs in CI-style**
+- [x] **Step 4: Add a busted wrapper so the diff runs in CI-style**
 
-Append to `magium.koplugin/spec/engine/scene_spec.lua`:
+Append to `magium.koplugin/spec/engine/scene_spec.lua` an offline structural
+check: render each committed ch1 case and compare the port-owned fields to the
+committed golden **without** a live oracle. Compares `scene_id`, `checkpoint`,
+`paragraphs` (concat), and per-choice `target` / `special` / `set_variables`
+(deep) + `achievements`. It does **not** raw-compare `statChecks[].text` or
+`header` — the live differ re-normalizes both sides for those, so an offline
+equality there could false-fail; the live oracle diff (Step 3) is the gate for
+them. A referenced golden that fails to resolve makes the test **fail**
+(`assert.are.equal(#cases, found)`), never silently skip.
+
 ```lua
 describe("scene.render — oracle parity (offline goldens)", function()
   -- Renders the committed ch1 cases and structurally compares to the committed
@@ -2298,6 +2307,13 @@ describe("scene.render — oracle parity (offline goldens)", function()
   local function read(p) local f = io.open(p, "r"); if not f then return nil end
     local s = f:read("*a"); f:close(); return s end
 
+  -- string->string map equality, both directions.
+  local function same_map(a, b)
+    for k, v in pairs(a) do if b[k] ~= v then return false end end
+    for k, v in pairs(b) do if a[k] ~= v then return false end end
+    return true
+  end
+
   it("matches every committed ch1 golden", function()
     local cases_raw = read("../reference/tools/oracle-cases-ch1.json")
     if not cases_raw then pending("run Task 14 to generate ch1 fixtures"); return end
@@ -2305,36 +2321,82 @@ describe("scene.render — oracle parity (offline goldens)", function()
     local scenes = parser.parse("./data/en/ch1.magium")
     local loc = Locale.load("./data", "en")
     local mismatches = {}
+    local found = 0
     for _, case in ipairs(cases) do
       local golden_raw = read("../reference/tools/oracle-capture/" .. case.name .. ".json")
       if golden_raw then
+        found = found + 1
         local view = {}
         for k, v in pairs(case.vars or {}) do view[k] = v end
         view.v_current_scene = case.sceneId
         local rm = sc.render(scenes[case.sceneId], view, loc)
         local golden = json.decode(golden_raw)
-        -- compare the fields the port owns
+
+        if rm.scene_id ~= golden.sceneId then
+          mismatches[#mismatches + 1] = case.name .. " sceneId"
+        end
+        if rm.checkpoint ~= golden.checkpoint then
+          mismatches[#mismatches + 1] = case.name .. " checkpoint"
+        end
+        -- scene.lua and the oracle normalize prose identically for ch1 (the live
+        -- 96/96 pass proves it) — safe to compare text here. NOT statChecks/header
+        -- text: the live differ re-normalizes both sides for those.
         if table.concat(rm.paragraphs, "\1") ~= table.concat(golden.paragraphs, "\1") then
           mismatches[#mismatches + 1] = case.name .. " paragraphs"
         end
+
         if #rm.choices ~= #golden.choices then
           mismatches[#mismatches + 1] = case.name .. " choice count"
+        else
+          for i = 1, #rm.choices do
+            local rc, gc = rm.choices[i], golden.choices[i]
+            if rc.target ~= gc.target then
+              mismatches[#mismatches + 1] = case.name .. " choices[" .. i .. "].target"
+            end
+            -- golden JSON null decodes to an absent key; normalize both sides.
+            if (rc.special or json.null) ~= (gc.special or json.null) then
+              mismatches[#mismatches + 1] = case.name .. " choices[" .. i .. "].special"
+            end
+            if not same_map(rc.set_variables or {}, gc.setVariables or {}) then
+              mismatches[#mismatches + 1] = case.name .. " choices[" .. i .. "].setVariables"
+            end
+          end
+        end
+
+        if #rm.achievements ~= #golden.achievements then
+          mismatches[#mismatches + 1] = case.name .. " achievement count"
+        else
+          for i = 1, #rm.achievements do
+            local ra, ga = rm.achievements[i], golden.achievements[i]
+            if ra.variable ~= ga.variable then
+              mismatches[#mismatches + 1] = case.name .. " achievements[" .. i .. "].variable"
+            end
+            if ra.text ~= ga.text then
+              mismatches[#mismatches + 1] = case.name .. " achievements[" .. i .. "].text"
+            end
+          end
         end
       end
     end
+    -- a referenced golden that fails to resolve must FAIL, not silently skip.
+    assert.are.equal(#cases, found)
     assert.are.same({}, mismatches)
   end)
 end)
 ```
 
-- [ ] **Step 5: Run the full engine spec suite**
+Also pin the `json.object` marker's behavior in `spec/engine/smoke_spec.lua`
+(`json.encode(json.object({})) == "{}"`), since the marker is a local addition
+to the vendored `engine/vendor/json.lua` that only the oracle harness exercises.
+
+- [x] **Step 5: Run the full engine spec suite**
 
 ```bash
 wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh test-engine'
 ```
 Expected: all green (the new offline-goldens `it` now runs against the committed ch1 goldens).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add tools/gen-ch1-cases.js reference/tools/oracle-cases-ch1.json reference/tools/oracle-capture/ch1-*.json magium.koplugin/spec/engine/scene_spec.lua
