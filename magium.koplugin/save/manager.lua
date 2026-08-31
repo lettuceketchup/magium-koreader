@@ -26,10 +26,13 @@ function SaveManager:_split()
   return current, ach
 end
 
+-- `writer` is the injected { read()->table|nil, write(table) } adapter — plain
+-- functions, NOT methods, so call them with a dot (a `:` would pass `self.writer`
+-- as the argument and silently drop the real payload).
 function SaveManager:_write(reason)
   local current, ach = self:_split()
-  local existing = self.writer:read() or {}
-  self.writer:write({
+  local existing = self.writer.read() or {}
+  self.writer.write({
     currentState = current,
     achievements = ach,
     checkpoint = existing.checkpoint,   -- preserved untouched in Phase I
@@ -38,7 +41,7 @@ function SaveManager:_write(reason)
 end
 
 function SaveManager:load()
-  local data = self.writer:read() or {}
+  local data = self.writer.read() or {}
   local merged = {}
   for k, v in pairs(data.currentState or {}) do merged[k] = v end
   for k, v in pairs(data.achievements or {}) do merged[k] = v end
