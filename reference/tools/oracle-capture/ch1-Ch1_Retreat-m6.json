@@ -1,0 +1,29 @@
+{
+  "sceneId": "Ch1-Retreat",
+  "header": "Book 1 - Chapter 1",
+  "checkpoint": false,
+  "statChecks": [],
+  "setVariables": [],
+  "paragraphs": [
+    "<br/><br/>\"I'm going to give you until the count of ten to get out of my sight,\" I tell him.<br/><br/>\"Hah! Empty words. That's all you've got. Arm yourself, fool! Today, I become a legend!\"<br/><br/>",
+    "Once he's done talking, I hear the mage throw several knives towards the forest. They all race past me, but before I get the chance to even think what to do next, the knives suddenly turn in midair and fly towards me, impaling me where I stand. It all ended so fast I barely even had the time to realize I was dead.<br/>",
+    "<br/>"
+  ],
+  "choices": [
+    {
+      "text": "Restart game",
+      "target": "Ch1-Intro1",
+      "special": "restart",
+      "setVariables": {
+        "v_current_scene": "Ch1-Intro1"
+      }
+    },
+    {
+      "text": "Load game",
+      "target": "",
+      "special": "saves",
+      "setVariables": {}
+    }
+  ],
+  "achievements": []
+}

@@ -1,0 +1,33 @@
+{
+  "sceneId": "Ch1-Retreat",
+  "header": "Book 1 - Chapter 1",
+  "checkpoint": false,
+  "statChecks": [],
+  "setVariables": [],
+  "paragraphs": [
+    "<br/><br/>\"I'm going to give you until the count of ten to get out of my sight,\" I tell him.<br/><br/>\"Hah! Empty words. That's all you've got. Arm yourself, fool! Today, I become a legend!\"<br/><br/>",
+    "<br/>"
+  ],
+  "choices": [
+    {
+      "text": "Restart game",
+      "target": "Ch1-Intro1",
+      "special": "restart",
+      "setVariables": {
+        "v_current_scene": "Ch1-Intro1"
+      }
+    },
+    {
+      "text": "Load game",
+      "target": "",
+      "special": "saves",
+      "setVariables": {}
+    }
+  ],
+  "achievements": [
+    {
+      "variable": "v_ac_ch1_die",
+      "text": "Off to a good start"
+    }
+  ]
+}

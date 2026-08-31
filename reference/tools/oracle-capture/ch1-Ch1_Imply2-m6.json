@@ -1,0 +1,33 @@
+{
+  "sceneId": "Ch1-Imply2",
+  "header": "Book 1 - Chapter 1",
+  "checkpoint": false,
+  "statChecks": [],
+  "setVariables": [],
+  "paragraphs": [
+    "<br/><br/>",
+    "The mage once again falls silent. He doesn't seem to want to push his luck any further. After a while, I hear him put his daggers back into his belt and then spit on the ground.<br/><br/>\"I'll remember this, stillwater. Don't think I won't. You'll rue the day you messed with Cutthroat Dave. And the same goes for you, healer in armor. I'll be seeing the both of you again soon.\"<br/><br/>After he finishes his speech, he turns away in disgust as he heads into the woods on the opposite side of the clearing. <br/>",
+    "Once I can no longer see the mage, I let out a big sigh. That was close. That was really close. I can still feel my heart beating rapidly in my chest.<br/><br/>You do that and you'll regret it? What was I even thinking? Was I trying to get myself killed? This is a life and death tournament, Barry. This is not the time for you to start playing hero.<br/><br/>As I try to calm myself down, the mage in armor sheathes his sword, picks up his shield from the ground and starts walking towards me.<br/><br/>\"You had no obligation to save me,\" he says. \"But you did so anyway, at the risk of your own life. I cannot let such selflessness go unrewarded. I, Daren, vow this day that I will offer you my protection from this moment, and until the end of this tournament. Tell me, brave soul, what is your name?\"<br/><br/>His speech took me by surprise.<br/><br/>\"It's, uhh... It's Barry. My name is Barry.\"<br/><br/>\"Wait, your name's Barry?\"<br/><br/>He tries to contain his laughter but fails miserably. He was trying to sound solemn and dignified just a few seconds ago, but it seems it didn't really take him long to drop his act.<br/><br/>\"Now that's the weirdest name for a mage I've heard in my life. Especially for a stillwater. Do you have something you want to tell me, Barry?\"<br/><br/>"
+  ],
+  "choices": [
+    {
+      "text": "Tell him I'm actually an ordinary human",
+      "target": "Ch1-Ordinary",
+      "special": null,
+      "setVariables": {
+        "v_ch1_stillwater": "2",
+        "v_current_scene": "Ch1-Ordinary"
+      }
+    },
+    {
+      "text": "Tell him my parents had a weird sense of humor",
+      "target": "Ch1-Humor",
+      "special": null,
+      "setVariables": {
+        "v_ch1_stillwater": "1",
+        "v_current_scene": "Ch1-Humor"
+      }
+    }
+  ],
+  "achievements": []
+}

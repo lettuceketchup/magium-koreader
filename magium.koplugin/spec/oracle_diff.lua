@@ -32,7 +32,7 @@ local function to_canonical(rm)
   for _, c in ipairs(rm.choices) do
     ch[#ch + 1] = {
       text = c.text, target = c.target, special = c.special or json.null,
-      setVariables = c.set_variables,
+      setVariables = json.object(c.set_variables),  -- always {} not [] when empty
     }
   end
   local ac = {}

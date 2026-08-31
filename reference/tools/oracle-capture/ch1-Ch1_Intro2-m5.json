@@ -1,0 +1,42 @@
+{
+  "sceneId": "Ch1-Intro2",
+  "header": "Book 1 - Chapter 1",
+  "checkpoint": false,
+  "statChecks": [],
+  "setVariables": [],
+  "paragraphs": [
+    "<br/><br/>",
+    "There's an explosion maybe a few hundred feet from my location. The fights have already begun. And one of them is much closer to me than I would have hoped. There's no way I can get in a fight with any of the mages at this point. I need to avoid combat for as long as possible if I am to survive until the end.<br/><br/>I head in the opposite direction from where I've heard the explosion. As I am heading towards the end of the forest, I start hearing voices. There are two mages talking in a clearing a few feet away from me. I hide behind a tree and take a quick glance towards the clearing. <br/><br/>It seems the two mages have just finished fighting. One of them has the appearance of an ordinary thug. He is wearing a simple stained white shirt, leather pants and a belt full of throwing knives. His untrimmed black beard hides a wicked smile. Just by seeing the confidence in his eyes, I can clearly tell he is the victor of the skirmish. The other mage is wearing heavy armor, but his shield lies on the ground besides him and he is barely holding his sword anymore.<br/><br/>Taking a closer look at the mage in armor, I notice his head is bald, his skin is dark, he is likely in his mid forties and he has a scar on his forehead, shaped like an 'X'. I've read of a mage matching this exact description who went by the name of Daren, and he was quite legendary, but would he lose so easily to some common thug? The mage in the white shirt answers my question as he addresses the one in armor, while casually playing with one of his knives.<br/><br/>\"The legendary mage Daren! The savior of the eastern continent. The healer in armor. They say you've travelled the world, saving countless villages from destruction. That you've once fought ten rock golems by yourself, only to defend a small child. I guess this goes to show, you should never really trust legends, aye? I always knew all of those tales about mages as strong as giants were just codswallop. Hell, if all those 'legendary' mages that joined this tournament are as weak as you, I'm going to win this by sundown!\"<br/><br/>He starts laughing but he stops suddenly.<br/><br/>\"Wait, who's there?\" he says, as he turns towards me.<br/><br/>I quickly pull my head back behind the tree, and press my back against it, trying to breathe as silently as possible.<br/><br/>\"I know you're there, coward. Show yourself, or I'll have one of my knives find you!\"<br/><br/>"
+  ],
+  "choices": [
+    {
+      "text": "Stay silent",
+      "target": "Ch1-Cutthroat Dave",
+      "special": null,
+      "setVariables": {
+        "v_ch1_show_yourself": "1",
+        "v_current_scene": "Ch1-Cutthroat Dave"
+      }
+    },
+    {
+      "text": "Show myself",
+      "target": "Ch1-Cutthroat Dave",
+      "special": null,
+      "setVariables": {
+        "v_ac_ch1_coward": "1",
+        "v_ch1_show_yourself": "2",
+        "v_current_scene": "Ch1-Cutthroat Dave"
+      }
+    },
+    {
+      "text": "\"I see no reason to show myself to you.\"",
+      "target": "Ch1-Cutthroat Dave",
+      "special": null,
+      "setVariables": {
+        "v_ch1_show_yourself": "3",
+        "v_current_scene": "Ch1-Cutthroat Dave"
+      }
+    }
+  ],
+  "achievements": []
+}

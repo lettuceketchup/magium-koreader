@@ -1,0 +1,686 @@
+[
+  {
+    "name": "ch1-Ch1_Intro1-m0",
+    "sceneId": "Ch1-Intro1",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Intro1-m1",
+    "sceneId": "Ch1-Intro1",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro1-m2",
+    "sceneId": "Ch1-Intro1",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro1-m3",
+    "sceneId": "Ch1-Intro1",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro1-m4",
+    "sceneId": "Ch1-Intro1",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro1-m5",
+    "sceneId": "Ch1-Intro1",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro1-m6",
+    "sceneId": "Ch1-Intro1",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro1-m7",
+    "sceneId": "Ch1-Intro1",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro2-m0",
+    "sceneId": "Ch1-Intro2",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Intro2-m1",
+    "sceneId": "Ch1-Intro2",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro2-m2",
+    "sceneId": "Ch1-Intro2",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro2-m3",
+    "sceneId": "Ch1-Intro2",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro2-m4",
+    "sceneId": "Ch1-Intro2",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro2-m5",
+    "sceneId": "Ch1-Intro2",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro2-m6",
+    "sceneId": "Ch1-Intro2",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Intro2-m7",
+    "sceneId": "Ch1-Intro2",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Cutthroat_Dave-m0",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Cutthroat_Dave-m1",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Cutthroat_Dave-m2",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Cutthroat_Dave-m3",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Cutthroat_Dave-m4",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Cutthroat_Dave-m5",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Cutthroat_Dave-m6",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Cutthroat_Dave-m7",
+    "sceneId": "Ch1-Cutthroat Dave",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Retreat-m0",
+    "sceneId": "Ch1-Retreat",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Retreat-m1",
+    "sceneId": "Ch1-Retreat",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Retreat-m2",
+    "sceneId": "Ch1-Retreat",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Retreat-m3",
+    "sceneId": "Ch1-Retreat",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Retreat-m4",
+    "sceneId": "Ch1-Retreat",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Retreat-m5",
+    "sceneId": "Ch1-Retreat",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Retreat-m6",
+    "sceneId": "Ch1-Retreat",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Retreat-m7",
+    "sceneId": "Ch1-Retreat",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply-m0",
+    "sceneId": "Ch1-Imply",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Imply-m1",
+    "sceneId": "Ch1-Imply",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply-m2",
+    "sceneId": "Ch1-Imply",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply-m3",
+    "sceneId": "Ch1-Imply",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply-m4",
+    "sceneId": "Ch1-Imply",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply-m5",
+    "sceneId": "Ch1-Imply",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply-m6",
+    "sceneId": "Ch1-Imply",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply-m7",
+    "sceneId": "Ch1-Imply",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply2-m0",
+    "sceneId": "Ch1-Imply2",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Imply2-m1",
+    "sceneId": "Ch1-Imply2",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply2-m2",
+    "sceneId": "Ch1-Imply2",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply2-m3",
+    "sceneId": "Ch1-Imply2",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply2-m4",
+    "sceneId": "Ch1-Imply2",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply2-m5",
+    "sceneId": "Ch1-Imply2",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply2-m6",
+    "sceneId": "Ch1-Imply2",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Imply2-m7",
+    "sceneId": "Ch1-Imply2",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Humor-m0",
+    "sceneId": "Ch1-Humor",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Humor-m1",
+    "sceneId": "Ch1-Humor",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Humor-m2",
+    "sceneId": "Ch1-Humor",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Humor-m3",
+    "sceneId": "Ch1-Humor",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Humor-m4",
+    "sceneId": "Ch1-Humor",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Humor-m5",
+    "sceneId": "Ch1-Humor",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Humor-m6",
+    "sceneId": "Ch1-Humor",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Humor-m7",
+    "sceneId": "Ch1-Humor",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Ordinary-m0",
+    "sceneId": "Ch1-Ordinary",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Ordinary-m1",
+    "sceneId": "Ch1-Ordinary",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Ordinary-m2",
+    "sceneId": "Ch1-Ordinary",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Ordinary-m3",
+    "sceneId": "Ch1-Ordinary",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Ordinary-m4",
+    "sceneId": "Ch1-Ordinary",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Ordinary-m5",
+    "sceneId": "Ch1-Ordinary",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Ordinary-m6",
+    "sceneId": "Ch1-Ordinary",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Ordinary-m7",
+    "sceneId": "Ch1-Ordinary",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Truth-m0",
+    "sceneId": "Ch1-Truth",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Truth-m1",
+    "sceneId": "Ch1-Truth",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Truth-m2",
+    "sceneId": "Ch1-Truth",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Truth-m3",
+    "sceneId": "Ch1-Truth",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Truth-m4",
+    "sceneId": "Ch1-Truth",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Truth-m5",
+    "sceneId": "Ch1-Truth",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Truth-m6",
+    "sceneId": "Ch1-Truth",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Truth-m7",
+    "sceneId": "Ch1-Truth",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Forced-m0",
+    "sceneId": "Ch1-Forced",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Forced-m1",
+    "sceneId": "Ch1-Forced",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Forced-m2",
+    "sceneId": "Ch1-Forced",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Forced-m3",
+    "sceneId": "Ch1-Forced",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Forced-m4",
+    "sceneId": "Ch1-Forced",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Forced-m5",
+    "sceneId": "Ch1-Forced",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Forced-m6",
+    "sceneId": "Ch1-Forced",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Forced-m7",
+    "sceneId": "Ch1-Forced",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Sister-m0",
+    "sceneId": "Ch1-Sister",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Sister-m1",
+    "sceneId": "Ch1-Sister",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Sister-m2",
+    "sceneId": "Ch1-Sister",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Sister-m3",
+    "sceneId": "Ch1-Sister",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Sister-m4",
+    "sceneId": "Ch1-Sister",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Sister-m5",
+    "sceneId": "Ch1-Sister",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Sister-m6",
+    "sceneId": "Ch1-Sister",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Sister-m7",
+    "sceneId": "Ch1-Sister",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Weakness-m0",
+    "sceneId": "Ch1-Weakness",
+    "vars": {}
+  },
+  {
+    "name": "ch1-Ch1_Weakness-m1",
+    "sceneId": "Ch1-Weakness",
+    "vars": {
+      "v_ch1_intro_feeling": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Weakness-m2",
+    "sceneId": "Ch1-Weakness",
+    "vars": {
+      "v_ch1_intro_feeling": "2"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Weakness-m3",
+    "sceneId": "Ch1-Weakness",
+    "vars": {
+      "v_ch1_intro_feeling": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Weakness-m4",
+    "sceneId": "Ch1-Weakness",
+    "vars": {
+      "v_ch1_show_yourself": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Weakness-m5",
+    "sceneId": "Ch1-Weakness",
+    "vars": {
+      "v_ch1_show_yourself": "2",
+      "v_ac_ch1_coward": "1"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Weakness-m6",
+    "sceneId": "Ch1-Weakness",
+    "vars": {
+      "v_ch1_show_yourself": "3"
+    }
+  },
+  {
+    "name": "ch1-Ch1_Weakness-m7",
+    "sceneId": "Ch1-Weakness",
+    "vars": {
+      "v_ac_ch1_coward": "1",
+      "v_ac_ch1_die": "1",
+      "v_ac_ch1_honesty": "1"
+    }
+  }
+]
