@@ -91,7 +91,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Deliverable:** `docs/spikes/*` (each: `HYPOTHESIS.md`, code, `FINDING.md`), feeding Phase 6.
 **Depends on:** Phases 1 and 2.
 
-- [x] 5.1 Spike A — **UI feel:** fork the simplest existing plugin, hard-code one Magium scene (prose + 3 choices), render it on the Paperwhite, wire the choices to swap to another hard-coded scene. Judge: does the widget model fit? refresh feel? navigation? — [`docs/spikes/04-ui-plugin-skeleton/`](docs/spikes/04-ui-plugin-skeleton/): plugin code written, API-grounded against real `v2026.07.1` source, **and actually run** — a working `kodev` emulator build was obtained in this session (see FINDING.md for how the earlier network-egress block on GitHub thirdparty tarballs was resolved: swap the ~17 archive-tarball fetches for `git clone` at the same tag). Both hard-coded scenes render correctly under the real KOReader runtime with zero errors, screenshotted. **Widget fit: confirmed.** Refresh feel/e-ink perceptual judgment (necessarily unanswerable from any non-e-ink display, emulator included) stays open for the owner on real hardware.
+- [x] 5.1 Spike A — **UI feel:** fork the simplest existing plugin, hard-code one Magium scene (prose + 3 choices), render it on the Paperwhite, wire the choices to swap to another hard-coded scene. Judge: does the widget model fit? refresh feel? navigation? — [`docs/spikes/04-ui-plugin-skeleton/`](docs/spikes/04-ui-plugin-skeleton/): plugin code written, API-grounded against real `v2026.07.1` source, **and actually run** — a working `kodev` emulator build was obtained in this session (see FINDING.md for how the earlier network-egress block on GitHub thirdparty tarballs was resolved: swap the ~17 archive-tarball fetches for `git clone` at the same tag). Both hard-coded scenes render correctly under the real KOReader runtime with zero errors, screenshotted. **Data/API fit: confirmed.** Owner review of the screenshots then caught that the specific widget used (`TextViewer`) is a padded dialog with continuous scroll, not the fullscreen + paginated presentation wanted for the finished UI — split off as **new OQ-013**, feeding Phase 6/8. Refresh feel/e-ink perceptual judgment (necessarily unanswerable from any non-e-ink display, emulator included) stays open for the owner on real hardware.
 - [x] 5.2 Spike B — **engine in Lua:** port `apply_condition`/`apply_conditions` + the scene parser for a 3-scene slice to Lua. Feed identical variable states to it and to `magium-dev`; diff the resulting text + choice list. — [`docs/spikes/02-engine-in-lua/`](docs/spikes/02-engine-in-lua/): **6/6 oracle-diff match** across 4 scenes/3 files (exceeds the planned 3-scene slice, reusing the existing fixture set); full 54-file structural parity confirmed as a bonus in 5.4. One real Lua-vs-JS pattern-syntax bug found+fixed (`%w` excludes `_`).
 - [x] 5.3 Spike C — **format conversion:** write a `.magium` → Twee (or Ink) converter for one chapter; try the output in an existing player (desktop first, then on-device if a player exists). Judge conversion fidelity for conditions/stats. — [`docs/spikes/05-magium-to-ink/`](docs/spikes/05-magium-to-ink/): `ch1.magium` (12 scenes) → Ink, compiled + played via `inkjs/full` (in-process JS compiler, no `inklecate`/.NET needed). Conditions/`set()` convert losslessly (verified against the oracle goldens); achievements/`special:` hooks/cross-chapter nav have no Ink primitive (documented, expected — doesn't change Phase 4's approach-C read since no e-ink Ink player exists regardless).
 - [x] 5.4 Spike D — **memory:** load all 54 files' text (and/or the fully parsed story) into memory on-device; watch RAM via KOReader's tools. Confirms/kills the "parse everything up front" approach. — [`docs/spikes/03-full-corpus-memory-parse/`](docs/spikes/03-full-corpus-memory-parse/): **not on-device, but now under koreader-base's own bundled LuaJIT** (see below) — desktop LuaJIT (stock apt package): full 54-file parse = **11.54 MB** heap delta (lower than the ~17.4 MB V8 estimate), **112–128 ms** parse time; re-run under koreader-base's bundled build (`LuaJIT 2.1.1783773675`, from a working `./kodev build` obtained later this session) once fixed: **11.48 MB**, **184–205 ms** — both agree with the stock-LuaJIT run within noise. Structural counts (2159 scenes/4880 paragraphs/3734 choices/594 `set()`) match the JS baseline exactly under both — a strong full-corpus fidelity check on spike B's port. The initial attempt to build the `kodev` emulator in this cloud session hit a 403 on GitHub thirdparty-tarball downloads and was reported as an unconditional block; that was too broad — see [`docs/spikes/04-ui-plugin-skeleton/FINDING.md`](docs/spikes/04-ui-plugin-skeleton/FINDING.md) for the fix (git-clone the ~17 affected libs at the same tag instead of downloading their archive tarball) and [`reference/setup-koreader-cloud-session.sh`](reference/setup-koreader-cloud-session.sh) for the reproducible recipe. Still not the Kindle's ARM core — that gap is unchanged, only the *desktop* number's provenance improved.
@@ -138,6 +138,63 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 13) — owner review of spike 04's screenshots: TextViewer's chrome corrected, new OQ-013
+
+Owner reviewed session 12's spike 04 screenshots and flagged two things:
+(1) the emulator window wasn't fullscreen — intentional, or just for
+testing? and (2) the text rendered as a continuous scroll, prone to
+ghosting and hard to navigate on Kindle — a paginated format with page
+numbers would be better, matching the web version's fullscreen look.
+
+- **Investigated rather than just noting the ask.** Grepped
+  `../koreader/frontend/ui/widget/textviewer.lua` and `scrolltextwidget.lua`
+  directly. Confirmed both observations are real, source-grounded findings,
+  not testing artifacts: `TextViewer` defaults to `screen_w/h -
+  Screen:scaleBySize(30)` (`textviewer.lua:107-108`) inside a
+  `radius = Size.radius.window` rounded frame with a `TitleBar` **✕ close
+  button** (`textviewer.lua:469-474`) — a padded dialog, not fullscreen.
+  Its prose area is `ScrollTextWidget` (`textviewer.lua:416`), a plain
+  scrollbar+pan widget with no page-number/pagination concept anywhere in
+  its API. Checked whether `frotz.koplugin` (the other cited prior art,
+  F-15) does any better: its `GameView` **is** genuinely fullscreen, but
+  its `StyledScroll` transcript still scrolls — no KOReader prior art
+  surveyed so far does "fullscreen + paginated" together.
+- **Corrected a standing inaccuracy this surfaced:**
+  `03-koreader-platform.md` §7 previously claimed "`TextViewer` fills the
+  screen" (written in Phase 2, before any spike actually ran it) — that
+  was wrong, now fixed with the exact source lines above and a citation to
+  the screenshots that exposed it.
+- **Filed `OQ-013`**: should the final reading screen be a custom
+  fullscreen, paginated widget (buildable on `TextBoxWidget`'s existing
+  line/height measurement API — not a new capability, just unbuilt) rather
+  than reusing `TextViewer`? Tagged as feeding Phase 6 (approach
+  comparison — a component of parity/effort, not a go/no-go factor) and
+  Phase 8 (roadmap — its own line item), not reopening Phase 5: spike 04
+  already did its job — proving the *data* drives a widget cleanly — this
+  is new information about the *chrome*, which was always going to need a
+  build-phase decision regardless of which widget the throwaway spike
+  happened to pick.
+- Also noted, grounding the pagination question in real numbers rather
+  than asserting it blind: most scenes are short (4880 paragraphs / 2159
+  scenes ≈ 2.3 avg, `01` §11) and may need neither scrolling nor
+  pagination once rendered in a true fullscreen frame (no
+  titlebar/button-row/30px-margin overhead eating screen space) —
+  pagination mainly matters for the longer scenes, not a rewrite of every
+  screen.
+- Updated `03-koreader-platform.md` (§3 spike-A verdict + §7 correction),
+  `07-risks-open-questions.md` (OQ-002's resolution softened to
+  "data/API fit," new OQ-013 row), `docs/spikes/04-ui-plugin-skeleton/FINDING.md`
+  (new caveat section, softened "widget fit: confirmed" language, updated
+  Confidence/Next step), `SUMMARY.md` (F-26 caveat, new F-28), this file.
+- **No code changed** — per CLAUDE.md, no application code exists yet or
+  should until an implementation phase is separately approved; this
+  session's output is entirely documentation, as the owner's request
+  ("note this in the docs") asked for.
+- **Next:** unchanged at the phase level — Phase 6 (approach comparison).
+  OQ-013 is now one more concrete item that phase's decision matrix and
+  Phase 8's roadmap should carry (custom pagination widget = its own
+  roadmap line item, not free).
 
 ### 2026-08-31 (session 12) — Phase 5 closed: spike A run for real, emulator-build blocker resolved
 
