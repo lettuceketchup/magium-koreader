@@ -13,6 +13,11 @@
 --   2. init()-time auto-run, deferred via UIManager:nextTick so it does not block
 --      FileManager load. This exists ONLY because the headless-xvfb emulator
 --      sanity run (tools/mgm.sh emu-smoke) has no way to tap a menu.
+--
+-- Task 17 bolts a second, equally temporary scaffold onto the same file: a
+-- "Magium: read ch1 intro" menu item + a second nextTick hook that opens
+-- ui/reader.lua on Ch1-Intro1 and walks every page headlessly. Also gone in
+-- Task 20.
 
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local InfoMessage = require("ui/widget/infomessage")
@@ -59,6 +64,45 @@ function Magium:init()
       logger.warn("MAGIUM parse (init) failed: " .. tostring(err))
     end
   end)
+
+  -- TEMPORARY (Task 17) — headless drive of ui/reader.lua. emu-smoke cannot
+  -- tap, so this is the only signal that the widget constructs, paginates
+  -- against a real TextBoxWidget, re-renders on turn, and reaches the choices
+  -- page. Same boot-loop reasoning as the timing hook above: pcall-guarded so a
+  -- throw from this unattended main-loop callback never reaches KOReader's
+  -- crash handler. Removed with the rest of this scaffold in Task 20.
+  UIManager:nextTick(function()
+    local ok, err = pcall(function()
+      local Locale = require("engine/locale")
+      local scenemod = require("engine/scene")
+      local Reader = require("ui/reader")
+      local story = Story.new{ data_dir = self.path .. "/data", locale = "en", strategy = "eager" }:preload()
+      local loc = Locale.load(self.path .. "/data", "en")
+      local rm = scenemod.render(story:get_scene("Ch1-Intro1"), {}, loc)
+      local reader = Reader:new{
+        render_model = rm, locale = loc,
+        on_close = function() end,
+        on_choice = function(b) logger.info("[MAGIUM] reader choice: " .. tostring(b.label)) end,
+      }
+      UIManager:show(reader)
+      logger.info("[MAGIUM] reader: " .. #reader.pages .. " pages")
+      local function step()
+        logger.info("[MAGIUM] reader page " .. reader.page_idx .. "/" .. #reader.pages
+          .. " kind=" .. reader.pages[reader.page_idx].kind)
+        if reader.page_idx < #reader.pages then
+          reader:onNextPage()
+          UIManager:scheduleIn(0.4, step)
+        else
+          reader:onClose()
+          logger.info("[MAGIUM] reader: walked all pages, closed")
+        end
+      end
+      UIManager:scheduleIn(0.4, step)
+    end)
+    if not ok then
+      logger.warn("[MAGIUM] reader (init) failed: " .. tostring(err))
+    end
+  end)
 end
 
 function Magium:addToMainMenu(menu_items)
@@ -70,6 +114,25 @@ function Magium:addToMainMenu(menu_items)
       local cold, w1, w2 = time_parse(data_root)
       UIManager:show(InfoMessage:new{
         text = string.format("cold %.0f ms\nwarm %.0f / %.0f ms\n(see crash.log)", cold, w1, w2),
+      })
+    end,
+  }
+  -- TEMPORARY (Task 17) — manual launch path for ui/reader.lua on Ch1-Intro1.
+  -- Removed with the rest of this scaffold in Task 20.
+  menu_items.magium_read = {
+    text = _("Magium: read ch1 intro"),
+    sorting_hint = "more_tools",
+    callback = function()
+      local Locale = require("engine/locale")
+      local scenemod = require("engine/scene")
+      local Reader = require("ui/reader")
+      local story = Story.new{ data_dir = self.path .. "/data", locale = "en", strategy = "eager" }:preload()
+      local loc = Locale.load(self.path .. "/data", "en")
+      local rm = scenemod.render(story:get_scene("Ch1-Intro1"), {}, loc)
+      UIManager:show(Reader:new{
+        render_model = rm, locale = loc,
+        on_close = function() end,
+        on_choice = function(b) logger.info("[MAGIUM] reader choice: " .. tostring(b.label)) end,
       })
     end,
   }
