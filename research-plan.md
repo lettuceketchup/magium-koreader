@@ -153,6 +153,38 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-08-31 (session 18) — Phase I execution started (subagent-driven): Tasks 1–6
+
+Began executing [the Milestone 0 + Phase I plan](docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md)
+on branch `feat/magium-plugin-phase-i`, fresh subagent per task + two-stage review
+(SDD ledger: `.superpowers/sdd/2026-08-31-magium-plugin-milestone-0-phase-i/progress.md`).
+
+- **Env rebuilt in WSL2 Ubuntu** (the prior emulator setup was gone): installed luajit
+  2.1 / lua5.1 / luarocks / busted 2.3.0 / xvfb; rebuilt the `kodev` emulator
+  (`~/koreader` @ v2026.07.1 == 9192014). `magium-dev` oracle @ `51f5aa9` verified.
+  Added `tools/mgm.sh` — a WSL task runner (the Git-Bash→wsl.exe boundary mangles inline
+  `$vars`/`$(...)`/`$?`; scripts run from a file don't). `emu-smoke` does a headless
+  kodev launch + log grep so subagents can verify plugin loads.
+- **Tasks 1–5 complete, reviewed clean.** Scaffolding + vendored `rxi/json.lua` (plan's
+  pin 404'd → used current master `dbf4b2dd`); `engine/parser.lua` (`parse_conditions`,
+  the 4 construct matchers, `parse()`) — **per-scene structural parity with `magium-dev`
+  proven** over all 54 files (2159 scenes / 4880 paragraphs / 3734 choices / 594 set() /
+  145 achievement() / 2480 #if, 0 anomalies); `engine/story.lua` eager strategy + the
+  lazy-stub seam.
+- **Plan defects found & corrected mid-flight:** `spec/run.lua` exit check (LuaJIT
+  `os.execute` returns a number, `0` is truthy); Task 3's `_match_set` tests used
+  `set(v_x, 1)` (space) where the corpus + `parser.js` use `set(v_x,1)`, and its R3
+  multi-digit assertion was dead code — both fixed in the plan and the code.
+- **Task 6 (Milestone 0)** harness built; emulator (x86) cold parse **411 ms** (warm
+  ~350 ms). Suggestive of `eager` but the gate is ARM — **the on-device cold-parse
+  measurement on the Kindle Paperwhite is the owner's to run** (spike 06 Step 4;
+  `docs/spikes/06-ondevice-parse-timing/FINDING.md`, device row PENDING). Task 6 stays
+  open; it does not block Tasks 7–19.
+- **Next:** Tasks 7–15 (conditions, store, stats, locale, specials, scene render, oracle
+  diff, ch1 fixtures, lazy story) then 16–20 (pagination, reader widget, choices, save,
+  main.lua wiring). Owner checkpoints remain at Milestone 0 (device parse timing) and
+  Phase I exit (Task 21, ch1 playable on-device).
+
 ### 2026-08-31 (session 17) — implementation-design cycle opened: architecture + Phase I spec (task 8.6)
 
 Owner approved starting the implementation-design cycle (the last open row of
