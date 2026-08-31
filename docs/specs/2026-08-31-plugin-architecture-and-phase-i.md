@@ -303,6 +303,8 @@ temp-dir fake. Same injected-seam pattern as `pagination.measure_fn` and
 
 ### 7.1 `eager`
 
+> **Milestone 0 (pending):** emulator (x86) cold parse measured 411 ms; the on-device ARM number that sets the default is pending the owner's Kindle run — see [spike 06](../spikes/06-ondevice-parse-timing/FINDING.md).
+
 `preload` parses all 54 files now, under a `Trapper` coroutine with a progress
 bar so the UI stays responsive (C3). Holds every `scene_table` resident
 (~11.5 MB measured, [spike 03](../spikes/03-full-corpus-memory-parse/) — a
