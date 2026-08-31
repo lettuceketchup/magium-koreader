@@ -278,16 +278,24 @@ Full task breakdown and status live in `research-plan.md`. Phases:
 | 4 | Prior art | `05-prior-art.md` (+ contacts map) |
 | 5 | De-risking spikes | `docs/spikes/*`, inputs to Phase 6 |
 | 6 | Approach comparison & recommendation | `06-approach-comparison.md`, `07-risks-open-questions.md` |
-| 7 | Licensing & permissions | `08-licensing.md`, `LICENSE` decision (ADR) |
+| 7 | Licensing & permissions *(deferred — [ADR-003](../../decisions/ADR-003-defer-licensing-distribution.md), personal-use-only scope)* | `08-licensing.md`, `LICENSE` decision (ADR) |
 | 8 | Roadmap, effort, timeline | `09-roadmap-effort.md`, handoff to design phase |
 
 Phases 1–2 may overlap; 3 depends on 2; 5 depends on 1 and 2; 6 depends on 3–5.
 
 ## 11. Handoff / exit criteria
 
+**Amended 2026-08-31** ([ADR-003](../../decisions/ADR-003-defer-licensing-distribution.md)):
+the owner confirmed this is a personal-use-only project for now, with no
+near-term distribution plan. Phase 7 / `08-licensing.md` is deferred until
+distribution is actually being considered, so the first criterion below is
+satisfied by "stable, or explicitly deferred with a reason" — `08-licensing.md`
+stays a stub by design, not an oversight.
+
 The research phase is done when:
 
-- All nine `docs/research/*` docs are `stable`.
+- All nine `docs/research/*` docs are `stable` (or explicitly deferred with a
+  reason, per the amendment above).
 - `SUMMARY.md` states a recommended end-form with a confidence tag and links.
 - Every `OQ-NNN` is either closed or explicitly deferred with a reason.
 - `09-roadmap-effort.md` gives a phased implementation roadmap with effort bands

@@ -4,7 +4,7 @@
 - **Last updated:** 2026-08-31
 - **Phase:** 6
 - **Sources:** [`04-constraints-budget.md`](04-constraints-budget.md), [`05-prior-art.md`](05-prior-art.md), [`../spikes/`](../spikes/), [`03-koreader-platform.md`](03-koreader-platform.md), [`01-magium-analysis.md`](01-magium-analysis.md)
-- **Related:** [`07-risks-open-questions.md`](07-risks-open-questions.md), [`../decisions/ADR-002-porting-approach.md`](../decisions/ADR-002-porting-approach.md), [`09-roadmap-effort.md`](09-roadmap-effort.md), `../../SUMMARY.md`
+- **Related:** [`07-risks-open-questions.md`](07-risks-open-questions.md), [`../decisions/ADR-002-porting-approach.md`](../decisions/ADR-002-porting-approach.md), [`../decisions/ADR-003-defer-licensing-distribution.md`](../decisions/ADR-003-defer-licensing-distribution.md), [`09-roadmap-effort.md`](09-roadmap-effort.md), `../../SUMMARY.md`
 
 > Goal: pick an end-form, or conclude that specific further spiking is needed
 > first. Result is recorded as [ADR-002](../decisions/ADR-002-porting-approach.md)
@@ -164,18 +164,21 @@ they narrow *how* candidate A gets built, not *whether* it's the right choice:
 
 | OQ | Blocks the approach decision itself? | What it actually gates |
 |---|---|---|
-| **OQ-004** (redistribution permission) | No — blocks *distribution* of any end-form, not the choice between them | Must close before any public release, regardless of A/B/C/D. Highest-priority remaining open item project-wide. |
+| **OQ-004** (redistribution permission) | No — blocks *distribution* of any end-form, not the choice between them | **Deferred ([ADR-003](../decisions/ADR-003-defer-licensing-distribution.md)):** owner confirmed this is personal-use-only for now, no near-term distribution — only relevant again if/when the port is actually being shared. |
 | **OQ-013** (custom pagination widget vs. `TextViewer`) | No | A UI-design detail *within* candidate A, already scoped as buildable ([`03` §3](03-koreader-platform.md#3-ui-toolkit-inventory-23)); feeds the Phase 8 roadmap as its own line item. |
 | **OQ-007** (e-ink refresh feel) | No | Tunes candidate A's redraw strategy (`"ui"` vs `"full"` cadence); Phase 3 already treats it as a responsiveness question, not a feasibility gate. |
 | **OQ-001 tail** (real on-device ARM parse time) | No | Decides whether A ships as "parse-all-at-launch" or needs the lazy-per-chapter fallback already scoped in [`04` §4](04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34) — an implementation detail within A, not a reason to prefer D. |
 | **OQ-011** (490 KB condition outlier cost) | No | Same shape as OQ-001 tail — mitigations already ordered ([`04` §3 row 4](04-constraints-budget.md#3-budget-table-33)); worst case is a targeted pre-compile of one construct, not a reason to adopt D wholesale. |
-| **OQ-005** (which license governs a port) | No | Phase 7's job; independent of which approach was picked, though A's "bundle `.magium` verbatim, write original Lua" shape is the cleanest case to reason about (no derived/converted artifact in the license chain). |
+| **OQ-005** (which license governs a port) | No | **Deferred ([ADR-003](../decisions/ADR-003-defer-licensing-distribution.md)):** Phase 7's job, and Phase 7 itself is deferred until distribution is being considered; independent of which approach was picked, though A's "bundle `.magium` verbatim, write original Lua" shape is the cleanest case to reason about when it happens (no derived/converted artifact in the license chain). |
 
-**Nothing here is blocking for Phase 6's purpose.** OQ-004 is the one item
-that blocks *the project*, not this decision — it should be resolved (owner
-outreach, [`05` §6](05-prior-art.md#6-outreach-46)) in parallel with or before
-Phase 8's roadmap work, since there is little point sequencing a detailed
-implementation plan ahead of confirming the content can legally be shipped.
+**Nothing here is blocking for Phase 6's purpose, and — per
+[ADR-003](../decisions/ADR-003-defer-licensing-distribution.md) — nothing
+here is currently blocking the project either.** OQ-004 would block *public
+distribution* of any end-form, but the owner has confirmed this is a
+personal-use project for now with no near-term distribution intent; the
+outreach drafts in [`05` §6](05-prior-art.md#6-outreach-46) stay ready,
+unsent, until that changes. Phase 8's roadmap work proceeds without waiting
+on it.
 
 ## 4. Recommendation *(6.4)*
 
