@@ -453,8 +453,9 @@ wiring is a thin adapter.
 ### 9.2 Debug action-trace (`util/trace.lua`, optional) — [ADR-005](../decisions/ADR-005-debug-trace-toggle.md)
 
 Off by default. A `Record debug log` checkbox in `≡ → More tools → Magium`
-(persisted as `G_reader_settings` key `magium_trace`) turns on a structured trace
-of player actions and plugin reactions — `session` header, `preload`/`preload_done`,
+(persisted as `G_reader_settings` key `magium_trace`, read at the top of each
+`openReader()`) turns on a structured trace of player actions and plugin
+reactions — `session` header, `preload`/`preload_done`,
 `open`/`resume`, `render` (scene id + para/choice/check counts + checkpoint),
 `page_turn`, `choice` (label/target/special/`set_vars` keys), `save`
 (op/reason), `warn`/`error`, `close`. Records buffer in memory and flush as

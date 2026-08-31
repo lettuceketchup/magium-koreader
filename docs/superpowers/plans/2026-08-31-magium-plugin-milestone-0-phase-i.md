@@ -3761,35 +3761,48 @@ function Magium:addToMainMenu(menu_items)
         text = _("Record debug log"),
         help_text = _("Writes a trace-*.jsonl of your play session under koreader/magium/ for bug reports. Takes effect the next time you open Magium."),
         checked_func = function() return G_reader_settings:isTrue("magium_trace") end,
-        callback = function() G_reader_settings:flipNilOrTrue("magium_trace") end,
+        callback = function() G_reader_settings:flipNilOrFalse("magium_trace") end,
       },
     },
   }
 end
 ```
-(The `Dispatcher` action `MagiumOpen` / `onMagiumOpen` → `openReader()` is unchanged — a gesture still opens the reader directly.)
+`flipNilOrFalse` (not `flipNilOrTrue`) is the correct helper for a default-OFF
+checkbox — it cycles `nil ↔ false` and pairs with `checked_func → isTrue`
+(Ruling 13; `flipNilOrTrue` is KOReader's *default-ON* helper and never writes
+`true`). The `Dispatcher` action `MagiumOpen` / `onMagiumOpen` → `openReader()`
+is unchanged — a gesture still opens the reader directly.
 
-- [ ] **Step 2: `main.lua` — configure trace in `init()`**
+- [ ] **Step 2: `main.lua` — `_configureTrace()`, called from `openReader()` (NOT `init()`)**
 
 Add `local trace = require("util/trace")` with the other module requires, and `local Version = require("version")`, `local Device = require("device")`, `local time = require("ui/time")`.
 
-At the end of `Magium:init()` (after `self.save` is built):
 ```lua
+function Magium:_configureTrace()
   local on = G_reader_settings:isTrue("magium_trace")
   trace.configure{
     enabled = on,
     writer = on and self:_trace_writer() or nil,
     log = logger.info,
-    clock = function() return math.floor(time.now() * 1000) end,
+    clock = function() return time.to_ms(time.now()) end,
   }
-  trace.event("session", {
-    plugin = "magium",
-    kover = tostring(Version:getNormalizedCurrentVersion()),
-    device = Device.model or "?",
-    ts = os.date("!%Y-%m-%dT%H:%M:%SZ"),
-  })
+  if on then
+    trace.event("session", {
+      plugin = "magium",
+      kover = Version:getCurrentRevision() or tostring(Version:getNormalizedCurrentVersion()),
+      device = Device.model or "?",
+      ts = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+    })
+  end
+end
 ```
-Verify the exact APIs against `../koreader/frontend/`: `Version:getNormalizedCurrentVersion()` (or `getCurrentRevision()`), `Device.model`, `time.now()` (`ui/time` returns seconds as a number). Adjust to what exists; the trace must not throw when logging is off (it won't — `trace.event` returns early) and must not throw when on.
+Call `self:_configureTrace()` as the **first line of `Magium:openReader()`**,
+before `self:_ensureLoaded()` — NOT in `init()` (Ruling 14: `init()` re-runs on
+every FileManager/ReaderUI instantiation, which would open a stray near-empty
+trace file per book open/close and let the prune-to-5 delete the real one). This
+makes the file lazy, honors a mid-session toggle on the next Open, and lands the
+`preload_*` events in the file. `time.now()` returns a fixed-point µs value (not
+seconds) — use `time.to_ms(...)`, verified against `../koreader/frontend/ui/time.lua`.
 
 - [ ] **Step 3: `main.lua` — `_trace_writer()` with prune-to-5**
 
