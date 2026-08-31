@@ -1,7 +1,9 @@
 -- Vendored from rxi/json.lua @ dbf4b2dd2eb7c23be2773c89eb059dadd6436f94 (MIT).
 -- https://github.com/rxi/json.lua  (_version 0.1.2)
 -- Pure Lua 5.1 JSON encode/decode. Used by engine/locale.lua (decode ui.json)
--- and spec/oracle_diff.lua (encode). Upstream file is unmodified below this header.
+-- and spec/oracle_diff.lua (encode). NOT unmodified upstream: a `json.null`
+-- sentinel is added below (2 lines, each marked "LOCAL ADDITION"); everything
+-- else is upstream.
 --
 -- json.lua
 --
@@ -27,6 +29,10 @@
 --
 
 local json = { _version = "0.1.2" }
+
+-- LOCAL ADDITION (not upstream): a sentinel for JSON null in a table slot.
+-- Lua nil in a table just deletes the key; this keeps "present but null".
+json.null = setmetatable({}, { __name = "json.null" })
 
 -------------------------------------------------------------------------------
 -- Encode
@@ -126,6 +132,7 @@ local type_func_map = {
 
 
 encode = function(val, stack)
+  if val == json.null then return "null" end  -- LOCAL ADDITION (not upstream)
   local t = type(val)
   local f = type_func_map[t]
   if f then
