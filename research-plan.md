@@ -1,11 +1,13 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** research phase substantially complete — Phases 0–6 and 8 done
+- **Status:** research phase complete — Phases 0–6 and 8 done
   (approach chosen — [ADR-002](docs/decisions/ADR-002-porting-approach.md);
   roadmap written — [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md));
   **Phase 7 deferred** (personal-use-only scope confirmed by owner —
-  [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)). Awaiting
-  owner review of the roadmap before opening the implementation-design cycle.
+  [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
+  **Implementation-design cycle open** — first spec
+  [`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
+  ([ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md)) in review.
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -143,13 +145,53 @@ proceeds to Phase 8 in the meantime.
 - [x] 8.3 Sequencing / critical path — [`09` §3](docs/research/09-roadmap-effort.md#3-critical-path--parallelism-83): M0→I→II is strictly sequential; III/IV/V (saves/stats/achievements) and VII (i18n) are independent extensions of Phase II's engine, parallelizable or handable to a contributor; VI likely shrinks once scoped against KOReader's own settings.
 - [x] 8.4 Timeline sketch — [`09` §4](docs/research/09-roadmap-effort.md#4-timeline-sketch-84): three named hobby-pace scenarios (5/10/20 hrs·wk⁻¹) against the ~100–162 hr total, since the owner hasn't stated a real weekly-hours figure — explicitly flagged as an assumption to replace.
 - [x] 8.5 Handoff checklist — [`09` §5](docs/research/09-roadmap-effort.md#5-handoff-checklist-85-design-doc-11-exit-criteria): `docs/research/00`–`06`,`09` promoted to `stable` this session (residual real-device-only items explicitly carried into the roadmap, not left unstated); `07` stays `living`, `08` stays a stub by design ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)); every `OQ-NNN` closed, deferred, or now scheduled as roadmap work (see `07`'s new "Phase 8 disposition" note); recommendation already recorded (Phase 6). Two rows genuinely need the owner, not more research: reviewing the roadmap, and approving the implementation-design cycle's start.
-- [x] 8.6 Start a new brainstorming cycle for the implementation design — **prepared, not started**: [`09` §6](docs/research/09-roadmap-effort.md#6-starting-the-implementation-design-cycle-86) describes what it looks like and where it begins (Milestone 0), but per CLAUDE.md no implementation-phase work — including formally opening that cycle — starts without the owner's approval, so this session stops at "ready" rather than unilaterally opening it.
+- [x] 8.6 Start a new brainstorming cycle for the implementation design — **done (session 17, owner-approved):** the cycle is open; deliverable is [`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md) — whole-plugin three-layer architecture + Milestone 0 + Phase I in build-ready detail, phases II–VIII as architectural notes. Layering/widget decisions recorded as [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md). Spec is in review; on approval → writing-plans for an implementation plan.
 
 ---
 
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 17) — implementation-design cycle opened: architecture + Phase I spec (task 8.6)
+
+Owner approved starting the implementation-design cycle (the last open row of
+[`09` §5](docs/research/09-roadmap-effort.md#5-handoff-checklist-85-design-doc-11-exit-criteria)).
+Ran the brainstorming process — architectural path — to a written spec.
+
+- **Clarifying decisions (owner):** (1) design now with a parse-strategy *seam*
+  rather than blocking on Milestone 0; (2) spec depth = Phase I in build-ready
+  detail, phases II–VIII as architecture notes; (3) internal architecture =
+  three-layer, engine-pure (over a two-layer faithful port or deferring the
+  custom widget); (4) reading screen = choices rendered as the final page (over a
+  pinned footer or an on-demand bottom sheet). Owner deferred KOReader/Lua
+  pattern specifics to me.
+- **Wrote [`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md):**
+  the permanent three-layer module map (`engine/` pure Lua + no KOReader deps,
+  desktop-testable against the `magium-dev` oracle; `ui/` KOReader widgets;
+  `save/` thin persistence; `main.lua` glue), the `.koplugin` folder layout, the
+  data-shape contracts (`scene_table`, `render_model`, `page`), the 12-step
+  `scene.render` pipeline port, the `story.lua` eager/lazy seam, the custom
+  fullscreen paginated reader (`ui/reader.lua` + a pure `ui/pagination.lua` with
+  an injected text-measurer), the 4-blob save model with debounced autosave, and
+  **Milestone 0** (on-device parse-timing gate, decision rule ≤1 s → eager else
+  lazy) + **Phase I** (complete engine, `ch1` playable, autosave/resume) with
+  explicit exit criteria. Phases II–VIII each get a "what it adds / what it
+  touches" note so Phase I code is written to accommodate them without rework.
+- **[ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md)** records
+  the three decisions that closed alternatives (layering, custom paginated
+  widget resolving OQ-013, choices-as-final-page). Options B/C for layering and
+  the other two choice-placement options are written up with why they lost.
+- **No implementation code** — per CLAUDE.md, that waits for the spec to be
+  approved and an implementation plan (writing-plans) to be written.
+- Updated `SUMMARY.md` (status, Decisions list, Next steps),
+  `docs/specs/README.md`, `docs/decisions/README.md`, this file (status line,
+  task 8.6 → done, this entry).
+- **Next:** owner reviews the spec. On approval → writing-plans skill to turn
+  Milestone 0 + Phase I into an ordered, checkpointed implementation plan
+  (build order: pure engine + oracle diff first, paginated widget second, glue
+  last). Milestone 0 (2–4 h) is the first concrete implementation action and
+  sets the `story` parse-strategy default.
 
 ### 2026-08-31 (session 16) — Phase 8 done: roadmap + effort + timeline, research phase substantially complete
 

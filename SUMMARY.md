@@ -1,11 +1,12 @@
 # SUMMARY — what we know so far
 
-- **Status:** research phase substantially complete (Phases 0–6 and 8 done;
-  approach chosen, see [ADR-002](docs/decisions/ADR-002-porting-approach.md);
-  roadmap written, see [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md);
-  **Phase 7 deferred** — personal-use-only scope,
-  [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)). Awaiting
-  owner review of the roadmap before the implementation-design cycle opens.
+- **Status:** research phase complete (Phases 0–6, 8 done; Phase 7 deferred —
+  [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
+  **Implementation-design cycle open:** first spec —
+  [`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
+  (architecture + Milestone 0 + Phase I) — **in review**;
+  [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md) records its
+  layering/widget decisions. No implementation code yet.
 - **Last updated:** 2026-08-31
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
@@ -207,10 +208,14 @@ See [`docs/decisions/`](docs/decisions/).
 - [ADR-001](docs/decisions/ADR-001-research-dossier-layout.md) — research organized as a modular dossier (not a single report or a wiki).
 - [ADR-002](docs/decisions/ADR-002-porting-approach.md) — port Magium as a standalone KOReader plugin with a Lua reimplementation of the engine (candidate A), over extending an existing plugin (B), converting to Twine/Ink + an existing player (C), or a build-time hybrid (D).
 - [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md) — defer licensing & redistribution-permission work (Phase 7, OQ-004) until the port is actually being distributed; project is personal-use-only for now.
+- [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md) — plugin internal architecture: three-layer (engine-pure / ui / save), a custom fullscreen paginated reading widget (resolves OQ-013), choices rendered as the final page.
 
 ## Next steps
 
-The research phase is substantially complete. What's left needs the owner,
-not more research: review [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md)
-(the implementation roadmap) and decide whether to open the
-implementation-design cycle it describes — see [`09` §6](docs/research/09-roadmap-effort.md#6-starting-the-implementation-design-cycle-86).
+The implementation-design cycle is open. The first spec —
+[`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
+— covers the whole-plugin architecture plus Milestone 0 and Phase I in
+build-ready detail, and is **in review**. On approval, the next step is an
+implementation plan (writing-plans) for Milestone 0 → Phase I; Milestone 0 (the
+on-device parse-timing measurement, 2–4 h) is the first concrete action and sets
+the `story` parse-strategy default.
