@@ -57,7 +57,7 @@ magium.koplugin/
     locale.lua                      ui.json strings, header(), stat templates               [Task 10]
     specials.lua                    render-time special-case table + apply hooks            [Task 11]
     scene.lua                       the 12-step render() pipeline → render_model            [Task 12]
-    story.lua                       parse-strategy seam: eager + lazy impls                 [Tasks 5,15]
+    story.lua                       parse-strategy seam: eager (lazy seam stubbed, deferred) [Task 5]
 
   ui/
     pagination.lua                  paginate(render_model, geometry, measure_fn) → {pages}  [Task 16]
@@ -77,7 +77,7 @@ magium.koplugin/
     oracle_diff.lua                 render fixtures via engine/scene, diff vs magium-dev    [Task 13]
     support/
       fake_measure.lua              deterministic measure_fn for pagination specs          [Task 16]
-      mem_cache.lua                 in-memory cache_store for story lazy specs             [Task 15]
+      (mem_cache.lua                 — deferred with the lazy strategy, see Task 15)
       fake_writer.lua               in-memory writer for save/manager specs                [Task 19]
     engine/
       parser_conditions_spec.lua                                                          [Task 2]
@@ -90,7 +90,7 @@ magium.koplugin/
       locale_spec.lua                                                                      [Task 10]
       specials_spec.lua                                                                    [Task 11]
       scene_spec.lua                                                                       [Task 12]
-      story_lazy_spec.lua                                                                  [Task 15]
+      (story_lazy_spec.lua           — deferred with the lazy strategy, see Task 15)
     ui/
       pagination_spec.lua                                                                  [Task 16]
     save/
@@ -1003,7 +1003,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Consumes: `require("engine/story")`.
 - Produces: a menu item **"Magium: time parse"** that runs `story:preload()` and logs cold/warm wall-clock. This `main.lua` is discarded in Task 20 — keep it minimal.
 
-Reference: spec §10; the timing pattern from [spike 03 `measure_lua.lua`](../../spikes/03-full-corpus-memory-parse/measure_lua.lua). **Decision rule:** device cold parse ≤ ~1 s → default `strategy = "eager"`; > ~1 s → default `strategy = "lazy"` (`04` §3 row 3).
+Reference: spec §10; the timing pattern from [spike 03 `measure_lua.lua`](../../spikes/03-full-corpus-memory-parse/measure_lua.lua). **Decision rule:** device cold parse ≤ ~1 s → `eager` at launch; > ~1 s → lazy per-chapter cache *or* eager deferred to first open (`04` §3 row 3). **Outcome: 2.2 s → `eager`, deferred to first `openReader()` (owner call — simpler than building the lazy path). Task 15 deferred; Task 20 `PARSE_STRATEGY = "eager"`.**
 
 - [ ] **Step 1: Write `HYPOTHESIS.md`**
 
@@ -2345,185 +2345,24 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-## Task 15: `engine/story.lua` — lazy strategy
+## Task 15: `engine/story.lua` — lazy strategy — **DEFERRED (not Phase I)**
 
-**Files:**
-- Modify: `magium.koplugin/engine/story.lua` (`_build_index`, `_lazy_get`)
-- Create: `magium.koplugin/spec/support/mem_cache.lua`
-- Test: `magium.koplugin/spec/engine/story_lazy_spec.lua`
+**Milestone 0 (Task 6, 2026-08-31)** measured a ~2.2 s device cold parse — over the
+~1 s gate. Rather than build the lazy index + per-chapter disk-cache path now, the
+owner chose the simpler route: **`eager` with `preload()` deferred to the first
+`openReader()` of the session**, behind a `Trapper` progress bar (Task 20). The
+~2.2 s hits once per KOReader session, the first time Magium is opened; every
+open after that is instant; page turns and choices never parse. Resident heap is
+~11.5 MB (spike 03) — a non-issue against ~500 MB free.
 
-**Interfaces:**
-- Consumes: `opts.cache_store` — an object with `get(key) -> table|nil` and `set(key, table)`.
-- Produces: `Story.new{ ..., strategy = "lazy", cache_store = <adapter> }` where `preload` builds a scene-id→file index (line scan) and `get_scene` parses+caches one chapter file on demand, persisting via `cache_store`.
+**What stays for later:** `engine/story.lua` keeps the `strategy` / `cache_store`
+params on `Story.new` and the two erroring stubs (`_build_index` / `_lazy_get`,
+`Story._list_magium` / `Story._file_size`). A later phase (VIII — polish, or
+sooner if the per-session wait ever grates) implements the lazy path against this
+seam and backs `cache_store` with KOReader `Persist`. The `spec/support/mem_cache.lua`
+fake and `story_lazy_spec.lua` come with it then. Spec §7.2 carries the design.
 
-Reference: spec §7.2. Index key `"index-<lang>"`, chapter key `"chapter-<basename>"`. Rebuild index when the `(basename, size)` set changes.
-
-- [ ] **Step 1: Write the in-memory cache**
-
-`magium.koplugin/spec/support/mem_cache.lua`:
-```lua
--- An in-memory cache_store for story_lazy_spec. Mirrors the get/set contract
--- main.lua's Persist-backed adapter will implement.
-local MemCache = {}
-MemCache.__index = MemCache
-
-function MemCache.new()
-  return setmetatable({ store = {}, gets = 0, sets = 0 }, MemCache)
-end
-function MemCache:get(key)
-  self.gets = self.gets + 1
-  return self.store[key]
-end
-function MemCache:set(key, value)
-  self.sets = self.sets + 1
-  self.store[key] = value
-end
-
-return MemCache
-```
-
-- [ ] **Step 2: Write the failing test**
-
-`magium.koplugin/spec/engine/story_lazy_spec.lua`:
-```lua
-local helper = require("spec/spec_helper")
-local Story = require("engine/story")
-local MemCache = require("spec/support/mem_cache")
-
-local DATA_ROOT = helper.data_dir_en:gsub("/en$", "")
-
-describe("Story (lazy)", function()
-  it("builds an index without parsing constructs", function()
-    local cache = MemCache.new()
-    local story = Story.new{
-      data_dir = DATA_ROOT, locale = "en", strategy = "lazy", cache_store = cache,
-    }
-    story:preload()
-    assert.is_not_nil(cache.store["index-en"])
-    assert.are.equal(0, story:count())        -- nothing parsed yet
-  end)
-
-  it("parses a chapter on first get, then serves from memory", function()
-    local cache = MemCache.new()
-    local story = Story.new{
-      data_dir = DATA_ROOT, locale = "en", strategy = "lazy", cache_store = cache,
-    }
-    story:preload()
-    local s1 = story:get_scene("Ch1-Intro1")
-    assert.are.equal("Ch1-Intro1", s1.id)
-    assert.is_true(story:count() >= 12)       -- the whole ch1 file is now resident
-    assert.is_not_nil(cache.store["chapter-ch1.magium"])
-    local sets_after_first = cache.sets
-    story:get_scene("Ch1-Intro2")             -- same file, no new parse/cache write
-    assert.are.equal(sets_after_first, cache.sets)
-  end)
-
-  it("reads a chapter back from the cache_store on a fresh Story", function()
-    local cache = MemCache.new()
-    Story.new{ data_dir = DATA_ROOT, locale = "en", strategy = "lazy", cache_store = cache }
-      :preload():get_scene("Ch1-Intro1")
-
-    local fresh = Story.new{
-      data_dir = DATA_ROOT, locale = "en", strategy = "lazy", cache_store = cache,
-    }
-    fresh:preload()
-    local parse_spy = spy.on(require("engine/parser"), "parse")
-    local s = fresh:get_scene("Ch1-Intro1")
-    assert.are.equal("Ch1-Intro1", s.id)
-    assert.spy(parse_spy).was_not_called()
-    parse_spy:revert()
-  end)
-
-  it("returns nil for an unknown id", function()
-    local story = Story.new{
-      data_dir = DATA_ROOT, locale = "en", strategy = "lazy", cache_store = MemCache.new(),
-    }
-    story:preload()
-    assert.is_nil(story:get_scene("No-Such-Scene"))
-  end)
-end)
-```
-
-- [ ] **Step 3: Run it, verify it fails**
-
-Expected: FAIL — `lazy strategy not built yet (Task 15)`.
-
-- [ ] **Step 4: Implement**
-
-Replace the two stubs in `magium.koplugin/engine/story.lua`:
-```lua
-local function basename(path) return path:match("([^/]+)$") end
-
-function Story:_signature()
-  local files = Story._list_magium(self.dir)
-  local sig = {}
-  for _, f in ipairs(files) do
-    sig[#sig + 1] = basename(f) .. ":" .. tostring(Story._file_size(f))
-  end
-  return table.concat(sig, ";"), files
-end
-
-function Story:_build_index(on_progress)
-  local sig, files = self:_signature()
-  local cached = self.cache_store and self.cache_store:get("index-" .. self.locale)
-  if cached and cached.sig == sig then
-    self.index = cached.map
-    return
-  end
-  local map = {}
-  for i, f in ipairs(files) do
-    local base = basename(f)
-    local fh = assert(io.open(f, "r"))
-    for raw in fh:lines() do
-      if raw:sub(1, 4) == "ID: " then
-        local id = raw:gsub("\r$", ""):sub(5)
-        if map[id] then error("Story: duplicate scene id across files: " .. id) end  -- R9
-        map[id] = base
-      end
-    end
-    fh:close()
-    if on_progress then on_progress(i, #files) end
-  end
-  self.index = map
-  if self.cache_store then
-    self.cache_store:set("index-" .. self.locale, { sig = sig, map = map })
-  end
-end
-
-function Story:_load_chapter(base)
-  if self._loaded_files[base] then return end
-  local key = "chapter-" .. base
-  local parsed = self.cache_store and self.cache_store:get(key)
-  if not parsed then
-    parsed = require("engine/parser").parse(self.dir .. "/" .. base)
-    if self.cache_store then self.cache_store:set(key, parsed) end
-  end
-  for id, scene in pairs(parsed) do self.scenes[id] = scene end
-  self._loaded_files[base] = true
-end
-
-function Story:_lazy_get(id)
-  local base = self.index and self.index[id]
-  if not base then return nil end
-  self:_load_chapter(base)
-  return self.scenes[id]
-end
-```
-
-- [ ] **Step 5: Run it, verify it passes**
-
-```bash
-wsl bash -lc 'cd .../magium.koplugin && busted spec/engine/story_lazy_spec.lua'
-```
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add magium.koplugin/engine/story.lua magium.koplugin/spec/support/mem_cache.lua magium.koplugin/spec/engine/story_lazy_spec.lua
-git commit -m "engine/story: lazy strategy — index + per-chapter cache_store (Task 15)
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
-```
+No work in this task. Proceed to Task 16.
 
 ---
 
@@ -3137,7 +2976,7 @@ wsl bash -lc 'cd ~/koreader && xvfb-run -a ./kodev run --simulate=kindle-paperwh
 ```
 Menu → "Magium: read ch1 intro". **Play chapter 1 to its end:**
 - On the choices page, tap `Excited` → the next scene (`Ch1-Intro2`) renders at page 1 with the "excited" prose branch.
-- Continue through every scene to the end of ch1 (the last scene's choice diverts to `Ch2-...` — that scene won't be in ch1's parse under lazy, but under eager the whole corpus is loaded, so it renders; either way, no crash).
+- Continue through every scene to the end of ch1 (the last scene's choice diverts to `Ch2-...` — eager has the whole corpus loaded, so that scene renders; no crash).
 - `grep -i "error\|traceback\|magium" ~/koreader/koreader/crash.log | tail -20` — clean.
 
 Screenshot the `Ch1-Intro2` excited branch → `docs/spikes/06-ondevice-parse-timing/reader-ch1-branch.png`.
@@ -3370,7 +3209,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: all `engine/*`, `ui/reader`, `save/manager`; KOReader `WidgetContainer`, `UIManager`, `Persist`, `DataStorage`, `Dispatcher`, `Trapper`, `logger`.
-- Produces: the shipping plugin — menu item + Dispatcher action open the reader; `story:preload()` runs off the init hot path; lifecycle events flush the save.
+- Produces: the shipping plugin — menu item + Dispatcher action open the reader; the eager `story:preload()` (~2.2 s) runs on the **first `openReader()`** of the session behind a `Trapper` progress bar (once-guarded — `init()` does no parsing); lifecycle events flush the save.
 
 Reference: spec §6 (glue), §8.1 (choice commit), §9 (flush points), §11.1 (Plugin deliverables); [`03` §1.3, §7](../../research/03-koreader-platform.md) (registration + lifecycle); [spike 04 `main.lua`](../../spikes/04-ui-plugin-skeleton/magium_spike.koplugin/main.lua) (boilerplate shape).
 
@@ -3401,8 +3240,11 @@ local specials = require("engine/specials")
 local Reader = require("ui/reader")
 local SaveManager = require("save/manager")
 
--- Milestone 0 result (Task 6, 2026-08-31): device cold parse ≈ 2.2 s > ~1 s gate → lazy.
-local PARSE_STRATEGY = "lazy"
+-- Milestone 0 (Task 6, 2026-08-31): device cold parse ≈ 2.2 s. Over the ~1 s
+-- gate — but the owner chose `eager` with the parse **deferred to the first
+-- reader-open** (a Trapper progress bar covers the ~2.2 s once per session)
+-- rather than build the lazy/disk-cache path now. See spec §7 + spike 06.
+local PARSE_STRATEGY = "eager"
 
 local Magium = WidgetContainer:extend{ name = "magium", is_doc_only = false }
 
@@ -3423,18 +3265,9 @@ local function state_writer()
   }
 end
 
-local function cache_store()
-  local dir = save_dir() .. "/cache"
-  lfs.mkdir(dir)
-  return {
-    get = function(key)
-      return Persist:new{ path = dir .. "/" .. key, codec = "luajit" }:load()
-    end,
-    set = function(key, value)
-      Persist:new{ path = dir .. "/" .. key, codec = "luajit" }:save(value)
-    end,
-  }
-end
+-- (Milestone 0 chose `eager` + parse-on-first-open, so there is no lazy
+--  disk-cache adapter in Phase I. The `cache_store` seam stays on `Story.new`
+--  for the deferred lazy path — a later phase backs it with `Persist`.)
 
 -- ---- lifecycle ---------------------------------------------------------------
 
@@ -3443,10 +3276,7 @@ function Magium:init()
   self.ui.menu:registerToMainMenu(self)
   self.data_dir = self.path .. "/data"
   self.locale = Locale.load(self.data_dir, "en")
-  self.story = Story.new{
-    data_dir = self.data_dir, locale = "en",
-    strategy = PARSE_STRATEGY, cache_store = cache_store(),
-  }
+  self.story = Story.new{ data_dir = self.data_dir, locale = "en", strategy = PARSE_STRATEGY }
   self.store = Store.new()
   self.save = SaveManager.new{
     store = self.store, writer = state_writer(),
@@ -3454,15 +3284,22 @@ function Magium:init()
     unschedule = function(fn) UIManager:unschedule(fn) end,
     debounce = 8,
   }
-  -- warm the parse off the init hot path
-  UIManager:nextTick(function()
-    Trapper:wrap(function()
-      self.story:preload(function(done, total)
-        Trapper:info(_("Loading Magium… ") .. done .. "/" .. total)
-      end)
-      Trapper:clear()
+  -- NOTE: no parse here. init() runs at KOReader startup for every plugin; the
+  -- ~2.2 s eager parse happens lazily in openReader() the first time the user
+  -- actually opens Magium (Milestone 0 decision).
+end
+
+-- Parse all 54 files once, the first time the reader is opened this session,
+-- behind a Trapper progress bar. Subsequent opens are instant (story is resident).
+function Magium:_ensureLoaded()
+  if self._loaded then return end
+  Trapper:wrap(function()
+    self.story:preload(function(done, total)
+      Trapper:info(string.format("%s %d/%d", _("Loading Magium…"), done, total))
     end)
+    Trapper:clear()
   end)
+  self._loaded = true
 end
 
 function Magium:onDispatcherRegisterActions()
@@ -3482,6 +3319,8 @@ end
 function Magium:onMagiumOpen() self:openReader(); return true end
 
 function Magium:openReader()
+  self:_ensureLoaded()   -- first open this session: ~2.2 s parse behind a progress bar
+
   -- resume, or start fresh
   local resume = self.save:load()
   if not resume or not self.story:get_scene(resume) then
@@ -3529,20 +3368,21 @@ return Magium
 - [ ] **Step 2: Full-playthrough verification in the emulator**
 
 ```bash
-wsl bash -lc 'cd ~/koreader && xvfb-run -a ./kodev run --simulate=kindle-paperwhite --no-build'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh emu-smoke 40'
 ```
-- Menu → More tools → **Magium**. Reader opens on `Ch1-Intro1` (fresh state).
+For an interactive check, deploy + run with a display instead (`mgm.sh emu-deploy` then `mgm.sh emu-run`).
+- Menu → More tools → **Magium**. **First open shows a "Loading Magium… N/54" progress bar for ~1–2 s** (x86; ~2.2 s on device), then the reader opens on `Ch1-Intro1` (fresh state). A second open in the same session is instant (story stays resident).
 - Play chapter 1 to the end, taking a branch at `Ch1-Intro2`.
-- Press `Back` mid-chapter. Reopen **Magium** → it **resumes on the same scene** with the same branch prose.
-- `grep -iE "magium|error|traceback|warn" ~/koreader/koreader/crash.log | tail -30` — no errors, no `Magium: unknown scene` warnings during normal ch1 play.
-- Check the save file exists: `ls -la ~/koreader/koreader/magium/` → `state` present.
+- Press `Back` mid-chapter. Reopen **Magium** → it **resumes on the same scene** with the same branch prose (and no second progress bar).
+- `mgm.sh emu-log 200 | grep -iE "magium|error|traceback|warn"` — no errors, no `Magium: unknown scene` warnings during normal ch1 play.
+- Check the save file exists: `ls -la ~/koreader/koreader-emulator-x86_64-linux-gnu-debug/koreader/magium/` (emulator data dir) → `state` present.
 
 - [ ] **Step 3: Run the whole spec suite**
 
 ```bash
-wsl bash -lc 'cd "/mnt/f/Projects/Magium - Kindle/magium-koreader/magium.koplugin" && busted spec/engine spec/ui spec/save'
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh test'
 ```
-Expected: every spec green.
+Expected: every spec green (`spec/engine`, `spec/ui`, `spec/save`).
 
 - [ ] **Step 4: Commit**
 
@@ -3597,14 +3437,15 @@ Confirm each, on the evidence gathered:
 - [ ] `parser.lua` produces the exact corpus counts, 0 anomalies (Task 4 — re-run).
 - [ ] close + reopen resumes on the same scene + variable state.
 - [ ] `crash.log` clean across a full ch1 playthrough + a resume.
-- [ ] all busted specs pass (`busted spec/engine spec/ui spec/save`).
-- [ ] Milestone 0 `FINDING.md` committed; spec §7.1 default recorded (Task 6).
+- [ ] all busted specs pass (`mgm.sh test`).
+- [ ] Milestone 0 `FINDING.md` committed; spec §7 result recorded (Task 6 — **done**: 2.2 s → eager-deferred-to-first-open, lazy deferred).
 
 - [ ] **Step 6: Record the outcome**
 
-`SUMMARY.md` — add a finding:
+`SUMMARY.md` — add a finding (next free number — 36 and 37 are already the
+Milestone 0 + engine-parity rows added in session 18):
 ```markdown
-| 36 | **Phase I done: Magium chapter 1 plays end-to-end on the Kindle Paperwhite.** Full Lua engine (parser + conditions + stats + store + 12-step render) verified against the magium-dev oracle on all 6 goldens + every ch1 branch (N cases, 0 diffs); custom fullscreen paginated reader (OQ-013 resolved in build); debounced autosave + resume. Milestone 0 measured <N> ms on-device → `story` default `<eager|lazy>`. | high | [spec](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md) §11.2; [spike 06](docs/spikes/06-ondevice-parse-timing/FINDING.md) |
+| 38 | **Phase I done: Magium chapter 1 plays end-to-end on the Kindle Paperwhite.** Full Lua engine verified against the magium-dev oracle on all 6 goldens + every ch1 branch (N cases, 0 diffs); custom fullscreen paginated reader (OQ-013 resolved in build); eager parse deferred to first open (Milestone 0); debounced autosave + resume. | high | [spec](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md) §11.2; SDD ledger |
 ```
 Update `SUMMARY.md` status line: `Phase I (MVP) complete — ch1 playable on-device.`
 
@@ -3635,7 +3476,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 | §3.1 `scene.lua` (12 steps) | 12 |
 | §3.1 `specials.lua` (render-time #1–#4,#6–#8,#12) | 8 (#12), 9 (#6,#7), 11 (#1,#2,#3), 12 (#4 checkpoint), 10 (#8 lock text) |
 | §3.1 `locale.lua` | 10 |
-| §3.1 `story.lua` eager + lazy + cache_store | 5, 15 |
+| §3.1 `story.lua` eager (+ lazy seam stubbed; lazy impl deferred per Milestone 0) | 5 |
 | §3.2 `ui/pagination.lua` | 16 |
 | §3.2 `ui/reader.lua` | 17, 18 |
 | §3.2 `ui/choices.lua` | 18 |
@@ -3659,7 +3500,7 @@ Gaps deliberately deferred (spec §1.2 / §12, not this plan): stats/saves/achie
 ### 2. Placeholder scan
 
 - No "TBD"/"TODO"/"implement later" in task steps. The one `pending(...)` call in Task 14 Step 4 is a real busted primitive (skips gracefully if Task 14's fixtures aren't generated yet), not a plan placeholder.
-- `PARSE_STRATEGY = "lazy"` in Task 20 — Milestone 0 measured ≈ 2.2 s cold on the Kindle (over the ~1 s gate). `lazy` is now load-bearing for Phase I, so Task 15 + Task 20's `cache_store` adapter are on the launch hot path.
+- `PARSE_STRATEGY = "eager"` in Task 20 — Milestone 0 measured ≈ 2.2 s cold on the Kindle. Owner chose `eager` with `preload()` deferred to the first `openReader()` (Trapper progress bar) over building the lazy path. **Task 15 is deferred out of Phase I**; the `cache_store` adapter is not built; `story.lua`'s lazy stubs stay (erroring) for a later phase.
 - Every code step has a full code block. Every test step has real assertions.
 - Task 17's `reader.lua` lists helper methods in a comment then defines every one below it — verified each referenced method (`_zone`, `_header_height`, `_indicator_height`, `_head_offset`, `_build_header`, `_build_indicator`, `_build_page`, `_render`, `_turn`) has a body.
 

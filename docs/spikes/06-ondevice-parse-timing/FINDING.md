@@ -1,6 +1,6 @@
 # Finding — Spike 06 (on-device parse-timing gate, Milestone 0)
 
-- **Status:** stable — measured on the owner's Kindle Paperwhite 12th gen, 2026-08-31. **Verdict: `story` default = `lazy`** (cold parse ≈ 2.2 s, over the ~1 s gate).
+- **Status:** stable — measured on the owner's Kindle Paperwhite 12th gen, 2026-08-31. **Verdict: `story` = `eager`, `preload()` deferred to the first reader-open** (cold parse ≈ 2.2 s is over the ~1 s gate; owner chose deferred-eager over building the lazy path). Lazy strategy (Task 15) deferred out of Phase I.
 - **Last updated:** 2026-08-31
 - **Phase:** Implementation — Milestone 0
 - **Sources:** this spike's harness = [`../../../magium.koplugin/main.lua`](../../../magium.koplugin/main.lua) (temporary; Task 20 replaces it) driving [`engine/story.lua`](../../../magium.koplugin/engine/story.lua) `strategy="eager"` → [`engine/parser.lua`](../../../magium.koplugin/engine/parser.lua); emulator run via `tools/mgm.sh emu-smoke 35` on **LuaJIT 2.1** in `koreader-emulator-x86_64-linux-gnu-debug` (KOReader v2026.07.1, `9192014`), this session's x86_64 container — **not** the Kindle
@@ -75,42 +75,45 @@ Deployed via MTP (Kindle PW12 has no USB-mass-storage — it presents as an MTP/
 device). 69 runtime files (`_meta.lua`, `main.lua`, `engine/**`, `data/en/**`);
 `spec/` excluded.
 
-## Decision rule
+## Decision rule → outcome
 
-| Device cold parse | `story` default `strategy` |
-|---|---|
-| ≤ ~1 s | `eager` — parse all 54 files at launch behind a `Trapper` progress bar (spec §7.1) |
-| > ~1 s | `lazy` — scene-id→file index + per-chapter disk cache (spec §7.2) |
+| Device cold parse | Options | Outcome |
+|---|---|---|
+| ≤ ~1 s | `eager` at launch | — |
+| > ~1 s | `lazy` (scene-id index + per-chapter disk cache, spec §7.2) **or** `eager` deferred to the first reader-open | **2.2 s → `eager`, deferred to first `openReader()`** |
 
 Threshold rationale: [`04` §3 row 3](../../research/04-constraints-budget.md#3-budget-table-33).
-Both implementations ship regardless; this only picks the default (a plugin
-setting flips it).
 
-**Verdict: `story` default `strategy = "lazy"`.** The device cold parse is
-**≈ 2.2 s** — more than double the ~1 s gate. Parsing all 54 files at launch
-would freeze the plugin for ~2 s every time it opens (and warm re-parse barely
-helps, so a "parse once per session" shortcut buys nothing). `lazy` — scan every
-file's `ID:` lines for a scene-id→file index at launch (milliseconds), then parse
-+ disk-cache one chapter file on first access (spec §7.2) — is the default.
-`eager` still ships and a plugin setting flips to it (e.g. for a desktop build,
-or if a future device is faster).
+**Verdict: `story` = `eager`, `preload()` deferred to the first
+`Magium:openReader()` of the KOReader session, behind a `Trapper` progress bar.**
 
-Follow-ups this result creates:
-- **Task 15 (lazy strategy) is now load-bearing for Phase I**, not just "also
-  shipped". Its `cache_store` adapter (Persist-backed in `main.lua`, Task 20) is
-  on the launch hot path.
-- Even lazy's *first* `get_scene` for a chapter parses that whole file
-  (~10–30 ms on device for ch1's 27 KB, extrapolating 2.2 s / 7.6 MB). Fine for
-  a page turn; the `b3ch4a.magium` 490 KB file (OQ-011) would be ~30 ms to parse
-  and is cached after — measure in Phase VIII if it ever feels slow.
-- `Story.new{strategy="eager"}` under `Trapper` with a progress bar (spec §7.1)
-  is not needed for the Phase I default, but keep it wired for the setting.
+The device cold parse is **≈ 2.2 s** — over the ~1 s gate. `lazy` would make the
+launch invisible but costs the index + per-chapter `Persist`-cache path (~150
+lines, on the launch hot path). The owner chose the simpler route: with `eager`
+the ~2.2 s parse just moves to *"the first time you open Magium this session"*
+(a progress bar, not a freeze), then every open after that is instant and the
+story stays resident for the session (~11.5 MB heap — a non-issue). **Page turns
+and choices never parse** either way — that was the real concern, and it holds.
 
-## What was done (owner, 2026-08-31)
+Consequences:
+- **Task 15 (lazy strategy) is deferred out of Phase I.** `engine/story.lua`
+  keeps the `strategy` / `cache_store` params and the two erroring stubs
+  (`_build_index` / `_lazy_get`) for a later phase (spec §7.2, §12 Phase VIII).
+- `main.lua` (Task 20): `init()` does **no** parsing; `Magium:_ensureLoaded()`
+  (once-guarded) runs `story:preload()` under `Trapper` on the first
+  `openReader()`. No `cache_store` adapter.
+- If the once-per-session ~2.2 s wait ever grates, the deferred `lazy` path is
+  the fix — it slots into the same seam.
 
-Controller deployed `magium.koplugin/` to the Kindle over MTP, owner restarted
-KOReader three times + tapped the menu item, controller pulled `crash.log` over
-MTP and recorded the numbers above.
+## What was done (2026-08-31)
+
+Controller deployed the runtime files (`_meta.lua`, `main.lua`, `engine/**`,
+`data/en/**` — `spec/` excluded) to `koreader/plugins/magium.koplugin/` over MTP
+(Kindle PW12 presents as an MTP/WPD device, no drive letter). Owner disconnected
+USB, restarted KOReader three times and tapped ≡ → More tools → "Magium: time
+parse". Controller reconnected, pulled `koreader/crash.log` over MTP, recorded
+the numbers above. Plugin loaded clean — no traceback, no `MAGIUM parse (init)
+failed` line.
 
 ## Confidence
 

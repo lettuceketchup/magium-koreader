@@ -176,15 +176,24 @@ on branch `feat/magium-plugin-phase-i`, fresh subagent per task + two-stage revi
   `set(v_x, 1)` (space) where the corpus + `parser.js` use `set(v_x,1)`, and its R3
   multi-digit assertion was dead code — both fixed in the plan and the code.
 - **Task 6 (Milestone 0) — DONE.** Harness built; deployed to the owner's Kindle over
-  MTP; **on-device cold parse ≈ 2.2 s** (2282 / 2215 / 2186 ms, three restarts) — over
-  the ~1 s gate → **`story` default `strategy = "lazy"`** (spec §7, ADR-002; emulator
-  x86 was 411 ms, ~5.6× faster). `docs/spikes/06-ondevice-parse-timing/FINDING.md`
-  Status = stable, confidence high. Lazy is now load-bearing for Phase I (Task 20's
-  `cache_store` adapter + Task 15 on the launch hot path).
-- **Next:** Tasks 7–15 (conditions, store, stats, locale, specials, scene render, oracle
-  diff, ch1 fixtures, lazy story) then 16–20 (pagination, reader widget, choices, save,
-  main.lua wiring). Owner checkpoints remain at Milestone 0 (device parse timing) and
-  Phase I exit (Task 21, ch1 playable on-device).
+  MTP; **on-device cold parse ≈ 2.2 s** (2282 / 2215 / 2186 ms, three restarts; emulator
+  x86 411 ms, ~5.6× faster). Over the ~1 s gate — **owner chose `eager` with `preload()`
+  deferred to the first reader-open** (Trapper progress bar; ~2.2 s once per KOReader
+  session, then instant; page turns/choices never parse) over building the lazy
+  index+disk-cache path. **Task 15 (lazy strategy) deferred out of Phase I**; the
+  `story.lua` lazy stubs stay for a later phase. spec §7 + `docs/spikes/06-…/FINDING.md`
+  (stable, high confidence) updated; plan Task 20 `PARSE_STRATEGY = "eager"`.
+- **Progress (2026-08-31, session 18):** Tasks 1–13 done + reviewed clean; the engine
+  (parser + conditions + store + stats + locale + specials + 12-step render) is
+  oracle-validated 6/6 on the first integrated run. Task 6 (Milestone 0) done —
+  device measured, `eager`-deferred-to-first-open chosen, **Task 15 deferred**.
+  Three plan defects were caught and fixed against the `magium-dev` source during
+  review (`_match_set` comma format, the `v_ac_` freeze semantics, the stat-check
+  key→label swap).
+- **Next:** Task 14 (ch1 branch-matrix oracle diff) → 16 (pagination, pure) → 17–18
+  (the fullscreen reader widget + choices) → 19 (autosave/resume) → 20 (`main.lua`
+  wiring, eager `preload` deferred to first open) → 21 (**owner:** on-device ch1
+  playthrough + Phase I exit checklist). Task 15 (lazy) is now a Phase VIII item.
 
 ### 2026-08-31 (session 17) — implementation-design cycle opened: architecture + Phase I spec (task 8.6)
 
