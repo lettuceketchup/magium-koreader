@@ -1,6 +1,6 @@
 # 00 — Overview
 
-- **Status:** draft
+- **Status:** stable (Phase 0 complete 2026-08-31; device/problem facts unchanged through Phases 1–8)
 - **Last updated:** 2026-08-31
 - **Phase:** 0 (Baseline & setup)
 - **Sources:** project brief (2026-08-31); [design doc](../superpowers/specs/2026-08-31-magium-koreader-research-design.md); device: Amazon.in ASIN [B0DKTZ6592](https://www.amazon.in/All-new-Amazon-Kindle-Paperwhite/dp/B0DKTZ6592); [blog.the-ebook-reader.com 12th-gen specs](https://blog.the-ebook-reader.com/2024/10/16/new-12th-gen-kindle-paperwhite-specs-and-features-summary/); [goodereader 12th-gen review](https://goodereader.com/blog/electronic-readers/amazon-kindle-paperwhite-12th-generation-e-reader-review-2024); [KOReader Kindle install wiki](https://github.com/koreader/koreader/wiki/Installation-on-Kindle-devices)

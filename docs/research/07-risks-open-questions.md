@@ -49,6 +49,16 @@ They split into two groups:
   cost), OQ-013 (pagination widget). All have named mitigations already and
   are Phase 8 (roadmap) inputs, not open feasibility risks.
 
+**Phase 8 disposition:** none of these four are answerable on paper — each
+needs either real device time or actual code — so [`09-roadmap-effort.md`](09-roadmap-effort.md)
+schedules them as concrete implementation work rather than leaving them
+open-ended: OQ-001's tail is Milestone 0 (a pre-flight on-device parse-timing
+gate, before Phase I starts); OQ-013 is resolved by design in Phase I (the
+custom pagination widget is built from the start, not bolted on later);
+OQ-007 and OQ-011 are Phase VIII (polish) line items. This satisfies the
+design doc §11 exit criterion ("every OQ-NNN closed or explicitly deferred
+with a reason") for these rows without overstating them as closed.
+
 ## How to use
 
 - Add a row when a question arises. Assign the next `OQ-NNN`.

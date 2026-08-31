@@ -1,7 +1,9 @@
 # 05 — Prior art & contacts map
 
-- **Status:** draft (tasks 4.1–4.5 complete from web research 2026-08-31; 4.6 —
-  outreach prepared but not sent, see §6)
+- **Status:** stable (tasks 4.1–4.5 complete from web research 2026-08-31; 4.6's
+  outreach drafts remain prepared but intentionally unsent — deferred with
+  OQ-004 under [ADR-003](../decisions/ADR-003-defer-licensing-distribution.md),
+  not a gap, see §6)
 - **Last updated:** 2026-08-31
 - **Phase:** 4
 - **Sources:** web search + fetch, 2026-08-31 — KOReader GitHub, MobileRead

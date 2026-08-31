@@ -1,9 +1,11 @@
 # SUMMARY — what we know so far
 
-- **Status:** in-progress (Phases 0–6 done; approach chosen, see
-  [ADR-002](docs/decisions/ADR-002-porting-approach.md); **Phase 7 deferred**
-  — personal-use-only scope, [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md);
-  Phase 8 next)
+- **Status:** research phase substantially complete (Phases 0–6 and 8 done;
+  approach chosen, see [ADR-002](docs/decisions/ADR-002-porting-approach.md);
+  roadmap written, see [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md);
+  **Phase 7 deferred** — personal-use-only scope,
+  [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)). Awaiting
+  owner review of the roadmap before the implementation-design cycle opens.
 - **Last updated:** 2026-08-31
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
@@ -53,7 +55,14 @@ confirmed this is a **personal hobby project for use on their own device
 only, with no near-term distribution intent** — so Phase 7 (licensing &
 permissions) and OQ-004 outreach are **deferred** until that changes, not
 pursued now ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
-Phase 8 (roadmap/effort) is next.
+**Phase 8 (roadmap/effort) is now done** — see
+[`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md): a phased
+implementation roadmap for candidate A (Milestone 0 pre-flight → 8 build
+phases), effort bands totaling **~100–162 hrs**, critical-path/parallelism
+analysis, and a handoff checklist. The research phase is now substantially
+complete — every exit criterion is met except the two that need the owner
+directly: reviewing the roadmap, and approving the start of the
+implementation-design cycle.
 
 <details>
 <summary>Earlier reads (Phases 0–5), superseded by the Phase 6 decision above</summary>
@@ -139,6 +148,9 @@ setup or the real Kindle.
 | 30 | **Candidate D (build-time preprocess) is a real second-place option, not a strawman — same parity ceiling as A — but its rationale is undercut by Phase 5's own measurements.** D exists to avoid a slow runtime parse; spikes 02/03 measured the full 54-file corpus parsing in 112–205 ms under two LuaJIT builds, close to the original 95–130 ms V8/desktop anchor, not the order-of-magnitude-worse case D was scoped against. D also adds a standing cost A doesn't have: a build pipeline to write and a second, self-designed format to keep in sync with every upstream `.magium` update. | high | [`06`](docs/research/06-approach-comparison.md) §1–2 |
 | 31 | **No open question changes the A/B/C/D ranking.** Every still-open `OQ-NNN` narrows an implementation detail inside candidate A (pagination widget chrome, parse-strategy trigger, one outlier condition's mitigation, e-ink redraw tuning) rather than threatening the choice of A itself. | high | [`06` §3](docs/research/06-approach-comparison.md#3-blocking-open-questions-63), [`07`](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6) |
 | 32 | **Project scope confirmed: personal hobby project, owner's own device, no near-term distribution.** OQ-004 (redistribution permission) and OQ-005 (license) — and Phase 7 generally — are **deferred**, not pursued, until the owner is actually considering sharing the port. Neither blocks Phase 8 or any implementation phase; nothing about Phases 0–6's technical findings changes. | high | [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md) |
+| 33 | **Full roadmap for candidate A bands to ~100–162 hrs** across a pre-flight parse-timing gate (Milestone 0) and eight build phases (MVP → full story/nav → saves → stats → achievements → settings → i18n → polish). The two widest-uncertainty items are Phase I's custom fullscreen pagination widget (no KOReader prior art does "fullscreen + paginated" together — OQ-013) and Phase VIII's on-device tuning (e-ink feel/OQ-007, condition-outlier cost/OQ-011) — both flagged as the best-targeted spots for community help. Everything else is closer to mechanical, oracle-checked translation. | medium | [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md) §1–2 |
+| 34 | **Saves, stats, and achievements (roadmap phases III–V) are mutually independent extensions of the same variable engine, and localization (phase VII) depends only on the full-corpus/navigation phase (II)** — three real opportunities to parallelize implementation work or hand off to a contributor, not a strictly linear build order. | high | [`09`](docs/research/09-roadmap-effort.md) §3 |
+| 35 | **The three still-open OQs that survived Phase 6 (OQ-001's parse-time tail, OQ-007, OQ-011) plus OQ-013 are not researchable further on paper** — each needs real device time or actual code. Phase 8 resolved this by scheduling them as concrete roadmap work (a pre-flight gate for OQ-001; built into Phase I by design for OQ-013; Phase VIII line items for OQ-007/OQ-011) rather than leaving them open-ended, satisfying the design doc's "closed or explicitly deferred with a reason" exit criterion for every remaining row. | high | [`09`](docs/research/09-roadmap-effort.md) §5, [`07`](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6) |
 
 ## Open questions
 
@@ -154,6 +166,11 @@ note](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6).
 **OQ-013** (pagination widget), **OQ-007** (e-ink feel), **OQ-001**'s
 parse-time tail, and **OQ-011** (490 KB condition cost) all feed Phase 8's
 roadmap as scoped implementation-phase work, not open feasibility risk.
+**Phase 8** ([`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md)):
+made that concrete — each of the four now has a specific roadmap slot
+(Milestone 0 / Phase I / Phase VIII) rather than sitting open-ended, which is
+what "explicitly deferred with a reason" means for questions that need real
+device time or actual code, not more research.
 
 <details>
 <summary>Earlier open-questions summary (Phases 0–5), superseded by the Phase 6 note above</summary>
@@ -190,3 +207,10 @@ See [`docs/decisions/`](docs/decisions/).
 - [ADR-001](docs/decisions/ADR-001-research-dossier-layout.md) — research organized as a modular dossier (not a single report or a wiki).
 - [ADR-002](docs/decisions/ADR-002-porting-approach.md) — port Magium as a standalone KOReader plugin with a Lua reimplementation of the engine (candidate A), over extending an existing plugin (B), converting to Twine/Ink + an existing player (C), or a build-time hybrid (D).
 - [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md) — defer licensing & redistribution-permission work (Phase 7, OQ-004) until the port is actually being distributed; project is personal-use-only for now.
+
+## Next steps
+
+The research phase is substantially complete. What's left needs the owner,
+not more research: review [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md)
+(the implementation roadmap) and decide whether to open the
+implementation-design cycle it describes — see [`09` §6](docs/research/09-roadmap-effort.md#6-starting-the-implementation-design-cycle-86).
