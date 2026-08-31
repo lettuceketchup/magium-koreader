@@ -29,8 +29,12 @@
 #   oracle-diff-lua <args..>  luajit spec/oracle_diff.lua <args..> from the plugin
 #                       dir, with the oracle live for the duration
 #   emu-deploy          symlink magium.koplugin into the built emulator
-#   emu-run             xvfb-run kodev run (kindle-paperwhite, no rebuild)
-#   emu-log [N]         tail N lines of the emulator crash.log (default 80)
+#   emu-run             xvfb-run kodev run (kindle-paperwhite, no rebuild) — blocks
+#   emu-smoke [SECS]    deploy + launch headless for SECS (default 25), kill it,
+#                       then dump the run log + any magium/error/traceback lines.
+#                       KOReader logger output goes to STDOUT (captured), not
+#                       crash.log — crash.log only fills on an actual crash.
+#   emu-log [N]         tail N lines of the last emu-smoke run log (default 80)
 #   kindle-tag          print the koreader checkout's tag/commit
 #
 # NOTE: WSL kills a `wsl.exe <cmd>` invocation's whole process tree on return,
@@ -124,8 +128,44 @@ case "$cmd" in
     [ -d "$KO" ] || die "no $KO"
     cd "$KO" && exec xvfb-run -a ./kodev run --simulate=kindle-paperwhite --no-build
     ;;
+  emu-smoke)
+    secs="${1:-25}"
+    [ -d "$EMU/koreader/plugins" ] || die "emulator not built ($EMU)"
+    if [ -d "$PLUGIN" ]; then
+      ln -sfn "$PLUGIN" "$EMU/koreader/plugins/magium.koplugin"
+      echo "mgm: deployed $PLUGIN"
+    fi
+    : > /tmp/magium-emu.log
+    # Pass a directory so the emulator lands in FileManager (where a
+    # is_doc_only=false plugin loads) rather than restoring a last-opened doc.
+    ( cd "$KO" && timeout $((secs + 15)) xvfb-run -a ./kodev run \
+        --simulate=kindle-paperwhite --no-build "$EMU/koreader" ) >/tmp/magium-emu.log 2>&1 &
+    bg=$!
+    echo "mgm: emulator launched headless, waiting ${secs}s ..."
+    sleep "$secs"
+    pkill -f "reader.lua" 2>/dev/null
+    pkill -f "koreader-emulator-x86" 2>/dev/null
+    kill "$bg" 2>/dev/null
+    sleep 2
+    pkill -9 -f "reader.lua" 2>/dev/null; pkill -9 -f "Xvfb" 2>/dev/null
+    wait "$bg" 2>/dev/null
+    echo
+    echo "=== run log: magium / error / traceback / warning ==="
+    grep -inE "magium|error|traceback|warning|luajit" /tmp/magium-emu.log | tail -60 \
+      || echo "(no matching lines)"
+    echo
+    echo "=== run log tail (last 25 lines) ==="
+    tail -25 /tmp/magium-emu.log
+    echo
+    if [ -s "$EMU/koreader/crash.log" ]; then
+      echo "=== crash.log IS NON-EMPTY (a crash happened) ==="
+      tail -40 "$EMU/koreader/crash.log"
+    else
+      echo "=== crash.log empty (no crash) ==="
+    fi
+    ;;
   emu-log)
-    tail -n "${1:-80}" "$EMU/koreader/crash.log"
+    tail -n "${1:-80}" /tmp/magium-emu.log
     ;;
   kindle-tag)
     git -C "$KO" describe --tags --always
