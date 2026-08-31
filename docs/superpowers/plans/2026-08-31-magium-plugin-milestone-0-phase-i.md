@@ -1984,9 +1984,15 @@ function M.render(scene_table, view, locale)
   end
 
   -- assemble render_model
+  -- statChecksToDisplay (renderers.js:70, utils.js:195) swaps the varToStat KEY
+  -- for the localized label, EXCEPT the raw v_b3_ch1_unlock sentinel. Our
+  -- stats.stat_checks_to_display returns the KEY; do the swap here.
   local out_checks = {}
   for _, sc in ipairs(raw_checks) do
-    out_checks[#out_checks + 1] = { success = sc.success, text = locale:stat_check_text(sc) }
+    local var = sc.variable
+    if var ~= "v_b3_ch1_unlock" then var = locale:str(var) end
+    local text = locale:stat_check_text{ variable = var, value = sc.value, success = sc.success }
+    out_checks[#out_checks + 1] = { success = sc.success, text = text }
   end
   local out_setvars = {}
   for _, sv in ipairs(set_vars) do
