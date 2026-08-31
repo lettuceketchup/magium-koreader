@@ -86,15 +86,25 @@ function Magium:init()
       }
       UIManager:show(reader)
       logger.info("[MAGIUM] reader: " .. #reader.pages .. " pages")
+      -- step() self-reschedules and runs later inside UIManager's task loop,
+      -- i.e. OUTSIDE the outer pcall. Tasks 18-19 rewrite reader.lua with this
+      -- scaffold still present, so a deterministic throw here must not reach the
+      -- crash handler (on device: restart re-runs init() -> same throw ->
+      -- crash-loop). Guard each step and stop rescheduling on failure.
       local function step()
-        logger.info("[MAGIUM] reader page " .. reader.page_idx .. "/" .. #reader.pages
-          .. " kind=" .. reader.pages[reader.page_idx].kind)
-        if reader.page_idx < #reader.pages then
-          reader:onNextPage()
-          UIManager:scheduleIn(0.4, step)
-        else
-          reader:onClose()
-          logger.info("[MAGIUM] reader: walked all pages, closed")
+        local step_ok, step_err = pcall(function()
+          logger.info("[MAGIUM] reader page " .. reader.page_idx .. "/" .. #reader.pages
+            .. " kind=" .. reader.pages[reader.page_idx].kind)
+          if reader.page_idx < #reader.pages then
+            reader:onNextPage()
+            UIManager:scheduleIn(0.4, step)
+          else
+            reader:onClose()
+            logger.info("[MAGIUM] reader: walked all pages, closed")
+          end
+        end)
+        if not step_ok then
+          logger.warn("[MAGIUM] reader auto-drive step failed: " .. tostring(step_err))
         end
       end
       UIManager:scheduleIn(0.4, step)
