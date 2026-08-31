@@ -1,6 +1,9 @@
 # SUMMARY — what we know so far
 
-- **Status:** in-progress (Phases 0–5 done; **Phase 6 done** — approach chosen, see [ADR-002](docs/decisions/ADR-002-porting-approach.md); Phase 7 next)
+- **Status:** in-progress (Phases 0–6 done; approach chosen, see
+  [ADR-002](docs/decisions/ADR-002-porting-approach.md); **Phase 7 deferred**
+  — personal-use-only scope, [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md);
+  Phase 8 next)
 - **Last updated:** 2026-08-31
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
@@ -38,16 +41,19 @@ fallback ([`04` §4](docs/research/04-constraints-budget.md#4-runtime-parsing-vs
 — pending a real on-device ARM timing measurement (OQ-001's tail), which
 Phase 8 should schedule as an early implementation-phase gate.
 
-**Nothing here is blocking on an open question.** Every remaining open
-`OQ-NNN` narrows an implementation detail *inside* Option A (the pagination
-widget, e-ink redraw tuning, the 490 KB condition's mitigation, the
-parse-strategy gate) rather than threatening the choice itself — see
-[`06` §3](docs/research/06-approach-comparison.md#3-blocking-open-questions-63) /
+**Nothing here is blocking on an open question, or on the project at all.**
+Every remaining open `OQ-NNN` narrows an implementation detail *inside*
+Option A (the pagination widget, e-ink redraw tuning, the 490 KB condition's
+mitigation, the parse-strategy gate) rather than threatening the choice
+itself — see [`06` §3](docs/research/06-approach-comparison.md#3-blocking-open-questions-63) /
 [`07`'s blocking-status note](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6).
-**OQ-004** (does the family's permission extend to a further port?) remains
-the one item that blocks the *project* — public distribution — regardless of
-which approach was picked, and is worth pursuing in parallel with Phase 7/8
-rather than after them.
+**OQ-004** (does the family's permission extend to a further port?) and
+**OQ-005** (license) would matter for public distribution, but the owner has
+confirmed this is a **personal hobby project for use on their own device
+only, with no near-term distribution intent** — so Phase 7 (licensing &
+permissions) and OQ-004 outreach are **deferred** until that changes, not
+pursued now ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
+Phase 8 (roadmap/effort) is next.
 
 <details>
 <summary>Earlier reads (Phases 0–5), superseded by the Phase 6 decision above</summary>
@@ -131,18 +137,21 @@ setup or the real Kindle.
 | 28 | **`TextViewer` is the wrong final widget for the reading screen — a custom fullscreen, paginated widget is the better direction.** Owner review of spike 04's screenshots (2026-08-31) caught what source-reading alone had missed: `TextViewer` defaults to a padded dialog (`screen_w/h − 30px`, rounded frame, titlebar + close button, `textviewer.lua:107-108,469-474`) — not fullscreen, despite `03-koreader-platform.md`'s earlier (now corrected) claim that it is — and its prose area (`ScrollTextWidget`) is continuous-scroll with no page-number/pagination concept. Neither gap is unique to this spike's choice: `frotz.koplugin`'s `GameView` (the other cited prior art) is fullscreen but also scrolls. No KOReader prior art surveyed so far does "fullscreen + paginated" together — that combination needs a small custom widget (buildable on `TextBoxWidget`'s existing line/height measurement API, per `03` §3), which is new work, not a reuse. Tracked as **new OQ-013**, feeding Phase 6 (approach comparison) and Phase 8 (roadmap) rather than reopening Phase 5. | high | [spike 04](docs/spikes/04-ui-plugin-skeleton/FINDING.md), [`07` OQ-013](docs/research/07-risks-open-questions.md) |
 | 29 | **Candidates B and C fail for structural reasons, not close calls.** Phase 4 already showed neither has anything real to build on — no existing KOReader plugin plays CYOA content to extend (B, OQ-003/F-30), no e-ink/KOReader player exists for whatever `.magium` gets converted into (C, F-27). Phase 6's scored decision matrix confirms this holds even scoring B and C generously on every other axis: weighted totals A 95, D 70, B 53, C 47 (out of 100) — [`06` §2](docs/research/06-approach-comparison.md#2-decision-matrix-62). | high | [`06`](docs/research/06-approach-comparison.md) §1–2 |
 | 30 | **Candidate D (build-time preprocess) is a real second-place option, not a strawman — same parity ceiling as A — but its rationale is undercut by Phase 5's own measurements.** D exists to avoid a slow runtime parse; spikes 02/03 measured the full 54-file corpus parsing in 112–205 ms under two LuaJIT builds, close to the original 95–130 ms V8/desktop anchor, not the order-of-magnitude-worse case D was scoped against. D also adds a standing cost A doesn't have: a build pipeline to write and a second, self-designed format to keep in sync with every upstream `.magium` update. | high | [`06`](docs/research/06-approach-comparison.md) §1–2 |
-| 31 | **No open question changes the A/B/C/D ranking.** Every still-open `OQ-NNN` narrows an implementation detail inside candidate A (pagination widget chrome, parse-strategy trigger, one outlier condition's mitigation, e-ink redraw tuning) rather than threatening the choice of A itself. OQ-004 (redistribution permission) is the one item that blocks the *project* going forward, independent of which approach was picked. | high | [`06` §3](docs/research/06-approach-comparison.md#3-blocking-open-questions-63), [`07`](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6) |
+| 31 | **No open question changes the A/B/C/D ranking.** Every still-open `OQ-NNN` narrows an implementation detail inside candidate A (pagination widget chrome, parse-strategy trigger, one outlier condition's mitigation, e-ink redraw tuning) rather than threatening the choice of A itself. | high | [`06` §3](docs/research/06-approach-comparison.md#3-blocking-open-questions-63), [`07`](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6) |
+| 32 | **Project scope confirmed: personal hobby project, owner's own device, no near-term distribution.** OQ-004 (redistribution permission) and OQ-005 (license) — and Phase 7 generally — are **deferred**, not pursued, until the owner is actually considering sharing the port. Neither blocks Phase 8 or any implementation phase; nothing about Phases 0–6's technical findings changes. | high | [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md) |
 
 ## Open questions
 
 Tracked in [`docs/research/07-risks-open-questions.md`](docs/research/07-risks-open-questions.md)
 (OQ-001 … OQ-013). Closed: OQ-003, OQ-006, OQ-010. Mostly resolved: OQ-001, OQ-008,
-OQ-009, OQ-012. **Phase 6:** none of the remaining open questions block the
-approach decision (all narrow an implementation detail inside the chosen
-candidate A) — see the table above and [`07`'s blocking-status
+OQ-009, OQ-012. **Deferred (not pursued for now):** OQ-004 (redistribution
+permission), OQ-005 (license) — personal-use-only scope,
+[ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md). **Phase 6:**
+none of the remaining open questions block the approach decision (all narrow
+an implementation detail inside the chosen candidate A) — see the table above
+and [`07`'s blocking-status
 note](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6).
-**OQ-004** (redistribution permission) is the one item blocking the project
-overall; **OQ-013** (pagination widget), **OQ-007** (e-ink feel), **OQ-001**'s
+**OQ-013** (pagination widget), **OQ-007** (e-ink feel), **OQ-001**'s
 parse-time tail, and **OQ-011** (490 KB condition cost) all feed Phase 8's
 roadmap as scoped implementation-phase work, not open feasibility risk.
 
@@ -180,3 +189,4 @@ See [`docs/decisions/`](docs/decisions/).
 
 - [ADR-001](docs/decisions/ADR-001-research-dossier-layout.md) — research organized as a modular dossier (not a single report or a wiki).
 - [ADR-002](docs/decisions/ADR-002-porting-approach.md) — port Magium as a standalone KOReader plugin with a Lua reimplementation of the engine (candidate A), over extending an existing plugin (B), converting to Twine/Ink + an existing player (C), or a build-time hybrid (D).
+- [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md) — defer licensing & redistribution-permission work (Phase 7, OQ-004) until the port is actually being distributed; project is personal-use-only for now.

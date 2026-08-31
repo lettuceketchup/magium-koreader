@@ -1,6 +1,9 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phases 0–5 done; **Phase 6 done** (approach chosen — [ADR-002](docs/decisions/ADR-002-porting-approach.md)); Phase 7 next
+- **Status:** active — Phases 0–6 done (approach chosen —
+  [ADR-002](docs/decisions/ADR-002-porting-approach.md)); **Phase 7 deferred**
+  (personal-use-only scope confirmed by owner —
+  [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)); Phase 8 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -111,6 +114,13 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 
 ## Phase 7 — Licensing & permissions
 
+**DEFERRED (2026-08-31, [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)):**
+project scope confirmed as personal use on the owner's own device only, no
+near-term distribution intent. This phase only matters once distribution is
+actually being considered — not dropped, just not run now. Revisit before
+any public release. Phase 8 does not depend on this phase, so research
+proceeds to Phase 8 in the meantime.
+
 **Goal:** know what license the port must use and what redistribution is allowed.
 **Deliverable:** `docs/research/08-licensing.md`, `LICENSE`, an ADR.
 
@@ -130,7 +140,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 - [ ] 8.2 Effort band per phase (e.g. S/M/L or hour ranges). Calibrate to: experienced generalist programmer new to Lua (fast ramp) and new to the KOReader API (the real ramp — carry a premium on KOReader-facing work) + targeted community help. State assumptions.
 - [ ] 8.3 Sequencing / critical path; what unblocks what; what can be parallelised or handed to a contributor.
 - [ ] 8.4 Timeline sketch under a stated weekly-hours assumption.
-- [ ] 8.5 Handoff checklist (design doc §11 exit criteria): confirm all `docs/research/*` are `stable`, every `OQ` closed or deferred, recommendation recorded.
+- [ ] 8.5 Handoff checklist (design doc §11 exit criteria): confirm all `docs/research/*` are `stable` or explicitly deferred with a reason (`08-licensing.md` stays a stub by design — [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)), every `OQ` closed or deferred, recommendation recorded.
 - [ ] 8.6 Start a new brainstorming cycle for the implementation design.
 
 ---
@@ -138,6 +148,54 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 15) — scope clarified: personal use only; licensing deferred (ADR-003)
+
+The owner clarified project scope right after Phase 6 closed: this is a
+**personal hobby project for use on their own Kindle only** — no near-term
+plan to distribute or share it. "The rest can be figured out after the
+project is complete" — i.e. licensing and redistribution permission are
+questions for later, not now.
+
+- This directly touched a claim made in session 14: ADR-002's consequences
+  section had said OQ-004 "should be pursued in parallel with Phase 7/8,"
+  and `research-plan.md`/`SUMMARY.md`/`06`/`07` all pointed at Phase 7 as
+  next. That's now wrong given the actual scope, so it needed correcting
+  everywhere it was stated, not just noted once.
+- **Wrote [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md):**
+  defers Phase 7 (`08-licensing.md`, `LICENSE`, its own ADR) and **OQ-004**
+  (redistribution permission) until the owner is actually considering
+  distributing the port — not dropped (the contacts map + three unsent
+  outreach drafts in [`05` §5–6](docs/research/05-prior-art.md#5-contacts-map-45)
+  stay ready), just not pursued now. Explicitly does **not** touch
+  [ADR-002](docs/decisions/ADR-002-porting-approach.md)'s actual Decision
+  (candidate A) — only supersedes its consequences-section sequencing claim
+  about OQ-004.
+- **Propagated the correction** rather than leaving it in one place:
+  - [`07-risks-open-questions.md`](docs/research/07-risks-open-questions.md):
+    OQ-004 and OQ-005 Blocking? → "no — deferred," with the reason; rewrote
+    the "Blocking status after Phase 6" section (added last session) so it
+    no longer calls OQ-004 "the one item worth prioritizing now."
+  - [`06-approach-comparison.md`](docs/research/06-approach-comparison.md)
+    §3's blocking-OQ table and the paragraph under it — corrected from
+    "should be resolved... in parallel with or before Phase 8" to "deferred,
+    Phase 8 proceeds without waiting on it."
+  - `SUMMARY.md` — recommendation section, finding 31 (dropped its now-wrong
+    OQ-004 clause), new finding 32 recording the scope decision, the open-
+    questions summary paragraph, status line, Decisions list.
+  - `research-plan.md` — status line, Phase 7 section header marked
+    **DEFERRED** with the reason and a pointer to proceed to Phase 8
+    (dependency-checked: Phase 8 depends only on Phase 6, confirmed in its
+    own header), task 8.5's handoff-checklist wording.
+  - [`08-licensing.md`](docs/research/08-licensing.md) and the governing
+    [design doc](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
+    §11 exit criteria — short notes added pointing to ADR-003, so "all nine
+    docs stable" no longer reads as silently unmet; the doc itself stays a
+    stub, not filled in, per the instruction to ignore this for now.
+- **No code changed, no actual licensing research done** — that was the
+  point: this session recorded a scope decision and fixed every place it
+  was already contradicted, not started Phase 7 work.
+- **Next:** Phase 8 (roadmap, effort, timeline → `09-roadmap-effort.md`).
 
 ### 2026-08-31 (session 14) — Phase 6 done: approach chosen, ADR-002
 

@@ -19,3 +19,4 @@ Record here, so the reasoning survives after the decision looks obvious.
 |---|---|---|
 | [001](ADR-001-research-dossier-layout.md) | Research organized as a modular dossier | Accepted |
 | [002](ADR-002-porting-approach.md) | Port Magium as a standalone KOReader plugin with a Lua engine | Accepted |
+| [003](ADR-003-defer-licensing-distribution.md) | Defer licensing & redistribution-permission work until after the port is functionally complete | Accepted |

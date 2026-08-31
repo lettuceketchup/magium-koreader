@@ -1,10 +1,16 @@
 # 08 — Licensing & permissions
 
-- **Status:** stub (not started)
+- **Status:** stub (deferred — see note below)
 - **Last updated:** 2026-08-31
-- **Phase:** 7
+- **Phase:** 7 (deferred)
 - **Sources:** `../magium-dev/LICENSE` (MIT), `../magium-recrystallized/LICENSE` (AGPL-3.0), https://github.com/raduprv/Magium, https://github.com/koreader/koreader/blob/master/COPYING, Magium Discord
-- **Related:** [`../decisions/`](../decisions/) (license ADR), [`07-risks-open-questions.md`](07-risks-open-questions.md) OQ-004, OQ-005
+- **Related:** [`../decisions/`](../decisions/) (license ADR), [`07-risks-open-questions.md`](07-risks-open-questions.md) OQ-004, OQ-005, [`../decisions/ADR-003-defer-licensing-distribution.md`](../decisions/ADR-003-defer-licensing-distribution.md)
+
+> **Deferred (2026-08-31, [ADR-003](../decisions/ADR-003-defer-licensing-distribution.md)):**
+> project scope confirmed as personal use on the owner's own device only, no
+> near-term distribution plan. This doc stays a stub — not filled in — until
+> distribution is actually being considered; not dropped, just not run yet.
+> The groundwork below (sources, related OQs) is left in place for then.
 
 > Goal: know what license the port must adopt and what redistribution of code and
 > story text is permitted, before any public release.
