@@ -17,8 +17,10 @@
 #
 # Commands:
 #   env                 print toolchain versions
-#   test [busted-args]  run busted from magium.koplugin/ (default: whole suite)
-#   test-engine [args]  run only spec/engine (pure, fastest)
+#   test [busted-args]  run busted from magium.koplugin/ (no args = whole suite;
+#                       for one file: `mgm.sh test spec/engine/foo_spec.lua`)
+#   test-engine         run `busted spec/engine` (pure layer, fastest) — takes NO
+#                       path args; use `test <path>` for a single file
 #   lua <file> [args]   run luajit from magium.koplugin/
 #   diff <args...>      oracle-diff.js <args...>, with the oracle auto-started
 #                       around the call and torn down after (file-only subcommands
@@ -87,7 +89,10 @@ case "$cmd" in
     ;;
   test-engine)
     [ -d "$PLUGIN/spec/engine" ] || die "no spec/engine/ yet"
-    cd "$PLUGIN" && exec busted spec/engine "$@"
+    if [ -n "${1:-}" ] && [ "${1#-}" = "$1" ]; then
+      die "test-engine takes no path args (busted would double-scan). Use: mgm.sh test $*"
+    fi
+    cd "$PLUGIN" && exec busted spec/engine "$@"   # "$@" here is only flags, if any
     ;;
   lua)
     [ -n "${1:-}" ] || die "usage: mgm.sh lua <file> [args]"
