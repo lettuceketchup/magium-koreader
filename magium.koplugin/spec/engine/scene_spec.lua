@@ -51,6 +51,13 @@ describe("scene.render — oracle parity (offline goldens)", function()
   local function read(p) local f = io.open(p, "r"); if not f then return nil end
     local s = f:read("*a"); f:close(); return s end
 
+  -- string->string map equality, both directions.
+  local function same_map(a, b)
+    for k, v in pairs(a) do if b[k] ~= v then return false end end
+    for k, v in pairs(b) do if a[k] ~= v then return false end end
+    return true
+  end
+
   it("matches every committed ch1 golden", function()
     local cases_raw = read("../reference/tools/oracle-cases-ch1.json")
     if not cases_raw then pending("run Task 14 to generate ch1 fixtures"); return end
@@ -58,23 +65,65 @@ describe("scene.render — oracle parity (offline goldens)", function()
     local scenes = parser.parse("./data/en/ch1.magium")
     local loc = Locale.load("./data", "en")
     local mismatches = {}
+    local found = 0
     for _, case in ipairs(cases) do
       local golden_raw = read("../reference/tools/oracle-capture/" .. case.name .. ".json")
       if golden_raw then
+        found = found + 1
         local view = {}
         for k, v in pairs(case.vars or {}) do view[k] = v end
         view.v_current_scene = case.sceneId
         local rm = sc.render(scenes[case.sceneId], view, loc)
         local golden = json.decode(golden_raw)
-        -- compare the fields the port owns
+
+        if rm.scene_id ~= golden.sceneId then
+          mismatches[#mismatches + 1] = case.name .. " sceneId"
+        end
+        if rm.checkpoint ~= golden.checkpoint then
+          mismatches[#mismatches + 1] = case.name .. " checkpoint"
+        end
+        -- scene.lua and the oracle normalize prose identically for ch1 (the live
+        -- 96/96 pass proves it) — safe to compare text here. NOT statChecks/header
+        -- text: the live differ re-normalizes both sides for those.
         if table.concat(rm.paragraphs, "\1") ~= table.concat(golden.paragraphs, "\1") then
           mismatches[#mismatches + 1] = case.name .. " paragraphs"
         end
+
         if #rm.choices ~= #golden.choices then
           mismatches[#mismatches + 1] = case.name .. " choice count"
+        else
+          for i = 1, #rm.choices do
+            local rc, gc = rm.choices[i], golden.choices[i]
+            if rc.target ~= gc.target then
+              mismatches[#mismatches + 1] = case.name .. " choices[" .. i .. "].target"
+            end
+            -- golden JSON null decodes to an absent key; normalize both sides.
+            if (rc.special or json.null) ~= (gc.special or json.null) then
+              mismatches[#mismatches + 1] = case.name .. " choices[" .. i .. "].special"
+            end
+            if not same_map(rc.set_variables or {}, gc.setVariables or {}) then
+              mismatches[#mismatches + 1] = case.name .. " choices[" .. i .. "].setVariables"
+            end
+          end
+        end
+
+        if #rm.achievements ~= #golden.achievements then
+          mismatches[#mismatches + 1] = case.name .. " achievement count"
+        else
+          for i = 1, #rm.achievements do
+            local ra, ga = rm.achievements[i], golden.achievements[i]
+            if ra.variable ~= ga.variable then
+              mismatches[#mismatches + 1] = case.name .. " achievements[" .. i .. "].variable"
+            end
+            if ra.text ~= ga.text then
+              mismatches[#mismatches + 1] = case.name .. " achievements[" .. i .. "].text"
+            end
+          end
         end
       end
     end
+    -- a referenced golden that fails to resolve must FAIL, not silently skip.
+    assert.are.equal(#cases, found)
     assert.are.same({}, mismatches)
   end)
 end)
