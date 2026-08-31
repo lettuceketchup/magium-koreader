@@ -29,16 +29,18 @@ related [`OQ-NNN`](../research/07-risks-open-questions.md).
 
 ## Index
 
-Run 2026-08-31 (session 11). Folder numbering reflects build order, not the
-A/B/C/D letters above — see each `HYPOTHESIS.md` for which planned spike it
-answers.
+Run 2026-08-31 (session 11, extended in session 12 once this session's
+KOReader-emulator build blocker was resolved — see
+[`04-ui-plugin-skeleton/FINDING.md`](04-ui-plugin-skeleton/FINDING.md)).
+Folder numbering reflects build order, not the A/B/C/D letters above — see
+each `HYPOTHESIS.md` for which planned spike it answers.
 
 | Folder | Answers | Verdict | Confidence |
 |---|---|---|---|
-| [`02-engine-in-lua/`](02-engine-in-lua/) | Spike B | **confirmed** — 6/6 oracle-diff match + full 54-file structural parity | high |
-| [`03-full-corpus-memory-parse/`](03-full-corpus-memory-parse/) | Spike D | **confirmed (partial)** — memory ~11.5 MB (desktop LuaJIT); parse-time and true on-device numbers still need real hardware; emulator build blocked by this session's network policy | medium (memory) / low (on-device parse time, unchanged) |
+| [`02-engine-in-lua/`](02-engine-in-lua/) | Spike B | **confirmed** — 6/6 oracle-diff match + full 54-file structural parity, re-confirmed under koreader-base's own bundled LuaJIT | high |
+| [`03-full-corpus-memory-parse/`](03-full-corpus-memory-parse/) | Spike D | **confirmed (partial)** — memory ~11.5 MB (both stock and koreader-base-bundled LuaJIT); parse-time (112–205 ms desktop x86) and the true on-device ARM number still need real hardware | medium (memory) / low (on-device parse time, unchanged) |
 | [`05-magium-to-ink/`](05-magium-to-ink/) | Spike C | **confirmed for fidelity, with named gaps** — conditions/stats/set() convert to Ink losslessly; achievements/`special:` hooks/cross-chapter nav don't (expected, documented) | medium-high |
-| [`04-ui-plugin-skeleton/`](04-ui-plugin-skeleton/) | Spike A | **blocked** — plugin code written and API-grounded, never run (same emulator-build block as spike 03); UI-feel judgment (OQ-002/OQ-007) stays open, owner-only | n/a — not run |
+| [`04-ui-plugin-skeleton/`](04-ui-plugin-skeleton/) | Spike A | **confirmed (functional half)** — a working `kodev` emulator build was obtained in this session (see FINDING.md for how the earlier network blocker was resolved); the plugin loads and both hard-coded scenes render correctly with real prose + a real choice list, no errors, screenshotted. The perceptual e-ink-feel half of OQ-002/OQ-007 is unaffected — that always needed the real device or the owner's WSL2 build, emulator or not | high (widget fit, functional) / n/a (e-ink feel, still owner-only) |
 
 Spike E (task 5.5) was not run: no Phase 3 🟡/🔴 came out of these four
 spikes needing a dedicated follow-up measurement beyond what they already

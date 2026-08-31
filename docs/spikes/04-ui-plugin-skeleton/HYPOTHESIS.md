@@ -1,6 +1,6 @@
 # Spike 04 — UI plugin skeleton (widget fit)
 
-- **Status:** blocked — code written, not run (see FINDING.md)
+- **Status:** run — widget-fit confirmed under a real KOReader build; e-ink feel still needs the device (see FINDING.md)
 - **Last updated:** 2026-08-31
 - **Phase:** 5 (task 5.1, "Spike A")
 - **Sources:** `../../../../koreader/plugins/hello.koplugin/main.lua`,
@@ -10,8 +10,8 @@
 - **Related:** [`../../research-plan.md`](../../research-plan.md) task 5.1,
   [`OQ-002`](../research/07-risks-open-questions.md), [`OQ-007`](../research/07-risks-open-questions.md),
   [`03-koreader-platform.md` §3](../research/03-koreader-platform.md#3-ui-toolkit-inventory-23),
-  [spike 03's egress-block finding](../03-full-corpus-memory-parse/FINDING.md#blocked-could-not-get-a-real-koreader-environment-number)
-  (same blocker hits this spike), [`FINDING.md`](FINDING.md)
+  [`FINDING.md`](FINDING.md) (includes how the earlier "cloud session can't
+  build the emulator" blocker was resolved)
 
 ## Question
 
@@ -41,16 +41,22 @@ rather than assumed from the docstring alone.
 
 The "judge: widget fit / refresh feel / navigation" part of the question is
 an **inherently human, on-device, e-ink perceptual call** — no amount of
-source-reading or code-writing substitutes for someone tapping through it
-on the actual Paperwhite. That was true before this session started, and
-this spike doesn't change it. What this session *could* still have added —
-a run inside the `kodev` emulator, confirming the code at least loads and
-renders without crashing, functional correctness short of the feel
-judgment — turned out to be blocked too (see FINDING.md), for the same
-network-egress reason spike 03 hit trying to build that same emulator.
+source-reading, code-writing, or even a real emulator run on a non-e-ink
+display substitutes for someone tapping through it on the actual
+Paperwhite. That was true before this session started, and it's still
+true after: a build was eventually gotten working in this cloud session
+(see FINDING.md — the earlier "blocked" state was a fixable download-fetch
+problem, not a fundamental one), and it confirmed the *functional* half —
+the plugin loads, the widgets accept this data shape, both hard-coded
+scenes render correctly with real prose and a real choice list, navigation
+between them works — but SDL renders instantly on a desktop/Xvfb display
+either way, so the *feel* half was never obtainable from this environment,
+emulator or not.
 
-So this spike delivers a **reviewable, source-grounded design artifact**:
-real widget choice, real API shapes, real story content, wired end-to-end —
-but genuinely **not run**, at any level, in this session. That's a
-materially weaker result than spikes 02/03/05, and it's reported as such
-rather than blurred.
+So this spike now delivers two separate things: a **reviewable,
+source-grounded design artifact** (real widget choice, real API shapes,
+real story content, wired end-to-end) *and*, as of the later pass, a
+**functional confirmation under the real KOReader v2026.07.1 runtime**
+(loads, renders, no errors, screenshotted). What it still can't deliver —
+by nature, not by this session's limitations — is the e-ink perceptual
+judgment; that stays with the owner.

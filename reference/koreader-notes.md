@@ -80,6 +80,22 @@ side) and it loads on the next `kodev run`.
 **Alternatives** (not needed now): the `koreader/virdevenv` Docker image; or
 `--appimage-extract` a released Linux AppImage for pure-Lua frontend work.
 
+**Cloud/remote Claude Code session variant:** the recipe above assumes normal
+unrestricted internet access. A cloud session's egress policy blocks
+`github.com/*/archive/*` (GitHub's dynamic tarball-from-ref endpoint, used by
+`./kodev fetch-thirdparty` for ~17 of koreader-base's thirdparty C libraries)
+for repos outside the session's attached scope, while allowing plain
+`git clone` and `github.com/*/releases/download/*` — see
+[`setup-koreader-cloud-session.sh`](setup-koreader-cloud-session.sh) (same
+steps as above, plus a small patch —
+[`koreader-base-thirdparty-git-fetch.patch`](koreader-base-thirdparty-git-fetch.patch)
+— swapping those 17 fetches for `git clone` at the same tag) and
+[`07` OQ-012](../docs/research/07-risks-open-questions.md)'s Phase 5 note.
+Verified working end-to-end 2026-08-31 in such a session, headless via
+`xvfb-run -a ./kodev run --simulate=kindle-paperwhite --no-build` (no real
+display, so no e-ink refresh simulation either way — see
+[spike 04](../docs/spikes/04-ui-plugin-skeleton/FINDING.md)).
+
 ## On-device debugging (the real target)
 
 USB copy the plugin to `koreader/plugins/` on the Kindle, restart KOReader, read

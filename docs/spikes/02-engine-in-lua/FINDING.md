@@ -125,6 +125,13 @@ one; that risk is unaffected by this spike and stays open for the real
 implementation phase to work through case-by-case, not exhaustively
 re-spiked here.
 
+**Re-confirmed twice more the same day**, in a fresh container re-run of
+this session (6/6, stock apt LuaJIT) and again under koreader-base's own
+bundled LuaJIT once a working `./kodev build` was obtained (6/6 — see
+[`../03-full-corpus-memory-parse/FINDING.md`](../03-full-corpus-memory-parse/FINDING.md#update-later-pass-same-day-got-a-real-koreader-base-luajit-number-after-all)) —
+the port's correctness doesn't depend on which container or which LuaJIT
+build runs it.
+
 ## Next step
 
 Feeds Phase 6 directly: this is the strongest evidence yet for approach A/D
@@ -133,5 +140,7 @@ Feeds Phase 6 directly: this is the strongest evidence yet for approach A/D
 open: the 490 KB condition outlier's *runtime cost* under this same
 `apply_conditions` implementation (OQ-011 — would need `b3ch4a.magium`
 included in a future spike's file list, deliberately out of scope for this
-one) and the KOReader-widget side of things (spike A, blocked this session
-— see [`../04-ui-plugin-skeleton/FINDING.md`](../04-ui-plugin-skeleton/FINDING.md)).
+one) and the e-ink-feel half of the KOReader-widget side of things (spike A
+— now actually run and functionally confirmed, see
+[`../04-ui-plugin-skeleton/FINDING.md`](../04-ui-plugin-skeleton/FINDING.md);
+only the on-device perceptual judgment is still open).

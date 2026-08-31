@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phases 0–4 done; Phase 5 mostly done (spikes B/C/D confirmed, spike A blocked — see below); Phase 6 next
+- **Status:** active — Phases 0–4 done; **Phase 5 done** (all 4 spikes confirmed — see below); Phase 6 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -91,10 +91,10 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Deliverable:** `docs/spikes/*` (each: `HYPOTHESIS.md`, code, `FINDING.md`), feeding Phase 6.
 **Depends on:** Phases 1 and 2.
 
-- [~] 5.1 Spike A — **UI feel:** fork the simplest existing plugin, hard-code one Magium scene (prose + 3 choices), render it on the Paperwhite, wire the choices to swap to another hard-coded scene. Judge: does the widget model fit? refresh feel? navigation? — [`docs/spikes/04-ui-plugin-skeleton/`](docs/spikes/04-ui-plugin-skeleton/): plugin code written, API-grounded against real `v2026.07.1` source, **never run** (KOReader emulator build blocked in this session — see 5.4). Widget-fit/feel judgment stays open for the owner on real hardware (or the already-working WSL2 emulator).
+- [x] 5.1 Spike A — **UI feel:** fork the simplest existing plugin, hard-code one Magium scene (prose + 3 choices), render it on the Paperwhite, wire the choices to swap to another hard-coded scene. Judge: does the widget model fit? refresh feel? navigation? — [`docs/spikes/04-ui-plugin-skeleton/`](docs/spikes/04-ui-plugin-skeleton/): plugin code written, API-grounded against real `v2026.07.1` source, **and actually run** — a working `kodev` emulator build was obtained in this session (see FINDING.md for how the earlier network-egress block on GitHub thirdparty tarballs was resolved: swap the ~17 archive-tarball fetches for `git clone` at the same tag). Both hard-coded scenes render correctly under the real KOReader runtime with zero errors, screenshotted. **Widget fit: confirmed.** Refresh feel/e-ink perceptual judgment (necessarily unanswerable from any non-e-ink display, emulator included) stays open for the owner on real hardware.
 - [x] 5.2 Spike B — **engine in Lua:** port `apply_condition`/`apply_conditions` + the scene parser for a 3-scene slice to Lua. Feed identical variable states to it and to `magium-dev`; diff the resulting text + choice list. — [`docs/spikes/02-engine-in-lua/`](docs/spikes/02-engine-in-lua/): **6/6 oracle-diff match** across 4 scenes/3 files (exceeds the planned 3-scene slice, reusing the existing fixture set); full 54-file structural parity confirmed as a bonus in 5.4. One real Lua-vs-JS pattern-syntax bug found+fixed (`%w` excludes `_`).
 - [x] 5.3 Spike C — **format conversion:** write a `.magium` → Twee (or Ink) converter for one chapter; try the output in an existing player (desktop first, then on-device if a player exists). Judge conversion fidelity for conditions/stats. — [`docs/spikes/05-magium-to-ink/`](docs/spikes/05-magium-to-ink/): `ch1.magium` (12 scenes) → Ink, compiled + played via `inkjs/full` (in-process JS compiler, no `inklecate`/.NET needed). Conditions/`set()` convert losslessly (verified against the oracle goldens); achievements/`special:` hooks/cross-chapter nav have no Ink primitive (documented, expected — doesn't change Phase 4's approach-C read since no e-ink Ink player exists regardless).
-- [x] 5.4 Spike D — **memory:** load all 54 files' text (and/or the fully parsed story) into memory on-device; watch RAM via KOReader's tools. Confirms/kills the "parse everything up front" approach. — [`docs/spikes/03-full-corpus-memory-parse/`](docs/spikes/03-full-corpus-memory-parse/): **not on-device** (see below) — desktop LuaJIT: full 54-file parse = **11.54 MB** heap delta (lower than the ~17.4 MB V8 estimate), **112–128 ms** parse time (same order of magnitude as the V8 anchor). Structural counts (2159 scenes/4880 paragraphs/3734 choices/594 `set()`) match the JS baseline exactly — a strong full-corpus fidelity check on spike B's port. **Blocked:** attempted building the `kodev` emulator in this cloud session to get a real on-device-equivalent number; `./kodev fetch-thirdparty`'s GitHub tarball downloads returned 403 under this session's network egress policy (confirmed non-transient via the proxy's own diagnostics, not retried) — a cloud/remote agent session cannot build the emulator, independent of CPU architecture. Real device or the owner's already-working WSL2 build remain the only ways to close the on-device number.
+- [x] 5.4 Spike D — **memory:** load all 54 files' text (and/or the fully parsed story) into memory on-device; watch RAM via KOReader's tools. Confirms/kills the "parse everything up front" approach. — [`docs/spikes/03-full-corpus-memory-parse/`](docs/spikes/03-full-corpus-memory-parse/): **not on-device, but now under koreader-base's own bundled LuaJIT** (see below) — desktop LuaJIT (stock apt package): full 54-file parse = **11.54 MB** heap delta (lower than the ~17.4 MB V8 estimate), **112–128 ms** parse time; re-run under koreader-base's bundled build (`LuaJIT 2.1.1783773675`, from a working `./kodev build` obtained later this session) once fixed: **11.48 MB**, **184–205 ms** — both agree with the stock-LuaJIT run within noise. Structural counts (2159 scenes/4880 paragraphs/3734 choices/594 `set()`) match the JS baseline exactly under both — a strong full-corpus fidelity check on spike B's port. The initial attempt to build the `kodev` emulator in this cloud session hit a 403 on GitHub thirdparty-tarball downloads and was reported as an unconditional block; that was too broad — see [`docs/spikes/04-ui-plugin-skeleton/FINDING.md`](docs/spikes/04-ui-plugin-skeleton/FINDING.md) for the fix (git-clone the ~17 affected libs at the same tag instead of downloading their archive tarball) and [`reference/setup-koreader-cloud-session.sh`](reference/setup-koreader-cloud-session.sh) for the reproducible recipe. Still not the Kindle's ARM core — that gap is unchanged, only the *desktop* number's provenance improved.
 - [-] 5.5 Spike E (only if a yellow/red from Phase 3 needs it) — not run: nothing from 5.1–5.4 surfaced a new 🟡/🔴 needing a dedicated follow-up measurement.
 - [x] 5.6 Write up each spike's verdict and roll the findings into `SUMMARY.md`. — done this session (see running log + `docs/spikes/README.md` index).
 
@@ -138,6 +138,90 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 12) — Phase 5 closed: spike A run for real, emulator-build blocker resolved
+
+Picked up where session 11 left off, in a **fresh cloud session/container**
+(the sibling checkouts — `../magium-dev`, `../koreader`, `../magium-recrystallized`
+— don't persist between sessions; re-cloned all three at their previously
+recorded commit hashes and confirmed they matched exactly). Prompted to
+finish Phase 5, with a note that this session's network access might be
+less restricted than session 11's.
+
+- **Re-verified reproducibility first:** re-ran spikes 02 (6/6 oracle-diff
+  match), 03 (11.17 MB / 148–188 ms, consistent with session 11's numbers),
+  and 05 (Ink conversion + playthrough) in the fresh container before
+  touching anything new — all three held up unchanged, confirming session
+  11's results weren't container-specific flukes.
+- **Investigated session 11's "cloud sessions can't build the KOReader
+  emulator" conclusion rather than accepting it at face value**, since the
+  prompt flagged network access as possibly different now. Found the
+  conclusion was **too broad**: `curl`-testing individual URL patterns
+  showed plain `git clone` of any public GitHub repo works (confirmed via
+  `add_repo` too — it reports anonymous git reads as already available),
+  and `github.com/*/releases/download/*` (published release assets) also
+  return 200. Only `github.com/*/archive/*` / `codeload.github.com`
+  (GitHub's dynamic "zip the tree at this ref" endpoint) returns 403 for
+  repos outside this session's attached scope — confirmed via the JSON
+  error body naming the repo-scope policy.
+- **Fixed it**: of koreader-base's ~50 thirdparty C-library dependencies,
+  17 fetch a GitHub archive tarball (blocked) and ~13 fetch a GitHub
+  release asset (not blocked, no change needed); the rest are non-GitHub
+  hosts (also not blocked). Patched the 17 archive-based ones — plus 3 more
+  found only once the build got further (`lua-term`, `lua_cliargs`,
+  `mediator_lua`, luarocks "spec" test deps) — to fetch via `git clone` at
+  the same tag instead, using the build system's own already-existing
+  `DOWNLOAD GIT` mechanism (same one `luajit`'s `CMakeLists.txt` already
+  used unmodified). Content-identical to the archive download: GitHub's
+  archive endpoint is just a zip of the git tree at that ref. Full patch:
+  [`reference/koreader-base-thirdparty-git-fetch.patch`](reference/koreader-base-thirdparty-git-fetch.patch);
+  reproducible recipe (apt prereqs, ninja/make version bump — same Ubuntu
+  24.04 issue session 8's WSL2 setup hit, built from git source instead of
+  a blocked GitHub release zip — clone, patch, build):
+  [`reference/setup-koreader-cloud-session.sh`](reference/setup-koreader-cloud-session.sh).
+- **`./kodev build` succeeded end to end** — all ~50 thirdparty libraries
+  (LuaJIT 2.1, MuPDF, HarfBuzz, FreeType, Tesseract, SDL3, ...) compiled,
+  then `koreader` itself linked. Ran headless via `xvfb-run -a ./kodev run
+  --simulate=kindle-paperwhite --no-build` — starts cleanly, loads every
+  bundled plugin plus spike 04's `magium_spike.koplugin` dropped into
+  `plugins/`, exits 0, zero errors in the log.
+- **Spike A (04-ui-plugin-skeleton) actually run for the first time.**
+  Instrumented a deployed copy (not the committed spike source) to
+  auto-open on startup and call `Screen:shot()`, confirming both
+  hard-coded scenes (`Ch1-Intro1`/`Ch1-Intro2`) render correctly — real
+  prose, correct "Book 1 - Chapter 1" header, working `buttons_table`
+  choice row, clean navigation between them, zero Lua errors. Screenshots
+  saved: [`docs/spikes/04-ui-plugin-skeleton/screenshots/`](docs/spikes/04-ui-plugin-skeleton/screenshots/).
+  This closes the **functional** half of OQ-002 (widget fit: confirmed,
+  not just structurally argued) — the **perceptual** half (OQ-007, e-ink
+  refresh feel) is unaffected and stays open, since no non-e-ink display
+  (this container's Xvfb included) was ever going to answer it.
+- Re-ran spikes 02 and 03's parsers under koreader-base's own bundled
+  LuaJIT (`2.1.1783773675`, distinct from the stock-apt build used
+  earlier) once the build succeeded: 6/6 oracle match and 11.48 MB / 184–
+  205 ms respectively — both agree with the earlier stock-LuaJIT numbers,
+  reinforcing that neither result is an artifact of which LuaJIT build ran
+  it. Still desktop x86, still not the Kindle's ARM core — that gap is
+  unchanged.
+- Updated [`docs/spikes/04-ui-plugin-skeleton/`](docs/spikes/04-ui-plugin-skeleton/)
+  (FINDING.md + HYPOTHESIS.md, rewritten around the actual run),
+  [`docs/spikes/03-full-corpus-memory-parse/FINDING.md`](docs/spikes/03-full-corpus-memory-parse/FINDING.md)
+  (adds the koreader-base-LuaJIT numbers, corrects the "cloud sessions
+  can't build the emulator" over-generalization), and
+  [`docs/spikes/02-engine-in-lua/FINDING.md`](docs/spikes/02-engine-in-lua/FINDING.md)
+  (notes the re-confirmation), [`docs/spikes/README.md`](docs/spikes/README.md)
+  index, `SUMMARY.md`, [`07`](docs/research/07-risks-open-questions.md)
+  (OQ-002 narrowed to functional-confirmed/perceptual-open; OQ-007
+  unchanged in substance but reworded; OQ-012's cloud-session note
+  corrected from "can't" to "can, with a documented fetch patch").
+- **Phase 5 status: done.** All four planned spikes reached a terminal,
+  evidence-based verdict; the one still-open thread (OQ-007's e-ink feel)
+  was never closable from any non-e-ink environment and is correctly
+  scoped to the owner, not a gap in this phase's work.
+- **Next:** Phase 6 (approach comparison & recommendation) — nothing in
+  this session's results changes the direction Phase 3/4/5 were already
+  pointing; if anything, spike A's actual run removes the last piece of
+  "argued from source, not observed" hedging around the UI layer.
 
 ### 2026-08-31 (session 11) — Phase 5: 3 of 4 spikes confirmed, 1 blocked by session network policy
 
