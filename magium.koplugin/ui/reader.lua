@@ -18,11 +18,12 @@ local VerticalSpan = require("ui/widget/verticalspan")
 local Screen = Device.screen
 local pagination = require("ui/pagination")
 local refresh = require("ui/refresh")
+local Choices = require("ui/choices")
 
 local Reader = InputContainer:extend{
   render_model = nil,
   locale = nil,
-  on_choice = nil,   -- function(button)
+  advance = nil,     -- function(button) -> new render_model (caller-supplied, Task 18)
   on_close = nil,    -- function()
   covers_fullscreen = true,
   page_idx = 1,
@@ -60,17 +61,24 @@ function Reader:init()
     prose_height = self.dimen.h - header_h - indicator_h - 2 * self.pad - 2 * Size.padding.large,
     first_page_offset = self:_head_offset(),
   }
-  self.pages = pagination.paginate(self.render_model, self.geometry, function(text, w)
-    local tb = TextBoxWidget:new{ text = text, face = self.face, width = w }
-    local h = tb:getSize().h
-    tb:free()
-    -- _build_page() appends one Size.padding.default VerticalSpan after every
-    -- block; fold it into the measurement so the budget stays honest.
-    return h + Size.padding.default
-  end)
+  self.pages = pagination.paginate(self.render_model, self.geometry, self:_measure_fn())
   self.page_idx = 1
   self:_render()
   UIManager:setDirty(self, refresh.on_open())
+end
+
+-- Shared prose measurer for pagination. Task 17 kept this closure inline in
+-- init(); Task 18 needs the SAME measurement in _commit_choice() when a new
+-- scene is re-paginated, so it lives in one place now. _build_page() appends one
+-- Size.padding.default VerticalSpan after every block — fold it in so the
+-- per-page budget stays honest on both the first and every subsequent scene.
+function Reader:_measure_fn()
+  return function(text, w)
+    local tb = TextBoxWidget:new{ text = text, face = self.face, width = w }
+    local h = tb:getSize().h
+    tb:free()
+    return h + Size.padding.default
+  end
 end
 
 -- (helper methods _zone, _header_height, _indicator_height, _head_offset,
@@ -122,37 +130,40 @@ function Reader:_build_indicator()
 end
 
 function Reader:_build_page()
-  local vg = VerticalGroup:new{ align = "left" }
   local page = self.pages[self.page_idx]
   if page.kind == "choices" then
-    for _, b in ipairs(page.buttons) do
+    return Choices.build{
+      buttons = page.buttons,
+      width = self.text_width,
+      show_parent = self,
+      on_select = function(button) self:_commit_choice(button) end,
+    }
+  end
+  local vg = VerticalGroup:new{ align = "left" }
+  for _, blk in ipairs(page.blocks) do
+    if blk.type == "banner" then
       table.insert(vg, TextWidget:new{
-        text = "> " .. b.label, face = self.face, max_width = self.text_width,
+        text = self.locale:str("mainCheckpointReachedText") or "[ Checkpoint reached: Game saved. ]",
+        face = Font:getFace(HEAD_FACE, 16),
       })
-      table.insert(vg, VerticalSpan:new{ width = Size.padding.default })
+    elseif blk.type == "stat_check" then
+      table.insert(vg, TextWidget:new{ text = blk.text, face = Font:getFace(HEAD_FACE, 16) })
+    else
+      table.insert(vg, TextBoxWidget:new{
+        text = blk.text, face = self.face, width = self.text_width,
+        alignment = "left",
+      })
     end
-  else
-    for _, blk in ipairs(page.blocks) do
-      if blk.type == "banner" then
-        table.insert(vg, TextWidget:new{
-          text = self.locale:str("mainCheckpointReachedText") or "[ Checkpoint reached: Game saved. ]",
-          face = Font:getFace(HEAD_FACE, 16),
-        })
-      elseif blk.type == "stat_check" then
-        table.insert(vg, TextWidget:new{ text = blk.text, face = Font:getFace(HEAD_FACE, 16) })
-      else
-        table.insert(vg, TextBoxWidget:new{
-          text = blk.text, face = self.face, width = self.text_width,
-          alignment = "left",
-        })
-      end
-      table.insert(vg, VerticalSpan:new{ width = Size.padding.default })
-    end
+    table.insert(vg, VerticalSpan:new{ width = Size.padding.default })
   end
   return vg
 end
 
 function Reader:_render()
+  -- Reclaim the previous frame's blitbuffers before dropping the tree. Task 17
+  -- deferred this; Task 18 re-renders on every choice commit (a whole new tree
+  -- each hop through the story), so the leak now compounds — guard it here.
+  if self[1] and self[1].free then self[1]:free() end
   self[1] = FrameContainer:new{
     background = Blitbuffer.COLOR_WHITE,
     bordersize = 0,
@@ -189,10 +200,22 @@ function Reader:onClose()
   return true
 end
 
--- Task 18 overrides this to open the real choice widget / commit a choice.
-function Reader:onChoiceSelected(button)
-  if self.on_choice then self.on_choice(button) end
-  return true
+-- A choice button was tapped (ui/choices.lua callback). Commit sequence
+-- (spec §8.1): the caller's `advance` applies the button's set_vars to the
+-- store, moves v_current_scene, dispatches any `special`, and returns the new
+-- scene's render_model. We then re-paginate that scene and show its page 1.
+function Reader:_commit_choice(button)
+  if not self.advance then return end
+  local rm = self.advance(button)
+  if not rm then return end
+  self.render_model = rm
+  -- refresh the first-page banner/stat-check offset for the NEW scene before
+  -- re-paginating (init() sets this once from the opening scene).
+  self.geometry.first_page_offset = self:_head_offset()
+  self.pages = pagination.paginate(rm, self.geometry, self:_measure_fn())
+  self.page_idx = 1
+  self:_render()
+  UIManager:setDirty(self, refresh.on_new_scene())
 end
 
 return Reader

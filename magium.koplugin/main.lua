@@ -18,6 +18,11 @@
 -- "Magium: read ch1 intro" menu item + a second nextTick hook that opens
 -- ui/reader.lua on Ch1-Intro1 and walks every page headlessly. Also gone in
 -- Task 20.
+--
+-- Task 18 makes both of those Store-backed via make_reader() below (real choice
+-- commits: set_vars -> store, v_current_scene moves, re-render) and extends the
+-- headless hook to tap a forward choice ~10 times, hopping scene by scene and
+-- logging each "[MAGIUM] scene <id> <N>pages" hop.
 
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local InfoMessage = require("ui/widget/infomessage")
@@ -43,6 +48,47 @@ local function time_parse(data_root)
   return cold, warm1, warm2
 end
 
+-- Build a Store-backed ui/reader.lua positioned at the story's default scene.
+-- Shared by the "read ch1 intro" menu item and the headless auto-drive. The
+-- `advance` closure is the Phase-I choice-commit engine (spec §8.1): apply the
+-- tapped button's set_vars to the store (relative +N/-N resolve inside
+-- store:set), let v_current_scene move with them (C6, it is one of the set_vars
+-- for a normal choice), dispatch `special` (only `restart` is wired in Phase I —
+-- saves/stats/checkpoint are inert), then re-render whatever v_current_scene now
+-- points at. Task 20 replaces this with the real plugin flow (+ resume/autosave).
+local function make_reader(base_path)
+  local Locale = require("engine/locale")
+  local scenemod = require("engine/scene")
+  local Store = require("engine/store")
+  local Reader = require("ui/reader")
+  local specials = require("engine/specials")
+
+  local story = Story.new{ data_dir = base_path .. "/data", locale = "en", strategy = "eager" }:preload()
+  local loc = Locale.load(base_path .. "/data", "en")
+  local store = Store.new()
+  store:set("v_current_scene", specials.DEFAULT_SCENE)
+
+  local function render_current()
+    return scenemod.render(story:get_scene(store:get("v_current_scene")), store:view(), loc)
+  end
+
+  local reader
+  reader = Reader:new{
+    render_model = render_current(),
+    locale = loc,
+    on_close = function() end,
+    advance = function(button)
+      for k, v in pairs(button.set_vars) do store:set(k, v) end
+      if button.special == "restart" then
+        store:restore({})
+        store:set("v_current_scene", specials.DEFAULT_SCENE)
+      end
+      return render_current()
+    end,
+  }
+  return reader, store
+end
+
 local Magium = WidgetContainer:extend{ name = "magium", is_doc_only = false }
 
 function Magium:init()
@@ -65,49 +111,78 @@ function Magium:init()
     end
   end)
 
-  -- TEMPORARY (Task 17) — headless drive of ui/reader.lua. emu-smoke cannot
-  -- tap, so this is the only signal that the widget constructs, paginates
-  -- against a real TextBoxWidget, re-renders on turn, and reaches the choices
-  -- page. Same boot-loop reasoning as the timing hook above: pcall-guarded so a
-  -- throw from this unattended main-loop callback never reaches KOReader's
-  -- crash handler. Removed with the rest of this scaffold in Task 20.
+  -- TEMPORARY (Task 17, extended Task 18) — headless drive of ui/reader.lua.
+  -- emu-smoke cannot tap, so this is the only signal that the widget constructs,
+  -- paginates against a real TextBoxWidget, re-renders on turn, reaches the
+  -- ButtonTable choices page, and — Task 18 — that committing a choice writes
+  -- the store, advances v_current_scene, re-renders and re-paginates the NEW
+  -- scene, repeatedly, across real scene transitions. Same boot-loop reasoning
+  -- as the timing hook above: pcall-guarded so a throw from this unattended
+  -- main-loop callback never reaches KOReader's crash handler. Gone in Task 20.
   UIManager:nextTick(function()
     local ok, err = pcall(function()
-      local Locale = require("engine/locale")
-      local scenemod = require("engine/scene")
-      local Reader = require("ui/reader")
-      local story = Story.new{ data_dir = self.path .. "/data", locale = "en", strategy = "eager" }:preload()
-      local loc = Locale.load(self.path .. "/data", "en")
-      local rm = scenemod.render(story:get_scene("Ch1-Intro1"), {}, loc)
-      local reader = Reader:new{
-        render_model = rm, locale = loc,
-        on_close = function() end,
-        on_choice = function(b) logger.info("[MAGIUM] reader choice: " .. tostring(b.label)) end,
-      }
+      local reader = make_reader(self.path)
       UIManager:show(reader)
-      logger.info("[MAGIUM] reader: " .. #reader.pages .. " pages")
+      logger.info(string.format("[MAGIUM] scene %s %dpages (start)",
+        tostring(reader.render_model.scene_id), #reader.pages))
+
+      -- Which button to tap. Deviation from the brief's literal "buttons[1]":
+      -- in this corpus buttons[1] of Ch1-Cutthroat Dave is a death choice whose
+      -- only follow-ups are special:restart / special:saves, so buttons[1] just
+      -- loops Intro1->Intro2->Cutthroat Dave->Retreat->(restart) — 4 scenes, not
+      -- the "~10 distinct ch1 scenes" the brief wants proven. Pick the last
+      -- button that actually moves forward (skip special:restart / dead-end
+      -- special choices with no target); fall back to buttons[1]. This walks
+      -- Intro1 -> Intro2 -> Cutthroat Dave -> Imply -> Imply2 -> Humor -> Ch2...
+      local DEAD_END = { restart = true, saves = true, checkpoint_load = true }
+      local function pick_forward(buttons)
+        for i = #buttons, 1, -1 do
+          local b = buttons[i]
+          if not DEAD_END[b.special or ""] and b.target and b.target ~= "" then
+            return b
+          end
+        end
+        return buttons[1]
+      end
+
       -- step() self-reschedules and runs later inside UIManager's task loop,
-      -- i.e. OUTSIDE the outer pcall. Tasks 18-19 rewrite reader.lua with this
-      -- scaffold still present, so a deterministic throw here must not reach the
-      -- crash handler (on device: restart re-runs init() -> same throw ->
-      -- crash-loop). Guard each step and stop rescheduling on failure.
+      -- i.e. OUTSIDE the outer pcall — guard each step, stop rescheduling on a
+      -- failure (a deterministic throw here would otherwise crash-loop a device
+      -- restart via init()). Walk each scene's pages, tap a forward choice on
+      -- the choices page, repeat for ~10 hops or until a scene has no choices.
+      local hops, MAX_HOPS = 0, 10
       local function step()
         local step_ok, step_err = pcall(function()
-          logger.info("[MAGIUM] reader page " .. reader.page_idx .. "/" .. #reader.pages
-            .. " kind=" .. reader.pages[reader.page_idx].kind)
           if reader.page_idx < #reader.pages then
-            reader:onNextPage()
-            UIManager:scheduleIn(0.4, step)
-          else
-            reader:onClose()
-            logger.info("[MAGIUM] reader: walked all pages, closed")
+            reader:onNextPage()                       -- advance to the choices page
+            UIManager:scheduleIn(0.3, step)
+            return
           end
+          local last = reader.pages[#reader.pages]
+          if last.kind ~= "choices" or not last.buttons or #last.buttons == 0 then
+            logger.info(string.format("[MAGIUM] scene %s has no choices — stopping after %d hops",
+              tostring(reader.render_model.scene_id), hops))
+            reader:onClose()
+            return
+          end
+          if hops >= MAX_HOPS then
+            logger.info(string.format("[MAGIUM] reached %d hops — closing", hops))
+            reader:onClose()
+            return
+          end
+          local btn = pick_forward(last.buttons)
+          local label = btn.label
+          reader:_commit_choice(btn)
+          hops = hops + 1
+          logger.info(string.format("[MAGIUM] scene %s %dpages (hop %d via %q)",
+            tostring(reader.render_model.scene_id), #reader.pages, hops, tostring(label)))
+          UIManager:scheduleIn(0.3, step)
         end)
         if not step_ok then
           logger.warn("[MAGIUM] reader auto-drive step failed: " .. tostring(step_err))
         end
       end
-      UIManager:scheduleIn(0.4, step)
+      UIManager:scheduleIn(0.3, step)
     end)
     if not ok then
       logger.warn("[MAGIUM] reader (init) failed: " .. tostring(err))
@@ -127,23 +202,13 @@ function Magium:addToMainMenu(menu_items)
       })
     end,
   }
-  -- TEMPORARY (Task 17) — manual launch path for ui/reader.lua on Ch1-Intro1.
-  -- Removed with the rest of this scaffold in Task 20.
+  -- TEMPORARY (Task 17, Store-backed in Task 18) — manual launch path for
+  -- ui/reader.lua from the story's default scene, choices live. Gone in Task 20.
   menu_items.magium_read = {
     text = _("Magium: read ch1 intro"),
     sorting_hint = "more_tools",
     callback = function()
-      local Locale = require("engine/locale")
-      local scenemod = require("engine/scene")
-      local Reader = require("ui/reader")
-      local story = Story.new{ data_dir = self.path .. "/data", locale = "en", strategy = "eager" }:preload()
-      local loc = Locale.load(self.path .. "/data", "en")
-      local rm = scenemod.render(story:get_scene("Ch1-Intro1"), {}, loc)
-      UIManager:show(Reader:new{
-        render_model = rm, locale = loc,
-        on_close = function() end,
-        on_choice = function(b) logger.info("[MAGIUM] reader choice: " .. tostring(b.label)) end,
-      })
+      UIManager:show(make_reader(self.path))
     end,
   }
 end
