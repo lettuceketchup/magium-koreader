@@ -56,7 +56,11 @@ build-time one.
 
 1. **Toggle:** a `Record debug log` checkbox in the plugin's `≡ → More tools →
    Magium` submenu, persisted as `G_reader_settings` key `magium_trace` (default
-   off, survives restarts). Read once at `Magium:init()`.
+   off, survives restarts; `checked_func` → `isTrue`, `callback` →
+   `flipNilOrFalse`). Read at the top of every `Magium:openReader()` — not at
+   `init()`, which KOReader re-runs on every FileManager/ReaderUI instantiation
+   (a mid-session flip therefore takes effect on the next Open, and the trace
+   file is created lazily only when the reader actually opens).
 2. **Durable sink:** `util/trace.lua` buffers `{ t = <ms>, ev = <kind>, … }`
    records and flushes them as **JSON Lines** to `koreader/magium/trace-<YYYYMMDD-HHMMSS>.jsonl`
    — one file per reader-open-with-logging-on, newest 5 kept (older pruned on
