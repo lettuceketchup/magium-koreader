@@ -13,6 +13,11 @@ describe("scaffolding", function()
     assert.are.equal("y", back.b[2])
   end)
 
+  it("json.object forces an object encoding (even when empty)", function()
+    assert.are.equal("{}", json.encode(json.object({})))
+    assert.are.equal('{"a":"1"}', json.encode(json.object({ a = "1" })))
+  end)
+
   it("sees the story data", function()
     local f = io.open(helper.data_dir_en .. "/ch1.magium", "r")
     assert.is_not_nil(f)

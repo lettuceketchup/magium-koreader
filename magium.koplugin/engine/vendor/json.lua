@@ -36,6 +36,8 @@ json.null = setmetatable({}, { __name = "json.null" })
 
 -- LOCAL ADDITION (not upstream): mark a table so encode always emits a JSON
 -- object, even when empty ({}) — upstream encodes an empty table as [].
+-- json.object(t) sets the marker metatable ON t in place and returns t (t is
+-- mutated, not copied); pass a table you own.
 json._object_mt = { __name = "json.object" }
 function json.object(t) return setmetatable(t or {}, json._object_mt) end
 
