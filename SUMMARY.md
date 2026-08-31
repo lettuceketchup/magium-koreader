@@ -2,11 +2,16 @@
 
 - **Status:** research phase complete (Phases 0–6, 8 done; Phase 7 deferred —
   [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
-  **Implementation-design cycle open:** first spec —
+  **Phase I in progress** — the design cycle produced
   [`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
-  (architecture + Milestone 0 + Phase I) — **in review**;
-  [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md) records its
-  layering/widget decisions. No implementation code yet.
+  + [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md) + a 21-task
+  plan, now executing on branch `feat/magium-plugin-phase-i`. As of 2026-08-31
+  (session 18): the complete Lua engine (parser · conditions · store · stats ·
+  locale · specials · 12-step render) is built and **verified 6/6 against the
+  `magium-dev` oracle on the first integrated run**; **Milestone 0 measured on
+  the owner's Kindle (2.2 s cold parse → `eager`, deferred to first reader-open;
+  lazy strategy deferred)**. Remaining: the reader widget, autosave, `main.lua`
+  wiring, on-device sign-off.
 - **Last updated:** 2026-08-31
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
@@ -152,6 +157,8 @@ setup or the real Kindle.
 | 33 | **Full roadmap for candidate A bands to ~100–162 hrs** across a pre-flight parse-timing gate (Milestone 0) and eight build phases (MVP → full story/nav → saves → stats → achievements → settings → i18n → polish). The two widest-uncertainty items are Phase I's custom fullscreen pagination widget (no KOReader prior art does "fullscreen + paginated" together — OQ-013) and Phase VIII's on-device tuning (e-ink feel/OQ-007, condition-outlier cost/OQ-011) — both flagged as the best-targeted spots for community help. Everything else is closer to mechanical, oracle-checked translation. | medium | [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md) §1–2 |
 | 34 | **Saves, stats, and achievements (roadmap phases III–V) are mutually independent extensions of the same variable engine, and localization (phase VII) depends only on the full-corpus/navigation phase (II)** — three real opportunities to parallelize implementation work or hand off to a contributor, not a strictly linear build order. | high | [`09`](docs/research/09-roadmap-effort.md) §3 |
 | 35 | **The three still-open OQs that survived Phase 6 (OQ-001's parse-time tail, OQ-007, OQ-011) plus OQ-013 are not researchable further on paper** — each needs real device time or actual code. Phase 8 resolved this by scheduling them as concrete roadmap work (a pre-flight gate for OQ-001; built into Phase I by design for OQ-013; Phase VIII line items for OQ-007/OQ-011) rather than leaving them open-ended, satisfying the design doc's "closed or explicitly deferred with a reason" exit criterion for every remaining row. | high | [`09`](docs/research/09-roadmap-effort.md) §5, [`07`](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6) |
+| 36 | **Milestone 0 done (2026-08-31): on-device cold parse of all 54 files ≈ 2.2 s** on the owner's Kindle Paperwhite 12th gen (2282 / 2215 / 2186 ms, three restarts; x86 emulator 411 ms). Over the ~1 s gate → **`story` ships `eager` with `preload()` deferred to the first reader-open** (Trapper progress bar; once per KOReader session, then instant; page turns/choices never parse). The `lazy` index+disk-cache path (Task 15) is **deferred out of Phase I** to Phase VIII — owner chose the simpler route over building it now. OQ-001 resolved. | high | [spike 06](docs/spikes/06-ondevice-parse-timing/FINDING.md), [spec §7](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md#7-the-parse-strategy-seam-enginestorylua) |
+| 37 | **The Lua engine port matches `magium-dev` structurally and by-render.** `parser.lua` reproduces the exact corpus counts (2159 scenes / 4880 paragraphs / 3734 choices / 594 set() / 145 achievement() / 2480 #if, 0 anomalies) and diffs per-scene identical against `parser.js` over all 54 files; the full render pipeline (`scene.render`) matched the `magium-dev` HTTP oracle 6/6 on the 6 committed goldens on the first combined run, no engine bug found. Three plan defects were caught against the JS source during review (`_match_set` comma format, the `v_ac_*` freeze semantics, the stat-check key→label swap). | high | SDD ledger `.superpowers/sdd/2026-08-31-…/progress.md`; `reference/tools/oracle-diff.js` |
 
 ## Open questions
 
@@ -212,10 +219,16 @@ See [`docs/decisions/`](docs/decisions/).
 
 ## Next steps
 
-The implementation-design cycle is open. The first spec —
-[`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
-— covers the whole-plugin architecture plus Milestone 0 and Phase I in
-build-ready detail, and is **in review**. On approval, the next step is an
-implementation plan (writing-plans) for Milestone 0 → Phase I; Milestone 0 (the
-on-device parse-timing measurement, 2–4 h) is the first concrete action and sets
-the `story` parse-strategy default.
+Phase I is executing on branch `feat/magium-plugin-phase-i` (plan:
+[`docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md`](docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md),
+21 tasks; live progress in the git-ignored SDD ledger).
+
+**Done (session 18):** Tasks 1–13 + Milestone 0 — scaffolding, the full engine,
+oracle-diff validation (6/6), the on-device parse-timing measurement.
+
+**Remaining:** Task 14 (ch1 branch-matrix oracle diff) → 16 (pagination, pure) →
+17–18 (the custom fullscreen paginated reader widget + choices) → 19
+(autosave/resume) → 20 (`main.lua` wiring). Then **Task 21** — on-device
+chapter-1 playthrough + the Phase I exit-criteria checklist (spec §11.2), on the
+owner's Kindle. Task 15 (the `lazy` parse strategy) was deferred to Phase VIII
+(finding 36).

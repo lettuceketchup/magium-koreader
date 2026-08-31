@@ -132,3 +132,15 @@ extra tap.
   whole-page e-ink swaps are *slower* to the reader than a scroll delta (OQ-007) —
   in which case the choice-placement and refresh strategy get revisited in a
   superseding ADR, not the layering.
+
+## Milestone 0 outcome (2026-08-31)
+
+The `story` seam absorbed the parse-timing result without an architecture
+change. On-device cold parse ≈ 2.2 s (over the ~1 s gate). Rather than build the
+`lazy` implementation, the owner chose **`eager` with `preload()` deferred to the
+first `Magium:openReader()`** — the ~2.2 s lands once per KOReader session behind
+a progress bar, page turns and choices never parse. Phase I ships `eager` only;
+the `lazy` index + per-chapter disk cache stays a stubbed second implementation
+behind the same interface, deferred to a later phase (spec §7.2, §12 Phase VIII).
+Recorded in [spike 06](../spikes/06-ondevice-parse-timing/FINDING.md) and
+[the spec](../specs/2026-08-31-plugin-architecture-and-phase-i.md) §7.

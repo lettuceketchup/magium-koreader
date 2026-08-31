@@ -1,6 +1,6 @@
 # Spec: Plugin architecture & Phase I (MVP)
 
-- **Status:** in-review
+- **Status:** stable — approved; Phase I executing (Tasks 1–13 + Milestone 0 done as of 2026-08-31). Milestone 0 result folded into §7 / §10.
 - **Last updated:** 2026-08-31
 - **Phase:** Implementation — design cycle 1 (roadmap [Milestone 0](../research/09-roadmap-effort.md#milestone-0--pre-flight-on-device-parse-timing-gate) + [Phase I](../research/09-roadmap-effort.md#phase-i--mvp-engine-core--the-real-reading-widget))
 - **Sources:**
@@ -117,7 +117,7 @@ apples-to-apples.
 | `scene.lua` | `render(scene_table, store_view, locale) → render_model`. The fixed 12-step pipeline (§6). Pure. | `renderers.js:renderScene`; [`01` §4](../research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14); [spike 02 `render_scene.lua`](../spikes/02-engine-in-lua/render_scene.lua) |
 | `specials.lua` | The 13 hardcoded special cases ([`01` §10](../research/01-magium-analysis.md#10-hardcoded-scene-id--variable-special-cases-task-110)) as a data table + small apply-hooks called at fixed points in `scene.render` and (later) in the stats screen. Phase I implements the render-time ones (#1–#4, #6–#8, #12; #13's unset→0 is in `conditions`/`store`); stats-screen ones (#5, #9–#11) are declared but inert until Phase IV. | `renderers.js` / `utils.js` / templates, per the §10 table |
 | `locale.lua` | Loads `data/<lang>/ui.json` via `engine/vendor/json.lua` (pure Lua, same under `luajit` and KOReader); `str(key)`; `header(scene_id)` = `getHeaderFromId` + the `<%= book %>/<%= chapter %>` micro-interpolator; the `mainStat{Success,Failed}Template` interpolation. | `utils.js` `getHeaderFromId` / `getLocaleData`; [`01` §9](../research/01-magium-analysis.md#9-localization-task-19) |
-| `story.lua` | **The parse-strategy seam.** `Story.new{ data_dir, locale, strategy } → story`; `story:preload(on_progress)`; `story:get_scene(id) → scene_table`; `story:scene_ids()`. Two impls behind one interface (§7). | new; [`04` §4](../research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34) |
+| `story.lua` | **The parse-strategy seam.** `Story.new{ data_dir, locale, strategy } → story`; `story:preload(on_progress)`; `story:get_scene(id) → scene_table`; `story:scene_ids()`. Phase I: `eager` only (§7); the `lazy` seam is stubbed, deferred (Milestone 0). | new; [`04` §4](../research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34) |
 
 `engine/` has **no** `init.lua` facade object — the modules are mostly pure
 functions plus two stateful holders (`store`, `story`), matching `magium-dev`'s
@@ -278,45 +278,54 @@ achievement toasts fire on the render right after the unlocking choice
 
 ## 7. The parse-strategy seam (`engine/story.lua`)
 
-One interface, two implementations. **Milestone 0 picked the default: `lazy`**
-(the other stays built and switchable via a plugin setting).
+One interface. Phase I ships **`eager` only**; the `lazy` design (§7.2) is a
+deferred second implementation behind the same seam.
 
-> **Milestone 0 result (2026-08-31):** on the owner's Kindle Paperwhite 12th gen,
-> cold parse of all 54 files = **≈ 2.2 s** (2282 / 2215 / 2186 ms across three
-> restarts) — over the ~1 s gate, so **`strategy` defaults to `lazy`**. Emulator
-> x86 was 411 ms (~5.6× faster). See [spike 06](../spikes/06-ondevice-parse-timing/FINDING.md).
-> `Task 20`'s `main.lua` sets `PARSE_STRATEGY = "lazy"`.
+> **Milestone 0 result + decision (2026-08-31):** on the owner's Kindle
+> Paperwhite 12th gen, cold parse of all 54 files = **≈ 2.2 s** (2282 / 2215 /
+> 2186 ms across three restarts; emulator x86 was 411 ms). Over the ~1 s gate.
+> The owner chose **`eager` with `preload()` deferred to the first
+> `openReader()`** of the session (a `Trapper` progress bar covers the one-time
+> ~2.2 s wait) rather than build the lazy index + disk-cache path now. Page turns
+> and choices never parse either way; `eager` just moves the whole parse to
+> "first time you open Magium this session". Task 20 sets `PARSE_STRATEGY =
+> "eager"`; **Task 15 (lazy) is deferred out of Phase I** — the `strategy` /
+> `cache_store` params and the erroring `_build_index` / `_lazy_get` stubs stay
+> on `Story.new` for a later phase. See [spike 06](../spikes/06-ondevice-parse-timing/FINDING.md).
 
 ```lua
 Story.new{
   data_dir    = "…/data",
   locale      = "en",
-  strategy    = "eager" | "lazy",
-  cache_store = <adapter> | nil,    -- get(key)→table|nil, set(key, table); lazy only
+  strategy    = "eager" | "lazy",   -- Phase I: always "eager"
+  cache_store = <adapter> | nil,    -- get(key)→table|nil, set(key, table); lazy only, deferred
 }
-story:preload(on_progress)          -- called once, off the init hot path
+story:preload(on_progress)          -- Phase I: called once, on the first openReader() of the session
 story:get_scene(scene_id)           -- returns the scene_table; caches parsed scenes
 story:scene_ids()                   -- iterator over all known ids (for full-corpus QA)
 ```
 
 `data_dir` is read with the Lua stdlib `io` (core, available under both plain
-`luajit` and KOReader) — so `story` stays engine-pure (C5). The **only**
-KOReader-specific concern, disk caching of parsed blobs (lazy path), is behind an
-injected `cache_store` adapter: `main.lua` backs it with KOReader `Persist`
-(`luajit` codec) under the data-dir `cache/`; specs back it with an in-memory or
-temp-dir fake. Same injected-seam pattern as `pagination.measure_fn` and
-`save/manager`'s writer.
+`luajit` and KOReader) — so `story` stays engine-pure (C5). The `cache_store`
+adapter (disk caching of parsed blobs — a KOReader `Persist` concern) is the
+injected seam for the deferred lazy path; not built in Phase I. Same
+injected-seam pattern as `pagination.measure_fn` and `save/manager`'s writer.
 
-### 7.1 `eager` (not the default — see the Milestone 0 result above)
+### 7.1 `eager` — the Phase I strategy
 
-`preload` parses all 54 files now, under a `Trapper` coroutine with a progress
-bar so the UI stays responsive (C3). Holds every `scene_table` resident
-(~11.5 MB measured, [spike 03](../spikes/03-full-corpus-memory-parse/) — a
-non-issue against ~497 MB free). `get_scene` is a table lookup. On the target
-Kindle this blocks ~2.2 s at launch (Milestone 0), which is why it is not the
-default; it stays available for a plugin setting and for desktop/faster devices.
+`preload` parses all 54 files, under a `Trapper` coroutine with a progress bar so
+the UI stays responsive (C3). Holds every `scene_table` resident (~11.5 MB
+measured, [spike 03](../spikes/03-full-corpus-memory-parse/) — a non-issue
+against ~497 MB free). `get_scene` is a table lookup.
 
-### 7.2 `lazy`
+**Phase I trigger:** `preload` is *not* called in `main.lua`'s `init()` (that
+runs at KOReader startup for every plugin). It runs on the **first
+`Magium:openReader()` of the session**, once-guarded — so the ~2.2 s cost lands
+only when the user actually opens Magium, and only once per KOReader session
+(the story object stays resident). A plugin setting could later move it back to
+`init()` or switch to `lazy`.
+
+### 7.2 `lazy` — deferred (a later phase)
 
 `preload` builds only a **scene-id → file index**: scan every `data/<lang>/*.magium`
 for `^ID: ` lines (no construct parsing — milliseconds). Store the index via
@@ -463,16 +472,17 @@ and [ADR-002](../decisions/ADR-002-porting-approach.md)'s deliberately-open deta
    [spike 03](../spikes/03-full-corpus-memory-parse/) flagged).
 4. Record: cold-parse wall-clock (ms), warm-parse, peak RSS delta.
 
-**Decision rule:**
+**Decision rule (and 2026-08-31 outcome):**
 
-| Cold parse (device) | Default strategy |
-|---|---|
-| ≤ ~1 s | `eager` — parse all at launch behind a progress bar |
-| > ~1 s | `lazy` — index + per-chapter disk cache (§7.2) |
+| Cold parse (device) | Strategy | Result |
+|---|---|---|
+| ≤ ~1 s | `eager` at launch | — |
+| > ~1 s | `lazy` per-chapter, **or** `eager` deferred to first open | **2.2 s → `eager`, deferred to first `openReader()`.** Owner chose the simpler route over building the lazy path; Task 15 deferred. |
 
 Threshold rationale: [`04` §3 row 3](../research/04-constraints-budget.md#3-budget-table-33).
-Either way both impls ship; this only sets the default. **Effort: 2–4 h**
-([`09` §2](../research/09-roadmap-effort.md#2-effort-summary-table-82)).
+`eager` is what ships in Phase I; the `lazy` design (§7.2) waits behind the same
+seam for a later phase. **Effort: 2–4 h** (measurement itself;
+[`09` §2](../research/09-roadmap-effort.md#2-effort-summary-table-82)).
 
 **Deliverable:** a short `docs/spikes/06-ondevice-parse-timing/FINDING.md` (spike
 folder — it is a measurement, and its harness is subsumed by Phase I) + this
@@ -500,7 +510,9 @@ spec's §7 default updated with the result.
 - `specials.lua` — render-time special cases #1–#4, #6–#8, #12 live (#13's
   unset→0 handled in `conditions`/`store`); stats-screen #5, #9–#11 declared,
   inert.
-- `story.lua` — both `eager` and `lazy`, default per Milestone 0.
+- `story.lua` — `eager` (the `lazy` seam is stubbed and deferred — Milestone 0
+  measured 2.2 s and the owner chose `eager` deferred to first open over building
+  lazy now; §7).
 
 **UI:**
 
@@ -518,8 +530,10 @@ spec's §7 default updated with the result.
 
 **Plugin:**
 
-- `main.lua` — `more_tools` menu item + `Dispatcher` action; `story:preload()`
-  scheduled off the `init()` hot path; lifecycle flush on close/suspend/`Close`.
+- `main.lua` — `more_tools` menu item + `Dispatcher` action; the eager
+  `story:preload()` (~2.2 s) runs once, on the **first `openReader()`** of the
+  session, behind a `Trapper` progress bar (`init()` does no parsing); lifecycle
+  flush on close/suspend/`Close`.
 - `_meta.lua`.
 
 **No title/menu screen in Phase I** — opening the plugin goes straight to
@@ -579,7 +593,7 @@ code is written to accommodate it without rework:
 | **V — achievements** | unlock toast; the 136-entry `achievements{1,2,3}.json` menu; `b2ch41` group quirk; always-on `v_ac_b3_ch9_prize` | `scene` already computes the list; `locale` (achievements JSON) | `ui/toast.lua`, `ui/achievementsmenu.lua` |
 | **VI — settings** | a scoping pass first — most of `settings.ejs` (font/theme) is KOReader's job ([`01` §8](../research/01-magium-analysis.md#8-saves--settings-task-18)); port only genuinely game-specific settings | `main` (menu) | maybe none |
 | **VII — i18n** | `data/fr/` bundle + `fr/ui.json`; `l10n/<lang>/*.po` for plugin chrome; a locale switch | `locale` (already parameterised), `story` (`locale` arg exists) | `l10n/` |
-| **VIII — polish** | OQ-007 e-ink tuning in `refresh.lua`; OQ-011 490 KB-condition mitigation in `conditions`/`story`; LuaJIT GC tuning; full-corpus `oracle_diff` over all 2159 scenes; `crash.log` bug bash; bare `koreader/plugins/` packaging | `refresh`, `conditions`, `story`, `spec/oracle_diff` | — |
+| **VIII — polish** | OQ-007 e-ink tuning in `refresh.lua`; OQ-011 490 KB-condition mitigation in `conditions`/`story`; **the deferred `lazy` parse strategy (§7.2) — index + per-chapter `Persist` cache — if the first-open ~2.2 s wait grates**; LuaJIT GC tuning; full-corpus `oracle_diff` over all 2159 scenes; `crash.log` bug bash; bare `koreader/plugins/` packaging | `refresh`, `conditions`, `story`, `spec/oracle_diff` | (`spec/support/mem_cache.lua`, `story_lazy_spec.lua`) |
 
 The engine/ui split means III–V and VII only **add** modules — they do not reopen
 `engine/` core or `ui/reader.lua`
@@ -591,7 +605,7 @@ The engine/ui split means III–V and VII only **add** modules — they do not r
 
 | ID | State entering implementation | Where it resolves |
 |---|---|---|
-| [OQ-001](../research/07-risks-open-questions.md) (parse-time tail) | memory closed; on-device ARM cold-parse time still unmeasured | **Milestone 0** (§10) |
+| [OQ-001](../research/07-risks-open-questions.md) (parse-time tail) | **resolved by Milestone 0 (2026-08-31): 2.2 s device cold parse → `eager`, deferred to first reader-open (§7). Lazy path deferred.** | Milestone 0 (§10) — done |
 | [OQ-007](../research/07-risks-open-questions.md) (e-ink refresh feel) | unanswerable off real e-ink | Phase VIII, `ui/refresh.lua` — owner on device |
 | [OQ-011](../research/07-risks-open-questions.md) (490 KB condition cost) | parses fine; per-render cost on ARM unmeasured | Phase VIII (or earlier if Milestone 0 flags the parse itself); §7.3 |
 | [OQ-013](../research/07-risks-open-questions.md) (pagination widget) | **resolved by this spec** — §8, custom fullscreen paginated widget, choices-as-final-page | built in Phase I |
@@ -610,11 +624,14 @@ On approval of this spec, the next step is the **writing-plans** skill to turn
 2. Engine core — `conditions`, `store`, `stats`, `locale`, `scene`, `specials`
    (render-time), each with its busted spec, then `oracle_diff` green on the 6
    goldens.
-3. `story` lazy path + the strategy default from step 1.
-4. `pagination` (pure, fake measurer) → `reader` + `choices` → `ch1` playable in
+3. `pagination` (pure, fake measurer) → `reader` + `choices` → `ch1` playable in
    WSL2 `kodev`.
-5. `save/manager` autosave + resume.
-6. `main.lua` wiring + lifecycle; on-device `ch1` run; exit criteria (§11.2).
+4. `save/manager` autosave + resume.
+5. `main.lua` wiring + lifecycle (eager `preload` deferred to first open per the
+   Milestone 0 result); on-device `ch1` run; exit criteria (§11.2).
+
+   *(`story` lazy path — originally step 3 — deferred out of Phase I: Milestone 0
+   measured 2.2 s and `eager`-on-first-open was chosen over building lazy now.)*
 
 Build order rationale: the pure engine + its oracle diff comes first (cheapest,
 highest-certainty, unblocks everything), the widget second (the real ramp), glue
