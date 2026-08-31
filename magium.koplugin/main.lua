@@ -1,220 +1,167 @@
--- TEMPORARY — Milestone 0 timing harness only. Replaced by the real plugin
--- class in Task 20. Do not build on this file.
---
--- Purpose: measure how long engine/story.lua's eager preload() (parse all 54
--- English .magium files) takes on the owner's real Kindle Paperwhite 12th gen,
--- to set story's default strategy ("eager" if cold parse <= ~1 s, else "lazy" —
--- spec §7 / §10). It logs the wall-clock deltas with a "MAGIUM parse ..." prefix
--- so they can be grepped out of the run log (emulator: STDOUT; device: crash.log).
---
--- Two ways in, both calling the same time_parse():
---   1. Menu: ≡ → More tools → "Magium: time parse"  — what the owner taps on the
---      real Kindle (brief Step 4).
---   2. init()-time auto-run, deferred via UIManager:nextTick so it does not block
---      FileManager load. This exists ONLY because the headless-xvfb emulator
---      sanity run (tools/mgm.sh emu-smoke) has no way to tap a menu.
---
--- Task 17 bolts a second, equally temporary scaffold onto the same file: a
--- "Magium: read ch1 intro" menu item + a second nextTick hook that opens
--- ui/reader.lua on Ch1-Intro1 and walks every page headlessly. Also gone in
--- Task 20.
---
--- Task 18 makes both of those Store-backed via make_reader() below (real choice
--- commits: set_vars -> store, v_current_scene moves, re-render) and extends the
--- headless hook to tap a forward choice ~10 times, hopping scene by scene and
--- logging each "[MAGIUM] scene <id> <N>pages" hop.
+--[[--
+Magium — play the text CYOA game inside KOReader. Phase I: chapter 1 playable,
+autosave/resume. Later phases add saves UI, stats, achievements, i18n.
+--]]--
 
-local WidgetContainer = require("ui/widget/container/widgetcontainer")
-local InfoMessage = require("ui/widget/infomessage")
+local DataStorage = require("datastorage")
+local Dispatcher = require("dispatcher")
+local Persist = require("persist")
+local Trapper = require("ui/trapper")
 local UIManager = require("ui/uimanager")
+local WidgetContainer = require("ui/widget/container/widgetcontainer")
+local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
 local _ = require("gettext")
 
 local Story = require("engine/story")
+local Locale = require("engine/locale")
+local scene = require("engine/scene")
+local Store = require("engine/store")
+local specials = require("engine/specials")
+local Reader = require("ui/reader")
+local SaveManager = require("save/manager")
 
--- Cold: first preload after a KOReader restart. Warm: the two that follow (JIT
--- warm, page cache warm). data_root is the folder that CONTAINS <locale>/ (i.e.
--- ".../magium.koplugin/data"); Story appends "/en".
-local function time_parse(data_root)
-  local function once()
-    local t0 = os.clock()
-    Story.new{ data_dir = data_root, locale = "en", strategy = "eager" }:preload()
-    return (os.clock() - t0) * 1000
-  end
-  local cold = once()
-  logger.info(string.format("MAGIUM parse cold: %.0f ms", cold))
-  local warm1, warm2 = once(), once()
-  logger.info(string.format("MAGIUM parse warm: %.0f ms / %.0f ms", warm1, warm2))
-  return cold, warm1, warm2
-end
-
--- Build a Store-backed ui/reader.lua positioned at the story's default scene.
--- Shared by the "read ch1 intro" menu item and the headless auto-drive. The
--- `advance` closure is the Phase-I choice-commit engine (spec §8.1): apply the
--- tapped button's set_vars to the store (relative +N/-N resolve inside
--- store:set), let v_current_scene move with them (C6, it is one of the set_vars
--- for a normal choice), dispatch `special` (only `restart` is wired in Phase I —
--- saves/stats/checkpoint are inert), then re-render whatever v_current_scene now
--- points at. Task 20 replaces this with the real plugin flow (+ resume/autosave).
---
--- Returns ONLY the reader — the store is captured in the `advance` closure and
--- nothing outside needs it. (A second return value would spread into
--- `UIManager:show(make_reader(...))` as the refreshtype arg and crash _repaint.)
-local function make_reader(base_path)
-  local Locale = require("engine/locale")
-  local scenemod = require("engine/scene")
-  local Store = require("engine/store")
-  local Reader = require("ui/reader")
-  local specials = require("engine/specials")
-
-  local story = Story.new{ data_dir = base_path .. "/data", locale = "en", strategy = "eager" }:preload()
-  local loc = Locale.load(base_path .. "/data", "en")
-  local store = Store.new()
-  store:set("v_current_scene", specials.DEFAULT_SCENE)
-
-  local function render_current()
-    return scenemod.render(story:get_scene(store:get("v_current_scene")), store:view(), loc)
-  end
-
-  local reader
-  reader = Reader:new{
-    render_model = render_current(),
-    locale = loc,
-    on_close = function() end,
-    advance = function(button)
-      for k, v in pairs(button.set_vars) do store:set(k, v) end
-      if button.special == "restart" then
-        store:restore({})
-        store:set("v_current_scene", specials.DEFAULT_SCENE)
-      end
-      return render_current()
-    end,
-  }
-  return reader
-end
+-- Milestone 0 (Task 6, 2026-08-31): device cold parse ≈ 2.2 s. Over the ~1 s
+-- gate — but the owner chose `eager` with the parse **deferred to the first
+-- reader-open** (a Trapper progress bar covers the ~2.2 s once per session)
+-- rather than build the lazy/disk-cache path now. See spec §7 + spike 06.
+local PARSE_STRATEGY = "eager"
 
 local Magium = WidgetContainer:extend{ name = "magium", is_doc_only = false }
 
+-- ---- persistence adapters (the KOReader-specific edges) -----------------------
+
+local function save_dir()
+  local d = DataStorage:getDataDir() .. "/magium"
+  lfs.mkdir(d)
+  return d
+end
+
+-- A { read()->table|nil, write(table) } adapter over one Persist blob — plain
+-- functions (SaveManager calls them with a dot), luajit codec, fsynced on write.
+local function state_writer()
+  local p = Persist:new{ path = save_dir() .. "/state", codec = "luajit" }
+  return {
+    read = function() return p:load() end,
+    write = function(t) p:save(t) end,
+  }
+end
+
+-- (Milestone 0 chose `eager` + parse-on-first-open, so there is no lazy
+--  disk-cache adapter in Phase I. The `cache_store` seam stays on `Story.new`
+--  for the deferred lazy path — a later phase backs it with `Persist`.)
+
+-- ---- lifecycle ---------------------------------------------------------------
+
 function Magium:init()
+  self:onDispatcherRegisterActions()
   self.ui.menu:registerToMainMenu(self)
-  -- Deviation from the brief: auto-run once, off the load hot path, so the
-  -- headless emulator smoke test produces the timing lines without a menu tap.
-  -- pcall-guarded: this fires unattended from the main loop at every launch, so
-  -- a throw here (e.g. busybox `ls` / io.popen quirk on the Kindle) must NOT
-  -- reach KOReader's crash handler — that would trap the owner in a boot loop
-  -- recoverable only by deleting the plugin over USB. The menu path stays
-  -- unguarded: it is user-triggered and a crash there is recoverable.
-  UIManager:nextTick(function()
-    local ok, err = pcall(function()
-      local cold, w1, w2 = time_parse(self.path .. "/data")
-      logger.info(string.format(
-        "MAGIUM parse (init) cold %.0f ms / warm %.0f / %.0f ms", cold, w1, w2))
-    end)
-    if not ok then
-      logger.warn("MAGIUM parse (init) failed: " .. tostring(err))
-    end
-  end)
+  self.data_dir = self.path .. "/data"
+  self.locale = Locale.load(self.data_dir, "en")
+  self.story = Story.new{ data_dir = self.data_dir, locale = "en", strategy = PARSE_STRATEGY }
+  self.store = Store.new()
+  self.save = SaveManager.new{
+    store = self.store, writer = state_writer(),
+    schedule = function(d, fn) UIManager:scheduleIn(d, fn); return fn end,
+    unschedule = function(fn) UIManager:unschedule(fn) end,
+    debounce = 8,
+  }
+  -- NOTE: no parse here. init() runs at KOReader startup for every plugin; the
+  -- ~2.2 s eager parse happens in openReader() the first time the user actually
+  -- opens Magium (Milestone 0 decision).
+end
 
-  -- TEMPORARY (Task 17, extended Task 18) — headless drive of ui/reader.lua.
-  -- emu-smoke cannot tap, so this is the only signal that the widget constructs,
-  -- paginates against a real TextBoxWidget, re-renders on turn, reaches the
-  -- ButtonTable choices page, and — Task 18 — that committing a choice writes
-  -- the store, advances v_current_scene, re-renders and re-paginates the NEW
-  -- scene, repeatedly, across real scene transitions. Same boot-loop reasoning
-  -- as the timing hook above: pcall-guarded so a throw from this unattended
-  -- main-loop callback never reaches KOReader's crash handler. Gone in Task 20.
-  UIManager:nextTick(function()
-    local ok, err = pcall(function()
-      local reader = make_reader(self.path)
-      UIManager:show(reader)
-      logger.info(string.format("[MAGIUM] scene %s %dpages (start)",
-        tostring(reader.render_model.scene_id), #reader.pages))
-
-      -- Which button to tap. Deviation from the brief's literal "buttons[1]":
-      -- in this corpus buttons[1] of Ch1-Cutthroat Dave is a death choice whose
-      -- only follow-ups are special:restart / special:saves, so buttons[1] just
-      -- loops Intro1->Intro2->Cutthroat Dave->Retreat->(restart) — 4 scenes, not
-      -- the "~10 distinct ch1 scenes" the brief wants proven. Pick the last
-      -- button that actually moves forward (skip special:restart / dead-end
-      -- special choices with no target); fall back to buttons[1]. This walks
-      -- Intro1 -> Intro2 -> Cutthroat Dave -> Imply -> Imply2 -> Humor -> Ch2...
-      local DEAD_END = { restart = true, saves = true, checkpoint_load = true }
-      local function pick_forward(buttons)
-        for i = #buttons, 1, -1 do
-          local b = buttons[i]
-          if not DEAD_END[b.special or ""] and b.target and b.target ~= "" then
-            return b
-          end
-        end
-        return buttons[1]
+-- Parse all 54 files once, the first time the reader is opened this session,
+-- behind a Trapper progress bar. Subsequent opens are instant (story is resident).
+function Magium:_ensureLoaded()
+  if self._loaded then return end
+  Trapper:wrap(function()
+    self.story:preload(function(done, total)
+      -- skip_dismiss_check = true (Trapper:info's 3rd arg) is load-bearing: on
+      -- its 2nd+ call Trapper:info() otherwise coroutine.yield()s back to the
+      -- resume() inside Trapper:wrap(), which returns — _ensureLoaded() would
+      -- fall through with the corpus only half-parsed and openReader() would
+      -- render(nil) → "unknown scene". With it, the whole preload runs
+      -- synchronously to completion before wrap() returns. A non-dismissable
+      -- ~2 s bar is the right trade (dismissing mid-parse = broken state).
+      -- Throttled to ~10 updates so the device isn't asked for 54 e-ink flashes.
+      if done == 1 or done == total or done % 6 == 0 then
+        Trapper:info(string.format("%s  %d / %d", _("Loading Magium…"), done, total), false, true)
       end
-
-      -- step() self-reschedules and runs later inside UIManager's task loop,
-      -- i.e. OUTSIDE the outer pcall — guard each step, stop rescheduling on a
-      -- failure (a deterministic throw here would otherwise crash-loop a device
-      -- restart via init()). Walk each scene's pages, tap a forward choice on
-      -- the choices page, repeat for ~10 hops or until a scene has no choices.
-      local hops, MAX_HOPS = 0, 10
-      local function step()
-        local step_ok, step_err = pcall(function()
-          if reader.page_idx < #reader.pages then
-            reader:onNextPage()                       -- advance to the choices page
-            UIManager:scheduleIn(0.3, step)
-            return
-          end
-          local last = reader.pages[#reader.pages]
-          if last.kind ~= "choices" or not last.buttons or #last.buttons == 0 then
-            logger.info(string.format("[MAGIUM] scene %s has no choices — stopping after %d hops",
-              tostring(reader.render_model.scene_id), hops))
-            reader:onClose()
-            return
-          end
-          if hops >= MAX_HOPS then
-            logger.info(string.format("[MAGIUM] reached %d hops — closing", hops))
-            reader:onClose()
-            return
-          end
-          local btn = pick_forward(last.buttons)
-          local label = btn.label
-          reader:_commit_choice(btn)
-          hops = hops + 1
-          logger.info(string.format("[MAGIUM] scene %s %dpages (hop %d via %q)",
-            tostring(reader.render_model.scene_id), #reader.pages, hops, tostring(label)))
-          UIManager:scheduleIn(0.3, step)
-        end)
-        if not step_ok then
-          logger.warn("[MAGIUM] reader auto-drive step failed: " .. tostring(step_err))
-        end
-      end
-      UIManager:scheduleIn(0.3, step)
     end)
-    if not ok then
-      logger.warn("[MAGIUM] reader (init) failed: " .. tostring(err))
-    end
+    Trapper:clear()
   end)
+  self._loaded = true
+end
+
+function Magium:onDispatcherRegisterActions()
+  Dispatcher:registerAction("magium_open", {
+    category = "none", event = "MagiumOpen", title = _("Magium"), general = true,
+  })
 end
 
 function Magium:addToMainMenu(menu_items)
   menu_items.magium = {
-    text = _("Magium: time parse"),
+    text = _("Magium"),
     sorting_hint = "more_tools",
-    callback = function()
-      local data_root = self.path .. "/data"
-      local cold, w1, w2 = time_parse(data_root)
-      UIManager:show(InfoMessage:new{
-        text = string.format("cold %.0f ms\nwarm %.0f / %.0f ms\n(see crash.log)", cold, w1, w2),
-      })
-    end,
-  }
-  -- TEMPORARY (Task 17, Store-backed in Task 18) — manual launch path for
-  -- ui/reader.lua from the story's default scene, choices live. Gone in Task 20.
-  menu_items.magium_read = {
-    text = _("Magium: read ch1 intro"),
-    sorting_hint = "more_tools",
-    callback = function()
-      UIManager:show(make_reader(self.path))
-    end,
+    callback = function() self:openReader() end,
   }
 end
+
+function Magium:onMagiumOpen() self:openReader(); return true end
+
+function Magium:openReader()
+  self:_ensureLoaded()   -- first open this session: ~2.2 s parse behind a progress bar
+
+  -- resume, or start fresh
+  local resume = self.save:load()
+  if not resume or not self.story:get_scene(resume) then
+    self.store:restore({})
+    self.store:set("v_current_scene", specials.DEFAULT_SCENE)
+  end
+
+  local function render_current()
+    local id = self.store:get("v_current_scene")
+    local st = self.story:get_scene(id)
+    if not st then
+      logger.warn("Magium: unknown scene", id, "— resetting to intro")
+      self.store:set("v_current_scene", specials.DEFAULT_SCENE)
+      st = self.story:get_scene(specials.DEFAULT_SCENE)
+    end
+    return scene.render(st, self.store:view(), self.locale)
+  end
+
+  self.reader = Reader:new{
+    render_model = render_current(),
+    locale = self.locale,
+    on_close = function() self.save:flush_now("close") end,
+    advance = function(button)
+      local touched_ac = false
+      for k, v in pairs(button.set_vars) do
+        self.store:set(k, v)
+        if k:sub(1, 5) == "v_ac_" then touched_ac = true end
+      end
+      if button.special == "restart" then
+        self.store:restore({})
+        self.store:set("v_current_scene", specials.DEFAULT_SCENE)
+      end
+      -- special:saves / :stats / :checkpoint_* are Phase II/III — no-op nav for now
+      if touched_ac then
+        self.save:on_achievement_unlocked()   -- spec §9: immediate flush on unlock
+      else
+        self.save:touch()
+      end
+      return render_current()
+    end,
+  }
+  UIManager:show(self.reader)
+end
+
+-- flush on suspend / shutdown — but only once the reader has been opened this
+-- session. Before that self.store is the empty Store.new() from init() and an
+-- unconditional flush would overwrite the player's real saved position with {}.
+function Magium:onSuspend() if self._loaded then self.save:flush_now("suspend") end end
+function Magium:onClose() if self._loaded then self.save:flush_now("close-broadcast") end end
+function Magium:onCloseWidget() if self._loaded then self.save:flush_now("close-widget") end end
 
 return Magium
