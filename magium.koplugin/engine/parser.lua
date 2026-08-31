@@ -151,4 +151,91 @@ function M._match_if(line)
   return nil
 end
 
+M.anomalies = {}
+
+local CONSTRUCT_PREFIXES = { "set(", "achievement(", "choice(", "#if(" }
+
+local function looks_like_construct(line)
+  for _, p in ipairs(CONSTRUCT_PREFIXES) do
+    if line:sub(1, #p) == p then return true end
+  end
+  return false
+end
+
+-- parse(path): mirrors parser.js line-by-line. Returns { [id] = scene }.
+function M.parse(path)
+  M.anomalies = {}
+  local order = {}
+  local current = {}                       -- the bogus leading {} (JS: let currentScene = {})
+  local para = { text = "", conditions = nil }
+  local skip = false
+  local seen_ids = {}
+
+  local fh = assert(io.open(path, "r"), "cannot open " .. path)
+  for raw in fh:lines() do
+    local line = raw:gsub("\r$", "")       -- R10
+
+    if line:sub(1, 4) == "ID: " then
+      order[#order + 1] = current
+      local id = line:sub(5)
+      if seen_ids[id] then
+        error("parser.parse: duplicate scene id '" .. id .. "' in " .. path)  -- R9
+      end
+      seen_ids[id] = true
+      current = {
+        id = id, paragraphs = {}, choices = {},
+        set_variables = {}, achievements = {},
+      }
+    elseif line:sub(1, 5) == "TEXT:" then
+      skip = true
+    elseif skip then
+      skip = false
+    else
+      local sn, sv, sc = M._match_set(line)
+      local at, av = nil, nil
+      local ch = nil
+      local ic = nil
+      if sn then
+        current.set_variables[#current.set_variables + 1] =
+          { name = sn, value = sv, conditions = M.parse_conditions(sc) }
+      else
+        at, av = M._match_achievement(line)
+        if at then
+          current.achievements[#current.achievements + 1] = { text = at, variable = av }
+        else
+          ch = M._match_choice(line)
+          if ch then
+            if para.text ~= "" then current.paragraphs[#current.paragraphs + 1] = para end
+            para = { text = "", conditions = nil }
+            current.choices[#current.choices + 1] = ch
+          else
+            ic = M._match_if(line)
+            if ic ~= nil then
+              if para.text ~= "" then current.paragraphs[#current.paragraphs + 1] = para end
+              para = { text = "", conditions = M.parse_conditions(ic) }
+            elseif line:sub(1, 1) == "}" then
+              current.paragraphs[#current.paragraphs + 1] = para
+              para = { text = "", conditions = nil }
+            else
+              if looks_like_construct(line) then
+                M.anomalies[#M.anomalies + 1] =
+                  path .. ": unmatched construct-like line: " .. line
+              end
+              para.text = para.text .. line .. "<br/>"
+            end
+          end
+        end
+      end
+    end
+  end
+  fh:close()
+
+  if para.text ~= "" then current.paragraphs[#current.paragraphs + 1] = para end
+  order[#order + 1] = current
+
+  local dict = {}
+  for i = 2, #order do dict[order[i].id] = order[i] end   -- drop the leading {} (JS slice(1))
+  return dict
+end
+
 return M
