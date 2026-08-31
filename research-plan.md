@@ -1,6 +1,6 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phases 0–4 done; **Phase 5 done** (all 4 spikes confirmed — see below); Phase 6 next
+- **Status:** active — Phases 0–5 done; **Phase 6 done** (approach chosen — [ADR-002](docs/decisions/ADR-002-porting-approach.md)); Phase 7 next
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -104,10 +104,10 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 **Deliverables:** `docs/research/06-approach-comparison.md`, `docs/research/07-risks-open-questions.md`, an ADR.
 **Depends on:** Phases 3, 4, 5.
 
-- [ ] 6.1 Describe each candidate concretely: (A) standalone KOReader plugin with a Lua engine, (B) extend an existing plugin, (C) convert `.magium` to a supported format + use an existing player, (D) hybrid (build-time conversion to a lean format + small Lua runtime).
-- [ ] 6.2 Decision matrix scored on: implementation effort, parity ceiling (can it ever reach full parity?), on-device performance, maintainability & upstream-sync cost, fit with owner's skills + community, distribution ease, risk.
-- [ ] 6.3 Consolidate all open questions into `07-risks-open-questions.md` as `OQ-NNN` rows with venue tags; note which are blocking.
-- [ ] 6.4 Write the recommendation into `SUMMARY.md` with a confidence tag, and record it as an ADR.
+- [x] 6.1 Describe each candidate concretely — [`06` §1](docs/research/06-approach-comparison.md#1-candidates-61): (A) standalone plugin/Lua engine, (B) extend `frotz.koplugin` (ruled out — nothing to extend, OQ-003), (C) convert to Ink + existing player (ruled out — no e-ink player exists, F-27), (D) build-time hybrid (real 2nd place, undercut by spike 02/03's fast measured parse time).
+- [x] 6.2 Decision matrix scored — [`06` §2](docs/research/06-approach-comparison.md#2-decision-matrix-62): 7 criteria × weight, weighted totals A 95 / D 70 / B 53 / C 47 (of 100). A wins clearly, not a close call.
+- [x] 6.3 Open questions consolidated — [`07`](docs/research/07-risks-open-questions.md): fixed 4 rows (OQ-001/009/011/012) that had lost their Blocking?/Status/Resolution column split across earlier edits (Resolution was rendering empty); added a "Blocking status after Phase 6" section — no open OQ blocks the approach decision itself; OQ-004 blocks the project (distribution permission).
+- [x] 6.4 Recommendation written into `SUMMARY.md` (confidence: high on approach, medium on the parse-all-vs-lazy-cache implementation detail) and recorded as [ADR-002](docs/decisions/ADR-002-porting-approach.md).
 
 ## Phase 7 — Licensing & permissions
 
@@ -138,6 +138,80 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 14) — Phase 6 done: approach chosen, ADR-002
+
+Picked up at "Phase 6 next" from session 13. Phase 6's job was to compare the
+four candidates fixed at project start against everything Phases 3–5 had
+since established, and either pick an end-form or conclude more spiking was
+needed. It didn't need more spiking — the evidence already pointed one way.
+
+- **Wrote [`06-approach-comparison.md`](docs/research/06-approach-comparison.md)
+  end to end** (was a stub): concrete descriptions of all four candidates
+  (§1) grounded in citations already on record (not new research — this
+  phase is synthesis, not discovery); a scored decision matrix (§2, 7
+  criteria × weight) — weighted totals **A 95, D 70, B 53, C 47** (of 100);
+  a blocking-open-questions accounting (§3); the recommendation (§4).
+- **Candidates B and C both fail on a structural fact, not a close call:**
+  B (extend `frotz.koplugin`) has nothing to extend — it's an IF-interpreter
+  host built around piping I/O to a Z-machine/Glulx VM, architecturally
+  unrelated to Magium's flat-var/DNF-condition model, and Phase 4 already
+  found zero existing plugins play CYOA content at all (OQ-003, F-30). C
+  (convert to Ink/Twine + existing player) has nothing to play the converted
+  output on — no e-ink or KOReader Ink/Twine/ChoiceScript player exists
+  anywhere (F-27), so "use existing tooling" collapses into writing A's
+  engine anyway, plus a translation tax (spike 05: achievements/`special:`
+  hooks have no Ink primitive).
+- **Candidate D (build-time hybrid) is a real second-place option** — same
+  parity ceiling as A — but the problem it exists to solve (slow runtime
+  parsing) didn't materialize: spikes 02/03 measured the **full 54-file
+  corpus** parsing in 112–205 ms under two LuaJIT builds, close to the
+  original 95–130 ms V8/desktop anchor. D's standing cost (a build pipeline
+  to write, a second format to keep in sync with every upstream `.magium`
+  update) is real and ongoing; A avoids it by bundling the source files
+  verbatim.
+- **Decision: Candidate A** — standalone KOReader plugin, Lua reimplementation
+  of the `magium-dev` engine, runtime `.magium` parsing. Recorded as
+  [**ADR-002**](docs/decisions/ADR-002-porting-approach.md) (options
+  considered, rationale, consequences — including that reopening B/C/D needs
+  a new superseding ADR with new evidence, not a unilateral revisit).
+  Confidence: **high** on the approach; **medium** on one implementation
+  detail left deliberately open within A — parse-all-at-launch vs. the
+  already-scoped lazy-per-chapter/disk-cache fallback ([`04`
+  §4](docs/research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34))
+  — pending real on-device ARM timing (OQ-001's tail), left for Phase 8 to
+  schedule as an early implementation-phase gate rather than resolved here.
+- **Consolidated [`07-risks-open-questions.md`](docs/research/07-risks-open-questions.md)**
+  (task 6.3): while re-checking every row against the Phase 6 decision, found
+  4 rows (OQ-001, OQ-009, OQ-011, OQ-012) had lost their Blocking?/Status/
+  Resolution column split somewhere across earlier sessions' edits — each was
+  missing one column, which meant their Resolution cell was rendering empty
+  in the table. Re-split all four (no content lost, just realigned) and used
+  the same pass to add each one's Phase 6 read. Added a "Blocking status
+  after Phase 6" section up top: **no open `OQ-NNN` blocks the approach
+  decision** — every one narrows an implementation detail inside candidate A
+  (pagination widget, parse-strategy gate, one outlier condition's
+  mitigation, e-ink redraw tuning) — while **OQ-004** (redistribution
+  permission) blocks the *project*, independent of which approach was chosen.
+- Updated `SUMMARY.md` (status line; replaced "Current recommendation: None
+  yet" with the Phase 6 decision + confidence tags, folding the earlier
+  Phase-0–5 "early read" paragraphs into a collapsed `<details>` block rather
+  than deleting them; findings 29–31; open-questions summary; Decisions
+  list), [`docs/decisions/README.md`](docs/decisions/README.md) index.
+- **No code changed** — per CLAUDE.md, this phase is analysis/decision work
+  only; the ADR is explicit that implementation still needs a separately
+  approved phase.
+- **Next:** Phase 7 (licensing & permissions → `08-licensing.md`, `LICENSE`,
+  an ADR) — ADR-002's consequences section already flags that A's shape
+  (original Lua + verbatim-bundled `.magium` text, no derived/converted
+  artifact) is the simplest case to reason about there. **OQ-004** (family
+  permission for redistribution) is worth pursuing in parallel — it's the
+  one item blocking the project overall and doesn't depend on Phase 7/8
+  being done first (three outreach drafts already sit in [`05`
+  §6](docs/research/05-prior-art.md#6-outreach-46), unsent, waiting on the
+  owner's own account access). Phase 8 (roadmap/effort) can start once
+  Phase 7 closes; it should open with the parse-all-vs-lazy-cache gate as an
+  early, concrete measure-then-decide milestone rather than a paper decision.
 
 ### 2026-08-31 (session 13) — owner review of spike 04's screenshots: TextViewer's chrome corrected, new OQ-013
 
