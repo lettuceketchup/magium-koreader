@@ -27,6 +27,19 @@ wrapper); `crash.log` stays empty unless there is an actual crash. On the **real
 Kindle**, KOReader redirects stdout/stderr into `koreader/crash.log`, so the
 owner greps the timing lines out of that file after the run.
 
+The `init()` auto-run is `pcall`-guarded: it fires unattended from the main loop
+at every launch, so a throw (e.g. a busybox `ls` / `io.popen` quirk on the
+Kindle) is logged as `MAGIUM parse (init) failed: …` and swallowed rather than
+tripping KOReader's crash handler. The menu path is left unguarded — it is
+user-triggered and recoverable.
+
+**Timing caveat:** `time_parse` uses `os.clock()`, which measures process **CPU
+time**, not wall-clock, and under-counts the `io.popen("ls")` fork/wait. For a
+single-threaded parse with no real I/O waits this tracks wall-clock closely, and
+the discrepancy is negligible against a ~1 s gate — but an outside reader should
+know the number is CPU time. (KOReader's `require("ui/time")` monotonic clock is
+the swap if a true wall-clock figure is ever needed.)
+
 ## Results
 
 ### Emulator (x86) — sanity only

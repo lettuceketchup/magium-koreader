@@ -44,8 +44,20 @@ function Magium:init()
   self.ui.menu:registerToMainMenu(self)
   -- Deviation from the brief: auto-run once, off the load hot path, so the
   -- headless emulator smoke test produces the timing lines without a menu tap.
+  -- pcall-guarded: this fires unattended from the main loop at every launch, so
+  -- a throw here (e.g. busybox `ls` / io.popen quirk on the Kindle) must NOT
+  -- reach KOReader's crash handler — that would trap the owner in a boot loop
+  -- recoverable only by deleting the plugin over USB. The menu path stays
+  -- unguarded: it is user-triggered and a crash there is recoverable.
   UIManager:nextTick(function()
-    time_parse(self.path .. "/data")
+    local ok, err = pcall(function()
+      local cold, w1, w2 = time_parse(self.path .. "/data")
+      logger.info(string.format(
+        "MAGIUM parse (init) cold %.0f ms / warm %.0f / %.0f ms", cold, w1, w2))
+    end)
+    if not ok then
+      logger.warn("MAGIUM parse (init) failed: " .. tostring(err))
+    end
   end)
 end
 
