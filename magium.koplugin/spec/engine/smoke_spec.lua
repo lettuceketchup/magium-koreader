@@ -1,0 +1,21 @@
+local helper = require("spec/spec_helper")
+local json = require("engine/vendor/json")
+
+describe("scaffolding", function()
+  it("resolves engine requires", function()
+    assert.is_table(json)
+  end)
+
+  it("round-trips JSON", function()
+    local s = json.encode({ a = 1, b = { "x", "y" } })
+    local back = json.decode(s)
+    assert.are.equal(1, back.a)
+    assert.are.equal("y", back.b[2])
+  end)
+
+  it("sees the story data", function()
+    local f = io.open(helper.data_dir_en .. "/ch1.magium", "r")
+    assert.is_not_nil(f)
+    f:close()
+  end)
+end)
