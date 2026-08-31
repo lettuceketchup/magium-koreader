@@ -102,14 +102,18 @@ function Magium:init()
   }
   -- NOTE: no parse here. init() runs at KOReader startup for every plugin; the
   -- ~2.2 s eager parse happens in openReader() the first time the user actually
-  -- opens Magium (Milestone 0 decision).
-  self:_configureTrace()   -- optional action trace; a no-op unless the debug toggle is on
+  -- opens Magium (Milestone 0 decision). The trace is configured per reader-open
+  -- (openReader), NOT here — init() runs on every FileManager/ReaderUI build, so
+  -- configuring here would spawn a session-header-only trace file on every book
+  -- open/close and let the prune-to-5 delete the file holding real play data.
 end
 
 -- Configure the optional action trace (util/trace, spec §9.2 / ADR-005). OFF
 -- unless the "Record debug log" menu checkbox (G_reader_settings "magium_trace")
--- is set. Its own method — cheap + idempotent (trace.configure resets the
--- buffer) — so the Task 23 emu test can re-run it after flipping the setting.
+-- is set. Called at the top of openReader() — once per real open, before any
+-- trace.event fires — so each play session gets its own trace-<ts>.jsonl and a
+-- mid-session menu flip takes effect on the next Open (matching the help text).
+-- trace.configure resets the buffer + count, so per-open calls are safe.
 function Magium:_configureTrace()
   local on = G_reader_settings:isTrue("magium_trace")
   trace.configure{
@@ -145,7 +149,9 @@ function Magium:_trace_writer()
   for i = 1, #existing - 4 do
     os.remove(dir .. "/" .. existing[i])
   end
-  local f = io.open(dir .. "/trace-" .. os.date("!%Y%m%d-%H%M%S") .. ".jsonl", "w")
+  local path = dir .. "/trace-" .. os.date("!%Y%m%d-%H%M%S") .. ".jsonl"
+  local f = io.open(path, "w")
+  if not f then logger.warn("Magium: could not open trace file " .. path) end
   return function(line)
     if f then f:write(line); f:write("\n"); f:flush() end
   end
@@ -185,7 +191,9 @@ function Magium:_ensureLoaded()
     end
     -- on failure: shared_loaded stays false → the next open retries from scratch.
     trace.event("preload_done", {
-      scenes = shared_story and shared_story:count() or 0,
+      -- count() is a ~2159-iter loop; skip it unless the trace will use it
+      -- (the data table is built before trace.event can no-op).
+      scenes = trace.enabled and shared_story and shared_story:count() or 0,
       ok = ok,
       ms = time.to_ms(time.now() - t0),
     })
@@ -212,7 +220,9 @@ function Magium:addToMainMenu(menu_items)
         text = _("Record debug log"),
         help_text = _("Writes a trace-*.jsonl of your play session under koreader/magium/ for bug reports. Takes effect the next time you open Magium."),
         checked_func = function() return G_reader_settings:isTrue("magium_trace") end,
-        callback = function() G_reader_settings:flipNilOrTrue("magium_trace") end,
+        -- flipNilOrFalse is the default-OFF pairing for checked_func→isTrue:
+        -- nil/false → true, true → nil. (flipNilOrTrue never writes true.)
+        callback = function() G_reader_settings:flipNilOrFalse("magium_trace") end,
       },
     },
   }
@@ -221,7 +231,8 @@ end
 function Magium:onMagiumOpen() self:openReader(); return true end
 
 function Magium:openReader()
-  self:_ensureLoaded()   -- first open this session: ~2.2 s parse behind a progress bar
+  self:_configureTrace()   -- (re)arm the trace for this open — reads the menu toggle, opens a fresh file
+  self:_ensureLoaded()     -- first open this session: ~2.2 s parse behind a progress bar
   trace.event("open")
 
   -- Real precondition for everything below: the opening scene must exist. Guards
@@ -231,6 +242,7 @@ function Magium:openReader()
   if not self.story or not self.story:get_scene(specials.DEFAULT_SCENE) then
     logger.warn("Magium: story data unavailable — cannot open reader")
     trace.event("error", { msg = "story unavailable" })
+    trace.flush()   -- nothing below sets self._loaded, so no lifecycle flush will run
     UIManager:show(InfoMessage:new{ text = _("Magium: could not load the story data.") })
     return
   end
@@ -295,7 +307,9 @@ function Magium:openReader()
         self.save:touch()
         trace.event("save", { op = "touch" })
       end
-      return render_current()
+      local rm = render_current()
+      trace.flush()   -- choice-commit is a flush point (spec §9.2 / ADR-005)
+      return rm
     end,
   }
   UIManager:show(self.reader)
