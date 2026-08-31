@@ -175,11 +175,12 @@ on branch `feat/magium-plugin-phase-i`, fresh subagent per task + two-stage revi
   `os.execute` returns a number, `0` is truthy); Task 3's `_match_set` tests used
   `set(v_x, 1)` (space) where the corpus + `parser.js` use `set(v_x,1)`, and its R3
   multi-digit assertion was dead code — both fixed in the plan and the code.
-- **Task 6 (Milestone 0)** harness built; emulator (x86) cold parse **411 ms** (warm
-  ~350 ms). Suggestive of `eager` but the gate is ARM — **the on-device cold-parse
-  measurement on the Kindle Paperwhite is the owner's to run** (spike 06 Step 4;
-  `docs/spikes/06-ondevice-parse-timing/FINDING.md`, device row PENDING). Task 6 stays
-  open; it does not block Tasks 7–19.
+- **Task 6 (Milestone 0) — DONE.** Harness built; deployed to the owner's Kindle over
+  MTP; **on-device cold parse ≈ 2.2 s** (2282 / 2215 / 2186 ms, three restarts) — over
+  the ~1 s gate → **`story` default `strategy = "lazy"`** (spec §7, ADR-002; emulator
+  x86 was 411 ms, ~5.6× faster). `docs/spikes/06-ondevice-parse-timing/FINDING.md`
+  Status = stable, confidence high. Lazy is now load-bearing for Phase I (Task 20's
+  `cache_store` adapter + Task 15 on the launch hot path).
 - **Next:** Tasks 7–15 (conditions, store, stats, locale, specials, scene render, oracle
   diff, ch1 fixtures, lazy story) then 16–20 (pagination, reader widget, choices, save,
   main.lua wiring). Owner checkpoints remain at Milestone 0 (device parse timing) and

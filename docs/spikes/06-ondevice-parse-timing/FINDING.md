@@ -1,6 +1,6 @@
 # Finding — Spike 06 (on-device parse-timing gate, Milestone 0)
 
-- **Status:** in progress — emulator (x86) sanity done; the on-device (ARM) number is **PENDING the owner's Kindle run** (Task 6 Step 4)
+- **Status:** stable — measured on the owner's Kindle Paperwhite 12th gen, 2026-08-31. **Verdict: `story` default = `lazy`** (cold parse ≈ 2.2 s, over the ~1 s gate).
 - **Last updated:** 2026-08-31
 - **Phase:** Implementation — Milestone 0
 - **Sources:** this spike's harness = [`../../../magium.koplugin/main.lua`](../../../magium.koplugin/main.lua) (temporary; Task 20 replaces it) driving [`engine/story.lua`](../../../magium.koplugin/engine/story.lua) `strategy="eager"` → [`engine/parser.lua`](../../../magium.koplugin/engine/parser.lua); emulator run via `tools/mgm.sh emu-smoke 35` on **LuaJIT 2.1** in `koreader-emulator-x86_64-linux-gnu-debug` (KOReader v2026.07.1, `9192014`), this session's x86_64 container — **not** the Kindle
@@ -57,7 +57,23 @@ the swap if a true wall-clock figure is ever needed.)
 | Measurement | Cold | Warm | Notes |
 |---|---|---|---|
 | **Emulator (x86, LuaJIT 2.1, this container)** | **411 ms** | **344 / 365 ms** | Plugin loads clean — no `Error when loading …/main.lua`, no traceback. Higher than spike 03's pure-parse 112–205 ms: the harness figure includes first-call JIT compilation, the `io.popen("ls …")` file enumeration, and `Story` object allocation on top of the parse itself. |
-| **Device — Kindle Paperwhite 12th gen (1 GHz MTK ARM, koreader-base LuaJIT)** | **PENDING — owner runs on the physical Kindle (Task 6 Step 4)** | PENDING | The number that actually sets the default. x86↔ARM is the whole reason this spike exists — see spike 03's identical caveat. |
+| **Device — Kindle Paperwhite 12th gen (KindlePaperWhite6, ~1 GHz MTK ARM, koreader-base LuaJIT), KOReader v2026.07.1** | **2282 ms** (consistent: 2282 / 2215 / 2186 across three restarts) | **~2037–2354 ms** | The deciding number. Plugin loaded clean — no traceback, `MAGIUM parse (init) cold 2282 ms` confirms the `init()` auto-run fired. **~5.6× the emulator's x86 figure** (411 ms) — steeper than spike 03's ~3–4× guess. Warm barely helps: the work is CPU-bound `.magium` line-scanning + table allocation, not something JIT or page cache speeds up much. |
+
+### Device run — raw log (`koreader/crash.log`, 2026-08-31 19:56–19:57)
+
+```
+08/31/26-19:56:58 INFO  MAGIUM parse cold: 2282 ms
+08/31/26-19:57:02 INFO  MAGIUM parse warm: 2037 ms / 2247 ms
+08/31/26-19:57:02 INFO  MAGIUM parse (init) cold 2282 ms / warm 2037 / 2247 ms
+08/31/26-19:57:24 INFO  MAGIUM parse cold: 2215 ms      (2nd restart)
+08/31/26-19:57:29 INFO  MAGIUM parse warm: 2248 ms / 2354 ms
+08/31/26-19:57:42 INFO  MAGIUM parse cold: 2186 ms      (menu re-tap)
+08/31/26-19:57:47 INFO  MAGIUM parse warm: 2338 ms / 2190 ms
+```
+
+Deployed via MTP (Kindle PW12 has no USB-mass-storage — it presents as an MTP/WPD
+device). 69 runtime files (`_meta.lua`, `main.lua`, `engine/**`, `data/en/**`);
+`spec/` excluded.
 
 ## Decision rule
 
@@ -70,26 +86,35 @@ Threshold rationale: [`04` §3 row 3](../../research/04-constraints-budget.md#3-
 Both implementations ship regardless; this only picks the default (a plugin
 setting flips it).
 
-**Verdict: PENDING the device number.** The emulator's 411 ms cold is well
-under the 1 s line, and spike 03's ARM extrapolation (~1–4 s) straddles it, so
-the emulator result is *suggestive of `eager`* but cannot decide it — a
-mid-range ARM slowdown factor lands on either side of the gate. Do not set the
-`PARSE_STRATEGY` default or fill spec §7.1's measured number until the owner's
-`MAGIUM parse cold:` line from the Kindle is recorded here.
+**Verdict: `story` default `strategy = "lazy"`.** The device cold parse is
+**≈ 2.2 s** — more than double the ~1 s gate. Parsing all 54 files at launch
+would freeze the plugin for ~2 s every time it opens (and warm re-parse barely
+helps, so a "parse once per session" shortcut buys nothing). `lazy` — scan every
+file's `ID:` lines for a scene-id→file index at launch (milliseconds), then parse
++ disk-cache one chapter file on first access (spec §7.2) — is the default.
+`eager` still ships and a plugin setting flips to it (e.g. for a desktop build,
+or if a future device is faster).
 
-## What remains (owner)
+Follow-ups this result creates:
+- **Task 15 (lazy strategy) is now load-bearing for Phase I**, not just "also
+  shipped". Its `cache_store` adapter (Persist-backed in `main.lua`, Task 20) is
+  on the launch hot path.
+- Even lazy's *first* `get_scene` for a chapter parses that whole file
+  (~10–30 ms on device for ch1's 27 KB, extrapolating 2.2 s / 7.6 MB). Fine for
+  a page turn; the `b3ch4a.magium` 490 KB file (OQ-011) would be ~30 ms to parse
+  and is cached after — measure in Phase VIII if it ever feels slow.
+- `Story.new{strategy="eager"}` under `Trapper` with a progress bar (spec §7.1)
+  is not needed for the Phase I default, but keep it wired for the setting.
 
-1. Copy `magium.koplugin/` to the Kindle's `koreader/plugins/`, restart KOReader.
-2. Either let the `init()` auto-run fire, or tap ≡ → More tools → "Magium: time
-   parse".
-3. Pull `koreader/crash.log` over USB; read the `MAGIUM parse cold:` and
-   `MAGIUM parse warm:` lines.
-4. Record them in the device row above, set the verdict against the ~1 s rule,
-   and update spec §7.1's opening note with the measured number + resulting
-   default. Then flip this doc's Status to stable and confidence to match.
+## What was done (owner, 2026-08-31)
+
+Controller deployed `magium.koplugin/` to the Kindle over MTP, owner restarted
+KOReader three times + tapped the menu item, controller pulled `crash.log` over
+MTP and recorded the numbers above.
 
 ## Confidence
 
-**Low** — the only measured number here is x86, and the gate is ARM. Memory is
-not re-measured (spike 03 closed it: ~11.5 MB heap, a non-issue); this spike is
-purely the parse-time gate, and its deciding input is not yet in hand.
+**High** — measured directly on the target device (the exact model, FW, and
+KOReader build the owner runs), three consistent cold runs within 100 ms of each
+other, well clear of the gate in the decisive direction. Memory was closed by
+spike 03 (~11.5 MB heap) and is not re-measured here.
