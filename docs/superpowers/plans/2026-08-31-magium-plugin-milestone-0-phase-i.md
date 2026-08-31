@@ -3487,9 +3487,14 @@ Eject, restart KOReader on the device (or Tools → Plugin management → enable
 
 Close mid-chapter (`Back`), relaunch Magium → resumes on the same scene + state.
 
-- [ ] **Step 4: Pull and inspect `crash.log`**
+- [ ] **Step 4: Pull and inspect `crash.log` + the debug trace**
 
-Copy `<Kindle>\koreader\crash.log`. Confirm: no Lua traceback, no `logger.warn`/`err` from `Magium` across the ch1 playthrough + resume.
+Before playing, enable `≡ → More tools → Magium → Record debug log` (Task 22/23).
+After the playthrough, copy `<Kindle>\koreader\crash.log` **and**
+`<Kindle>\koreader\magium\trace-*.jsonl`. Confirm: no Lua traceback, no
+`logger.warn`/`err` from `Magium`; the trace file's `render` / `choice` /
+`save` records match the path actually played and show no unexpected `warn`
+events. Keep the trace attached to the Phase I completion record.
 
 - [ ] **Step 5: Run the exit-criteria checklist (spec §11.2)**
 
@@ -3518,6 +3523,333 @@ Update `SUMMARY.md` status line: `Phase I (MVP) complete — ch1 playable on-dev
 ```bash
 git add SUMMARY.md research-plan.md docs/spikes/06-ondevice-parse-timing/FINDING.md
 git commit -m "Phase I complete: Magium ch1 plays end-to-end on-device (Task 21)
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+---
+
+> **Tasks 22–23 were added mid-execution (2026-09-01, [ADR-005](../../decisions/ADR-005-debug-trace-toggle.md)).**
+> Execution order: … → Task 20 → **Task 22 → Task 23** → Task 21. Task 21 Step 4
+> also pulls the `trace-*.jsonl` produced during the device playthrough.
+
+## Task 22: `util/trace.lua` — optional structured action trace
+
+**Files:**
+- Create: `magium.koplugin/util/trace.lua`
+- Create: `magium.koplugin/spec/support/fake_trace_writer.lua`
+- Test: `magium.koplugin/spec/trace/trace_spec.lua`
+
+**Interfaces:**
+- Consumes: `require("engine/vendor/json")`. An injected `writer(line_string)` (appends one
+  record, newline-terminated by the writer), an injected `log(msg_string)` (e.g. `logger.info`),
+  an injected `clock() -> number` (ms).
+- Produces: `local trace = require("util/trace")` — a singleton module:
+  - `trace.configure{ enabled=bool, writer=fn|nil, log=fn|nil, clock=fn|nil, flush_every=int }` — resets buffer + count.
+  - `trace.event(kind, data_table_or_nil)` — no-op when `not enabled`; else buffers `{ t=clock(), ev=kind, <data…> }`, mirrors `log("[MGM] " .. summary)`, auto-flushes at `flush_every`.
+  - `trace.flush()` — writes each buffered record as one `json.encode(rec)` line via `writer`, clears the buffer.
+
+Reference: spec §9.2, [ADR-005](../../decisions/ADR-005-debug-trace-toggle.md). **Pure** — Lua stdlib + `engine/vendor/json`. Off by default. `trace.event`'s first line is `if not M.enabled then return end`.
+
+- [ ] **Step 1: Write the fake + failing test**
+
+`magium.koplugin/spec/support/fake_trace_writer.lua`:
+```lua
+-- Plain-function trace double (matches the real injected shape): captures the
+-- JSONL lines and the mirrored log messages.
+local M = {}
+function M.new()
+  local w = { lines = {}, logs = {} }
+  w.writer = function(line) w.lines[#w.lines + 1] = line end
+  w.log = function(msg) w.logs[#w.logs + 1] = msg end
+  return w
+end
+return M
+```
+
+`magium.koplugin/spec/trace/trace_spec.lua`:
+```lua
+require("spec/spec_helper")
+local json = require("engine/vendor/json")
+local trace = require("util/trace")
+local FakeTrace = require("spec/support/fake_trace_writer")
+
+local function fresh(enabled, flush_every)
+  local w = FakeTrace.new()
+  local tick = 0
+  trace.configure{
+    enabled = enabled, writer = w.writer, log = w.log,
+    clock = function() tick = tick + 10; return tick end,
+    flush_every = flush_every or 32,
+  }
+  return w
+end
+
+describe("util/trace", function()
+  it("is a no-op when disabled", function()
+    local w = fresh(false)
+    trace.event("render", { scene = "X" })
+    trace.event("choice", { label = "Go" })
+    trace.flush()
+    assert.are.equal(0, #w.lines)
+    assert.are.equal(0, #w.logs)
+  end)
+
+  it("buffers then flushes one JSON object per event", function()
+    local w = fresh(true)
+    trace.event("render", { scene = "Ch1-Intro1", pages = 2, checkpoint = false })
+    assert.are.equal(0, #w.lines)       -- buffered, not yet written
+    trace.flush()
+    assert.are.equal(1, #w.lines)
+    local rec = json.decode(w.lines[1])
+    assert.are.equal("render", rec.ev)
+    assert.are.equal("Ch1-Intro1", rec.scene)
+    assert.are.equal(2, rec.pages)
+    assert.are.equal("number", type(rec.t))
+  end)
+
+  it("mirrors a sorted scalar summary line to log on every event", function()
+    local w = fresh(true)
+    trace.event("choice", { target = "Ch1-Intro2", label = "Excited", special = "" })
+    assert.are.equal(1, #w.logs)
+    assert.are.equal("[MGM] choice label=Excited special= target=Ch1-Intro2", w.logs[1])
+  end)
+
+  it("auto-flushes at flush_every", function()
+    local w = fresh(true, 3)
+    trace.event("a"); trace.event("b")
+    assert.are.equal(0, #w.lines)
+    trace.event("c")                    -- 3rd → auto-flush
+    assert.are.equal(3, #w.lines)
+    trace.event("d")
+    trace.flush()
+    assert.are.equal(4, #w.lines)
+  end)
+
+  it("configure() clears a pending buffer", function()
+    local w = fresh(true)
+    trace.event("x")
+    fresh(true)                         -- reconfigure
+    trace.flush()
+    assert.are.equal(0, #w.lines)       -- old event dropped
+  end)
+
+  it("round-trips a nested data table", function()
+    local w = fresh(true)
+    trace.event("choice", { set = { v_ch1_intro_feeling = "1", v_current_scene = "Ch1-Intro2" } })
+    trace.flush()
+    local rec = json.decode(w.lines[1])
+    assert.are.equal("1", rec.set.v_ch1_intro_feeling)
+    assert.are.equal("Ch1-Intro2", rec.set.v_current_scene)
+  end)
+end)
+```
+
+- [ ] **Step 2: Run it, verify it fails** (`module 'util/trace' not found`).
+
+- [ ] **Step 3: Implement**
+
+`magium.koplugin/util/trace.lua`:
+```lua
+-- util/trace.lua — optional structured action trace for bug reports (spec §9.2,
+-- ADR-005). OFF by default. Buffers { t=<ms>, ev=<kind>, ...data } records and
+-- flushes them as JSON Lines to an injected writer; mirrors a one-line summary
+-- to an injected log fn. PURE: Lua stdlib + engine/vendor/json. No KOReader.
+
+local json = require("engine/vendor/json")
+
+local M = {
+  enabled = false,
+  _buf = {},
+  _writer = nil,
+  _log = nil,
+  _clock = function() return 0 end,
+  _flush_every = 32,
+  _count = 0,
+}
+
+function M.configure(opts)
+  M.enabled = opts.enabled and true or false
+  M._writer = opts.writer
+  M._log = opts.log
+  M._clock = opts.clock or function() return 0 end
+  M._flush_every = opts.flush_every or 32
+  M._buf = {}
+  M._count = 0
+end
+
+-- "kind k=v k=v" for the mirror log — scalar fields only, key-sorted for stable output.
+local function summary(kind, data)
+  local parts = { kind }
+  if data then
+    local keys = {}
+    for k in pairs(data) do keys[#keys + 1] = k end
+    table.sort(keys)
+    for _, k in ipairs(keys) do
+      local v = data[k]
+      local tv = type(v)
+      if tv == "string" or tv == "number" or tv == "boolean" then
+        parts[#parts + 1] = k .. "=" .. tostring(v)
+      end
+    end
+  end
+  return table.concat(parts, " ")
+end
+
+function M.event(kind, data)
+  if not M.enabled then return end
+  local rec = { t = M._clock(), ev = kind }
+  if data then
+    for k, v in pairs(data) do rec[k] = v end
+  end
+  M._buf[#M._buf + 1] = rec
+  if M._log then M._log("[MGM] " .. summary(kind, data)) end
+  M._count = M._count + 1
+  if M._count >= M._flush_every then M.flush() end
+end
+
+function M.flush()
+  if M.enabled and M._writer then
+    for _, rec in ipairs(M._buf) do M._writer(json.encode(rec)) end
+  end
+  M._buf = {}
+  M._count = 0
+end
+
+return M
+```
+
+- [ ] **Step 4: Run it, verify it passes** (`mgm.sh test spec/trace/trace_spec.lua` → 6/0; `mgm.sh test` whole suite → previous total + 6).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add magium.koplugin/util/trace.lua magium.koplugin/spec/support/fake_trace_writer.lua magium.koplugin/spec/trace/trace_spec.lua
+git commit -m "util/trace: optional structured action trace, off by default (Task 22)
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+---
+
+## Task 23: wire the debug-log toggle + instrumentation
+
+**Files:**
+- Modify: `magium.koplugin/main.lua` (menu submenu, `trace.configure` in `init`, `_trace_writer` + prune, `trace.event` calls, `trace.flush` on the save-flush points)
+- Modify: `magium.koplugin/ui/reader.lua` (`require("util/trace")` + one `page_turn` event in `_turn`)
+- Verification: manual, in the `kodev` emulator.
+
+**Interfaces:**
+- Consumes: `require("util/trace")` (Task 22); KOReader `G_reader_settings` (global), `require("ui/time")`, `require("version")`, `require("device")`, `libs/libkoreader-lfs`.
+
+Reference: spec §9.2, [ADR-005](../../decisions/ADR-005-debug-trace-toggle.md). All instrumentation lives in `main.lua` except the one `page_turn` call `reader.lua` must emit itself (`main.lua` can't see page turns). `save/manager.lua` is **not** touched — `main.lua` emits the `save` events at the call sites where it already decides `touch()` vs `on_achievement_unlocked()` vs `flush_now()`.
+
+- [ ] **Step 1: `main.lua` — menu submenu**
+
+Replace the `addToMainMenu` body:
+```lua
+function Magium:addToMainMenu(menu_items)
+  menu_items.magium = {
+    text = _("Magium"),
+    sorting_hint = "more_tools",
+    sub_item_table = {
+      {
+        text = _("Open Magium"),
+        callback = function() self:openReader() end,
+      },
+      {
+        text = _("Record debug log"),
+        help_text = _("Writes a trace-*.jsonl of your play session under koreader/magium/ for bug reports. Takes effect the next time you open Magium."),
+        checked_func = function() return G_reader_settings:isTrue("magium_trace") end,
+        callback = function() G_reader_settings:flipNilOrTrue("magium_trace") end,
+      },
+    },
+  }
+end
+```
+(The `Dispatcher` action `MagiumOpen` / `onMagiumOpen` → `openReader()` is unchanged — a gesture still opens the reader directly.)
+
+- [ ] **Step 2: `main.lua` — configure trace in `init()`**
+
+Add `local trace = require("util/trace")` with the other module requires, and `local Version = require("version")`, `local Device = require("device")`, `local time = require("ui/time")`.
+
+At the end of `Magium:init()` (after `self.save` is built):
+```lua
+  local on = G_reader_settings:isTrue("magium_trace")
+  trace.configure{
+    enabled = on,
+    writer = on and self:_trace_writer() or nil,
+    log = logger.info,
+    clock = function() return math.floor(time.now() * 1000) end,
+  }
+  trace.event("session", {
+    plugin = "magium",
+    kover = tostring(Version:getNormalizedCurrentVersion()),
+    device = Device.model or "?",
+    ts = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+  })
+```
+Verify the exact APIs against `../koreader/frontend/`: `Version:getNormalizedCurrentVersion()` (or `getCurrentRevision()`), `Device.model`, `time.now()` (`ui/time` returns seconds as a number). Adjust to what exists; the trace must not throw when logging is off (it won't — `trace.event` returns early) and must not throw when on.
+
+- [ ] **Step 3: `main.lua` — `_trace_writer()` with prune-to-5**
+
+```lua
+-- Open this session's trace file; keep only the newest 5 trace-*.jsonl.
+function Magium:_trace_writer()
+  local dir = save_dir()
+  local lfs = require("libs/libkoreader-lfs")
+  local existing = {}
+  for name in lfs.dir(dir) do
+    if name:match("^trace%-.*%.jsonl$") then existing[#existing + 1] = name end
+  end
+  table.sort(existing)                       -- names sort chronologically
+  for i = 1, #existing - 4 do                -- keep newest 5 after this run makes 6
+    os.remove(dir .. "/" .. existing[i])
+  end
+  local path = dir .. "/trace-" .. os.date("!%Y%m%d-%H%M%S") .. ".jsonl"
+  local f = io.open(path, "w")
+  return function(line)
+    if f then f:write(line); f:write("\n"); f:flush() end
+  end
+end
+```
+(`save_dir()` is the existing helper from Task 20 — it `lfs.mkdir`s `<datadir>/magium` and returns the path. Confirm its return value has no trailing slash and adjust the `..` joins.)
+
+- [ ] **Step 4: `main.lua` — `trace.event` calls**
+
+- `_ensureLoaded()`: `trace.event("preload_start")` before `story:preload`; after, `trace.event("preload_done", { scenes = self.story:count(), ms = <elapsed> })` (compute `ms` with `time.now()` around the wrap).
+- `openReader()`: `trace.event("open")` at the top (after the nil-story guard from the Task 20 fix); after `save:load()`, `trace.event("resume", { scene = resume or "fresh" })`.
+- `render_current()` (the closure): before `return`, `trace.event("render", { scene = rm.scene_id, paras = #rm.paragraphs, choices = #rm.choices, checks = #rm.stat_checks, checkpoint = rm.checkpoint })` — where `rm` is the render_model it is about to return. On the unknown-scene reset branch, `trace.event("warn", { msg = "unknown scene", scene = id })`.
+- `advance()` (the closure): after computing `touched_ac` and dispatching `special`, `trace.event("choice", { label = button.label, target = button.target or "", special = button.special or "", ac = touched_ac })`; then at the flush decision — `if touched_ac then self.save:on_achievement_unlocked(); trace.event("save", { op = "achievement" }) else self.save:touch(); trace.event("save", { op = "touch" }) end`.
+- `on_close` (passed to `Reader:new`): `self.save:flush_now("close"); trace.event("save", { op = "flush", reason = "close" }); trace.event("close", { reason = "reader" }); trace.flush()`.
+- `onSuspend` / `onClose` / `onCloseWidget` (the `if self._loaded` guarded handlers): add `trace.event("save", { op = "flush", reason = <reason> }); trace.flush()` after the existing `self.save:flush_now(...)`.
+
+- [ ] **Step 5: `ui/reader.lua` — the one page_turn event**
+
+Add `local trace = require("util/trace")` with the requires. In `_turn(delta)`, after `self.page_idx = next_idx` (the successful-turn path):
+```lua
+  trace.event("page_turn", { from = self.page_idx - delta, to = self.page_idx, total = #self.pages })
+```
+(`_commit_choice` already routes through `main.advance` which emits `choice` + `render`; no trace call needed there.)
+
+- [ ] **Step 6: Verify in the emulator**
+
+Temp: enable the setting for the smoke run — either `G_reader_settings:makeTrue("magium_trace")` in the temp `nextTick` auto-drive before `openReader`, or `mgm.sh` sets it in the emulator settings. Re-add the Task 20-style pcall-guarded auto-drive (walk pages + commit ~4 choices + close), then:
+```bash
+wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh emu-smoke 45'
+```
+Confirm:
+- `koreader/magium/trace-<ts>.jsonl` is created; `cat` it — line 1 is `{"ev":"session",…}`, then `preload_done`, `open`, `resume`, `render`, `page_turn`, `choice`, `save`, `close` records, each valid JSON.
+- `[MGM] …` summary lines appear in the run log (mirrored to `logger`).
+- With the setting OFF (default): a second `emu-smoke` run writes **no** `trace-*.jsonl` and emits **no** `[MGM]` lines.
+- `mgm.sh test` whole suite still green.
+- Revert the temp auto-drive + temp setting flip; commit the clean files.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add magium.koplugin/main.lua magium.koplugin/ui/reader.lua
+git commit -m "main + reader: wire the debug-log toggle + action-trace instrumentation (Task 23)
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```

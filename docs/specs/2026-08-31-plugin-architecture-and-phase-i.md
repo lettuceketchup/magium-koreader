@@ -450,6 +450,22 @@ The serialization + debounce logic takes an injected writer so it is
 unit-testable without touching the filesystem; the KOReader `Persist`/`LuaSettings`
 wiring is a thin adapter.
 
+### 9.2 Debug action-trace (`util/trace.lua`, optional) — [ADR-005](../decisions/ADR-005-debug-trace-toggle.md)
+
+Off by default. A `Record debug log` checkbox in `≡ → More tools → Magium`
+(persisted as `G_reader_settings` key `magium_trace`) turns on a structured trace
+of player actions and plugin reactions — `session` header, `preload`/`preload_done`,
+`open`/`resume`, `render` (scene id + para/choice/check counts + checkpoint),
+`page_turn`, `choice` (label/target/special/`set_vars` keys), `save`
+(op/reason), `warn`/`error`, `close`. Records buffer in memory and flush as
+**JSON Lines** to `koreader/magium/trace-<YYYYMMDD-HHMMSS>.jsonl` (one file per
+reader-open-with-logging-on, newest 5 kept) on choice-commit / reader-close /
+suspend / every 32 events — never per page turn. Each event also mirrors a
+one-line `logger.info("[MGM] …")` to `crash.log`. `util/trace.lua` is pure
+(stdlib + `engine/vendor/json`); the file writer, `logger` fn, and clock are
+injected by `main.lua`. When off, `trace.event()` is a single guarded return.
+The owner pulls the `.jsonl` files over USB alongside `crash.log` for bug reports.
+
 ---
 
 ## 10. Milestone 0 — on-device parse-timing gate
@@ -528,12 +544,20 @@ spec's §7 default updated with the result.
   immediate flush + **resume** (reopen → `store` restored → `v_current_scene`
   scene shown). No manual slots / checkpoint UI (Phase III).
 
+**Diagnostics:**
+
+- `util/trace.lua` (§9.2, [ADR-005](../decisions/ADR-005-debug-trace-toggle.md)) —
+  optional per-session JSON-Lines action trace, off by default, toggled from the
+  plugin menu. Added mid-Phase-I so the owner's Task 21 device playthrough is
+  itself traceable.
+
 **Plugin:**
 
-- `main.lua` — `more_tools` menu item + `Dispatcher` action; the eager
-  `story:preload()` (~2.2 s) runs once, on the **first `openReader()`** of the
-  session, behind a `Trapper` progress bar (`init()` does no parsing); lifecycle
-  flush on close/suspend/`Close`.
+- `main.lua` — `more_tools` menu (`Open Magium` + `Record debug log`) + `Dispatcher`
+  action; the eager `story:preload()` (~2.2 s) runs once, on the **first
+  `openReader()`** of the session, behind a `Trapper` progress bar (`init()` does
+  no parsing); the parsed `story` is session-scoped (module upvalue), not
+  per-plugin-instance; lifecycle flush on close/suspend/`Close`.
 - `_meta.lua`.
 
 **No title/menu screen in Phase I** — opening the plugin goes straight to
