@@ -14,7 +14,11 @@ KOReader v2026.07.1 (`kindlehf`), ~1 GB RAM.
 
 ## Status
 
-**Phase: RESEARCH.** Nothing is being implemented. See
+**Phase: RESEARCH — substantially complete.** Nothing is being implemented
+yet. The dossier concludes with a chosen approach
+([ADR-002](docs/decisions/ADR-002-porting-approach.md)) and a phased
+implementation roadmap ([`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md)),
+awaiting owner review before an implementation-design cycle opens. See
 [`research-plan.md`](research-plan.md) for the plan and progress, and
 [`SUMMARY.md`](SUMMARY.md) for current conclusions.
 

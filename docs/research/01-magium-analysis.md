@@ -1,6 +1,6 @@
 # 01 — Magium engine analysis
 
-- **Status:** draft (source-grounded first pass complete 2026-08-31; key behaviours spot-checked against the running oracle)
+- **Status:** stable (source-grounded, spot-checked against the oracle in Phase 1; independently validated by a full Lua reimplementation matching 6/6 diffed fixtures + exact full-corpus structural counts — [spike 02](../spikes/02-engine-in-lua/FINDING.md), [spike 03](../spikes/03-full-corpus-memory-parse/FINDING.md))
 - **Last updated:** 2026-08-31
 - **Phase:** 1
 - **Sources:** `../magium-dev` @ `51f5aa9` — `src/parser.js`, `src/utils.js`, `src/renderers.js`, `src/main_setup.js`, `templates/*.ejs`, `public/scripts/{utils,saves,stats,theme}.js`, `data/en/{ui.json,locales.json,achievements1.json}`; the running differential oracle ([`../../reference/magium-dev-notes.md`](../../reference/magium-dev-notes.md)); corpus scan [`../../reference/tools/scan-magium-constructs.js`](../../reference/tools/scan-magium-constructs.js)

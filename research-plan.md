@@ -1,9 +1,11 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** active — Phases 0–6 done (approach chosen —
-  [ADR-002](docs/decisions/ADR-002-porting-approach.md)); **Phase 7 deferred**
-  (personal-use-only scope confirmed by owner —
-  [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)); Phase 8 next
+- **Status:** research phase substantially complete — Phases 0–6 and 8 done
+  (approach chosen — [ADR-002](docs/decisions/ADR-002-porting-approach.md);
+  roadmap written — [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md));
+  **Phase 7 deferred** (personal-use-only scope confirmed by owner —
+  [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)). Awaiting
+  owner review of the roadmap before opening the implementation-design cycle.
 - **Last updated:** 2026-08-31
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -136,18 +138,84 @@ proceeds to Phase 8 in the meantime.
 **Deliverable:** `docs/research/09-roadmap-effort.md`.
 **Depends on:** Phase 6.
 
-- [ ] 8.1 Phased implementation roadmap for the chosen approach: MVP (render + choose + conditions) → saves → stats/stat-checks → achievements → settings/themes → i18n → polish. Each phase: deliverables, dependencies.
-- [ ] 8.2 Effort band per phase (e.g. S/M/L or hour ranges). Calibrate to: experienced generalist programmer new to Lua (fast ramp) and new to the KOReader API (the real ramp — carry a premium on KOReader-facing work) + targeted community help. State assumptions.
-- [ ] 8.3 Sequencing / critical path; what unblocks what; what can be parallelised or handed to a contributor.
-- [ ] 8.4 Timeline sketch under a stated weekly-hours assumption.
-- [ ] 8.5 Handoff checklist (design doc §11 exit criteria): confirm all `docs/research/*` are `stable` or explicitly deferred with a reason (`08-licensing.md` stays a stub by design — [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)), every `OQ` closed or deferred, recommendation recorded.
-- [ ] 8.6 Start a new brainstorming cycle for the implementation design.
+- [x] 8.1 Phased implementation roadmap for the chosen approach — [`09` §1](docs/research/09-roadmap-effort.md#1-phased-implementation-roadmap-81): Milestone 0 (parse-timing gate) → I (MVP: engine core + custom pagination widget) → II (full corpus + nav) → III (saves) → IV (stats) → V (achievements) → VI (settings/themes) → VII (i18n) → VIII (polish). Each with deliverables + dependencies.
+- [x] 8.2 Effort bands per phase (hour ranges) — [`09` §2](docs/research/09-roadmap-effort.md#2-effort-summary-table-82): ~100–162 hrs total, engine-logic work banded low (mechanical, oracle-checked) and KOReader-facing work (the pagination widget, e-ink tuning) banded with a ramp premium, per the owner's stated skill profile. Assumptions stated in [`09` §0](docs/research/09-roadmap-effort.md#0-scope--assumptions-82-calibration).
+- [x] 8.3 Sequencing / critical path — [`09` §3](docs/research/09-roadmap-effort.md#3-critical-path--parallelism-83): M0→I→II is strictly sequential; III/IV/V (saves/stats/achievements) and VII (i18n) are independent extensions of Phase II's engine, parallelizable or handable to a contributor; VI likely shrinks once scoped against KOReader's own settings.
+- [x] 8.4 Timeline sketch — [`09` §4](docs/research/09-roadmap-effort.md#4-timeline-sketch-84): three named hobby-pace scenarios (5/10/20 hrs·wk⁻¹) against the ~100–162 hr total, since the owner hasn't stated a real weekly-hours figure — explicitly flagged as an assumption to replace.
+- [x] 8.5 Handoff checklist — [`09` §5](docs/research/09-roadmap-effort.md#5-handoff-checklist-85-design-doc-11-exit-criteria): `docs/research/00`–`06`,`09` promoted to `stable` this session (residual real-device-only items explicitly carried into the roadmap, not left unstated); `07` stays `living`, `08` stays a stub by design ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)); every `OQ-NNN` closed, deferred, or now scheduled as roadmap work (see `07`'s new "Phase 8 disposition" note); recommendation already recorded (Phase 6). Two rows genuinely need the owner, not more research: reviewing the roadmap, and approving the implementation-design cycle's start.
+- [x] 8.6 Start a new brainstorming cycle for the implementation design — **prepared, not started**: [`09` §6](docs/research/09-roadmap-effort.md#6-starting-the-implementation-design-cycle-86) describes what it looks like and where it begins (Milestone 0), but per CLAUDE.md no implementation-phase work — including formally opening that cycle — starts without the owner's approval, so this session stops at "ready" rather than unilaterally opening it.
 
 ---
 
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-08-31 (session 16) — Phase 8 done: roadmap + effort + timeline, research phase substantially complete
+
+Picked up at "Phase 8 next" from session 15. Phase 8's job was a credible
+implementation roadmap for candidate A (ADR-002) and a clean handoff to the
+design phase — the last deliverable the research phase needed.
+
+- **Wrote [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md) end to
+  end** (was a stub): a Milestone 0 pre-flight (an on-device parse-timing gate
+  that resolves OQ-001's tail *before* Phase I starts, per Phase 6's explicit
+  ask that this be an early gate, not a paper decision), then eight roadmap
+  phases (I MVP → II full corpus/nav → III saves → IV stats → V achievements
+  → VI settings → VII i18n → VIII polish), each with deliverables, dependencies,
+  and an hour-range effort band. Total: **~100–162 hrs**, with the ramp premium
+  concentrated on two items — Phase I's custom fullscreen pagination widget
+  (resolves OQ-013; no KOReader prior art surveyed does "fullscreen +
+  paginated" together) and Phase VIII's on-device tuning (OQ-007 e-ink feel,
+  OQ-011 condition-outlier cost) — both flagged as the best-targeted spots for
+  community help. Critical-path analysis (§3): M0→I→II is strictly sequential,
+  but III/IV/V (saves/stats/achievements) and VII (i18n) are independent
+  extensions of Phase II's engine — real parallelization or contributor-handoff
+  opportunities, not just a flat list. Timeline (§4): three named hobby-pace
+  scenarios (5/10/20 hrs/week) against the total, since the owner hasn't stated
+  a real weekly-hours figure — explicit assumption, not asserted as fact.
+- **Deliberate design choice: Phase I builds the real pagination widget from
+  the start**, not `TextViewer` first with a later swap — OQ-013 already
+  established `TextViewer` is the wrong final widget, so building on it now
+  would be solved work redone. Spike 02/04 code is treated explicitly as a
+  validated *design reference*, not a copy-paste base — per CLAUDE.md, spike
+  code is throwaway and production code is written fresh, hardened, and
+  covers the full 54-file/13-special-case surface the spikes didn't attempt.
+- **Closed the exit-criteria gap this surfaced:** checking design doc §11
+  found six of nine `docs/research/*` docs (`00`–`05`) still marked `draft`,
+  despite their phases having finished sessions ago — an oversight, not a
+  real gap. Reviewed each one's specific "why draft" note and promoted all
+  six to `stable`, folding in what Phase 5's spikes actually closed (e.g. `01`
+  now cites spike 02/03's full-corpus validation, not just "spot-checked";
+  `03`'s Windows-dev-loop caveat is resolved per OQ-012) and being explicit
+  about what's still genuinely open and why (`03`/`04` note that on-device
+  ARM parse time, GC pauses, and e-ink refresh latency remain real-hardware-only
+  measurements, now carried into `09`'s Milestone 0 / Phase VIII rather than
+  stated as an unexplained gap). `07` stays `living` (a register, never
+  "finished," by its own stated design) and `08` stays a stub
+  ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)) — both
+  intentional, not oversights. Added a "Phase 8 disposition" note to
+  [`07`](docs/research/07-risks-open-questions.md) cross-referencing exactly
+  where each still-open OQ (001's tail, 007, 011, 013) lands in the new
+  roadmap, so "closed or explicitly deferred with a reason" is genuinely true
+  for every row, not just the ones Phase 6 already closed.
+- **Task 8.6 (open a new brainstorming cycle) deliberately left at "prepared,
+  not started."** [`09` §6](docs/research/09-roadmap-effort.md#6-starting-the-implementation-design-cycle-86)
+  describes what starting it looks like (a new spec doc under `docs/specs/`,
+  beginning with Milestone 0) but does not do it — CLAUDE.md is explicit that
+  no implementation-phase work starts without a separately approved phase,
+  and that bar applies to formally opening the design cycle too, not just to
+  writing code. This mirrors how Phase 7's scope question and the Phase 4
+  outreach drafts were both left for the owner rather than decided
+  unilaterally this session.
+- **No code changed** — per CLAUDE.md, this phase is planning/estimation work
+  only.
+- **Next:** the research phase is substantially complete — every exit
+  criterion in [`09` §5](docs/research/09-roadmap-effort.md#5-handoff-checklist-85-design-doc-11-exit-criteria)
+  is met except two that need the owner directly: reviewing this roadmap, and
+  approving the start of the implementation-design cycle (§6). Once that
+  happens, the design phase opens with Milestone 0 (the parse-timing gate) as
+  its first concrete action.
 
 ### 2026-08-31 (session 15) — scope clarified: personal use only; licensing deferred (ADR-003)
 

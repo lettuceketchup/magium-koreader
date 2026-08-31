@@ -1,6 +1,6 @@
 # 02 — The `.magium` file format
 
-- **Status:** draft (grammar + full corpus scan done 2026-08-31; construct counts reproducible via [`scan-magium-constructs.js`](../../reference/tools/scan-magium-constructs.js))
+- **Status:** stable (grammar + full corpus scan done 2026-08-31, construct counts reproducible via [`scan-magium-constructs.js`](../../reference/tools/scan-magium-constructs.js); the described grammar is what [spike 02](../spikes/02-engine-in-lua/FINDING.md)'s Lua parser was built and oracle-validated against)
 - **Last updated:** 2026-08-31
 - **Phase:** 1
 - **Sources:** `../magium-dev` @ `51f5aa9` — `src/parser.js`, `src/utils.js`; all 54 files of `../magium-dev/data/en/*.magium`; `../magium-dev/data/fr/*.magium`; corpus scan [`reference/tools/scan-magium-constructs.js`](../../reference/tools/scan-magium-constructs.js) (run 2026-08-31, Node v24)

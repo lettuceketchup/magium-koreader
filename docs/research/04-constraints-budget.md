@@ -1,7 +1,14 @@
 # 04 — Constraints budget (go / no-go)
 
-- **Status:** draft (Phase 3 pass complete 2026-08-31; device + platform limits
-  settled, three rows carry a measurement deferred to named spikes A/B/D)
+- **Status:** stable (Phase 3 pass complete 2026-08-31; go/no-go verdict
+  reached — no 🔴, six 🟡 all with named mitigations. Spikes A/B/D ran in
+  Phase 5: memory (row 2) and normal-case parse/condition-eval cost are now
+  real LuaJIT measurements, not just the V8 estimate — but on **desktop
+  x86**, not the Kindle's ARM core. Real on-device parse time, LuaJIT
+  GC-pause behavior, and `"ui"`-refresh latency (rows 3, 6, 7) remain
+  genuinely unmeasured and are carried forward as
+  [`09-roadmap-effort.md`](09-roadmap-effort.md)'s Milestone 0 gate and
+  Phase VIII polish work, not a research-phase gap)
 - **Last updated:** 2026-08-31 (Phase 3: demands quantified, budget table rebuilt
   with mitigations, save-blob footprint measured, go/no-go verdict added)
 - **Phase:** 3

@@ -1,7 +1,12 @@
 # 03 — KOReader plugin platform & constraints
 
-- **Status:** draft (source-grounded first pass complete 2026-08-31 against the
-  v2026.07.1 tree; e-ink feel + Windows dev loop still need a spike)
+- **Status:** stable (source-grounded against the v2026.07.1 tree, Phase 2;
+  Windows dev loop resolved — [OQ-012](07-risks-open-questions.md) — a real
+  `kodev` build now run in both WSL2 and a cloud session, Phase 5. E-ink
+  refresh **feel** ([OQ-007](07-risks-open-questions.md)) remains genuinely
+  open — needs the owner at a real or WSL2-emulated device — and is carried
+  into [`09-roadmap-effort.md`](09-roadmap-effort.md) Phase VIII as scoped
+  implementation-time work, not a research-phase gap)
 - **Last updated:** 2026-08-31
 - **Phase:** 2
 - **Sources:** KOReader source, sibling checkout `../koreader` @ **`v2026.07.1`**
