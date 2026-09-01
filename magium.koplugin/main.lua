@@ -137,23 +137,36 @@ end
 
 -- Open this session's trace file under <datadir>/magium/ and prune old ones:
 -- keep only the newest 4 pre-existing trace-*.jsonl (this run's new file makes
--- 5). Returns a line writer (fsynced per line); the file is left open for the
--- process lifetime — the OS closes it on exit.
+-- 5). Returns a line writer (fsynced per line), or nil if the file could not be
+-- opened; the file is left open for the process lifetime — the OS closes it on
+-- exit.
 function Magium:_trace_writer()
   local dir = save_dir()   -- lfs.mkdir'd, no trailing slash
-  local existing = {}
-  for name in lfs.dir(dir) do
-    if name:match("^trace%-.*%.jsonl$") then existing[#existing + 1] = name end
-  end
-  table.sort(existing)   -- trace-YYYYmmdd-HHMMSS names sort chronologically
-  for i = 1, #existing - 4 do
-    os.remove(dir .. "/" .. existing[i])
-  end
+  -- Pruning is best-effort. lfs.dir throws on an unreadable directory and
+  -- os.remove can fail on a locked file; a diagnostic must never break the game
+  -- (ADR-005), so a throw here costs us the prune, not the trace.
+  local pruned = pcall(function()
+    local existing = {}
+    for name in lfs.dir(dir) do
+      if name:match("^trace%-.*%.jsonl$") then existing[#existing + 1] = name end
+    end
+    table.sort(existing)   -- trace-YYYYmmdd-HHMMSS names sort chronologically
+    for i = 1, #existing - 4 do
+      os.remove(dir .. "/" .. existing[i])
+    end
+  end)
+  if not pruned then logger.warn("Magium: could not prune old trace files in " .. dir) end
   local path = dir .. "/trace-" .. os.date("!%Y%m%d-%H%M%S") .. ".jsonl"
-  local f = io.open(path, "w")
-  if not f then logger.warn("Magium: could not open trace file " .. path) end
+  local ok, f = pcall(io.open, path, "w")
+  if not ok or not f then
+    -- return nil, not a writer that silently drops every line:
+    -- trace.configure{ writer = nil } is the honest degradation ("mirror to
+    -- crash.log only") and flush() then skips the write path entirely.
+    logger.warn("Magium: could not open trace file " .. path)
+    return nil
+  end
   return function(line)
-    if f then f:write(line); f:write("\n"); f:flush() end
+    f:write(line); f:write("\n"); f:flush()
   end
 end
 
