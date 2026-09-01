@@ -7,9 +7,11 @@
   [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
   **Implementation underway** — the [Phase I spec](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
   ([ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md)) is approved
-  and **Phase I is complete** (full engine + `ch1` playable + autosave/resume;
-  on-device sign-off 2026-09-01, spec §11.2). **Next: Phase II** (full corpus +
-  navigation) — needs its own spec cycle.
+  and **Phase I is complete** (on-device sign-off 2026-09-01).
+  **Phase II implemented 2026-09-01** ([spec](docs/specs/2026-09-01-phase-ii-full-corpus-and-navigation.md),
+  branch `feat/phase-ii-full-corpus-nav`) — full-corpus oracle parity
+  **8887/8887**, in-game menu, back-nav cut ([ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md));
+  automated gates green, owner device playthrough pending. **Next: Phase III** (saves).
 - **Last updated:** 2026-09-01
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -154,6 +156,112 @@ proceeds to Phase 8 in the meantime.
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-09-02 (session 27) — SSH deploy: per-device key setup (owner: "all or nothing" passwordless is no good)
+
+KOReader's "Login without password" is global, so the WiFi deploy now uses
+**key-only auth** with a per-device setup, all state gitignored under
+`tools/.kindle/` (one `id_ed25519` keypair + `devices/<name>.json`).
+
+- `tools/kindle-ssh-common.ps1` — dot-sourced helpers: keypair gen (`-N '""'` is
+  the Windows-OpenSSH empty-passphrase form), device-config load/save,
+  `Test-KindleSsh` (probes `MAGIUM_SSH_OK` + the real koreader dir).
+- `tools/kindle-ssh-setup.ps1 -Name <n>` — USB; plants the pubkey at
+  `koreader/settings/SSH/authorized_keys` over MTP (delete-first + size-verify,
+  same MTP-won't-overwrite guard as `deploy-kindle.ps1`), creates `settings/SSH/`
+  if the SSH server was never started, writes the device config.
+- `tools/kindle-ssh-test.ps1 -Name <n> -Ip <addr>` — key-auth check; persists IP
+  + probed koreader dir back to the config.
+- `tools/deploy-kindle-ssh.ps1` → **renamed `tools/kindle-ssh-deploy.ps1`**; now
+  resolves the target from the device config, runs `Test-KindleSsh` before
+  touching the device, uses `-i <key> -o BatchMode=yes`. `-Ip` alone still works.
+- On device, one-time: SSH server → tick **"Login with key only (SECURE)"**.
+- Smoke: 4 scripts parse-clean; common-helper round-trip/update/error paths pass.
+- **End-to-end verified on the owner's PW12** (192.168.1.11): key planted over
+  USB, key-auth test OK, deploy pushed 75/75 files, all 4 spot-checked files
+  md5-identical to staging (no stale-MTP problem). Two PS-5.1 fixes en route:
+  `2>&1` on native `ssh` throws under `EAP=Stop` (guard with local `EAP=Continue`);
+  piping the sftp batch to stdin prepends a BOM → "Invalid command." (write the
+  batch to a file, `sftp -b`).
+
+### 2026-09-01 (session 26) — Phase II: owner device test → deploy bug found, checkpoint blob, UI test harness
+
+Owner deployed Phase II to the Kindle and reported: menu doesn't work (any header
+tap closes the game), `checkpoint_load`/`saves` softlock on death scenes, the
+"Choices" footer is still there. Asked for emulator-based testing going forward.
+
+- **Root cause of the menu report: the MTP deploy was silently NOT overwriting
+  changed files.** The device was running a build from before session 22 (menu
+  still a submenu). `tools/deploy-kindle.ps1` rewritten — **wipe the device
+  plugin folder first**, then copy fresh, then **verify every file by size** and
+  fail loudly. Nothing about Phase II's menu is actually broken (see next).
+- **New headless UI test harness** (`tools/mgm.sh koenv` + `test-ui`,
+  `spec/ui/reader_smoke.lua`): runs the real KOReader widget stack in the built
+  emulator's Lua env, fires actual tap events at the `Reader`, asserts
+  header-left→close, header-right/middle→menu, body→page-turn, no "Choices"
+  footer. **9/9 — the Phase II header split is correct.** This is the regression
+  test whose absence let the (stale-code) menu report look like a code bug.
+- **`checkpoint` blob pulled forward from Phase III** (`save/manager.lua`:
+  `save_checkpoint`/`load_checkpoint`/`has_checkpoint`; +3 tests). Fixes the
+  real softlock: on a death scene (`B2-Ch07a-Kill` = `restart` / `checkpoint_load`
+  / `saves` only), D4's no-op `checkpoint_load` left `restart` as the sole way
+  out. Now it restores `currentState` from the checkpoint (achievements kept,
+  parity); no checkpoint → an `InfoMessage`, not silence. Menu "Load from last
+  checkpoint" enabled when one exists. `special:stats` → `InfoMessage` (Phase IV);
+  `special:saves` → the menu (50 slots = Phase III). **D4 revised in the spec.**
+- **`ui/reader.lua`**: choices page no longer shows the literal "Choices" footer.
+- **Gates:** busted **97/0**, engine **72/0**, `test-ui` **9/9**, headless load
+  clean, oracle-corpus still 8887/8887 (no `engine/` change). Commits `e70c8ee`
+  (code) + this doc pass.
+- **Deploy workaround (owner asked for one):** `tools/deploy-kindle-ssh.ps1` —
+  deploy over WiFi via KOReader's SSH server (`rm -rf` + `sftp put -r`), no USB,
+  no MTP, no manual delete. One-time: enable the SSH server in KOReader (Tools →
+  Network). Now the preferred device loop. `deploy-kindle.ps1` (USB) kept as a
+  fallback, now with the wipe+verify.
+- **Emulator playthrough testing (owner asked — "no manual Book 1"):**
+  `spec/support/headless_game.lua` plays the game headlessly (engine+save wired
+  like `main.lua`); `spec/flow/playthrough_spec.lua` walks 100+ scenes of real
+  choices + exercises checkpoint/restart/softlock paths;
+  `spec/engine/navigation_spec.lua` statically checks every choice target +
+  reachability. `mgm.sh test` 104/0, bare-luajit subset 89/0, `test-ui` 9/9.
+- **Next:** owner enables the KOReader SSH server, runs `deploy-kindle-ssh.ps1`,
+  spot-checks Phase II on device (menu, a checkpoint, restart, the footer). Then
+  spec `stable` + branch merge.
+
+### 2026-09-01 (session 25) — Phase II implemented: full-corpus parity 8887/8887, in-game menu, back-nav cut
+
+Brainstorming → spec → writing-plans → executed inline on `feat/phase-ii-full-corpus-nav`.
+
+**Shipped (commit `ade1a2f`):**
+- **Scene `set()` write-back** — `engine/scene.persist_effects(store, rm)` (2-line
+  pure helper, no `engine/commit.lua`), called in `main.lua` `render_current`.
+  Ports magium-dev's per-render `storeVariable()` writes. Ships the faithful
+  "re-applies on resume" quirk with a `ponytail:` upgrade comment.
+- **Special case #8** — `specials.HIDE_DEVICE_LOCK_TEXT` + a `scene.lua` branch:
+  empty device-lock stat label on `B3-Ch01a-Crossbow` only (its prose already
+  states the lock). **`mgm.sh oracle-corpus` → 8887/8887**, 0 DIFF (was 8886).
+  Carry-forward #3 (`Ch11b-Hole` `v_hearing <= 4`) confirmed clean in the sweep.
+- **In-game menu** — `Magium:openMenu()` over KOReader `ButtonDialog` (no
+  `ui/menu.lua`): full `menu.ejs` shell, Load-checkpoint/Save-Load/Achievements/
+  Settings `enabled = false`, Back-to-game + New-game + About wired. Reached via
+  a header tap-band split in `ui/reader.lua` (`close_zone_w`: left = close, right
+  = menu; `"Menu"` label affordance). `special:saves`/`stats` → the menu;
+  `checkpoint_*` stay no-op (D4).
+- **New game** = `reset_to_intro` (keeps `v_ac_*`) → flush → close+reopen reader.
+
+**Decisions:** D1 no back/history stack (**[ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md)**,
+magium-dev has none — overrides the roadmap line); D2 menu full-shell-disabled;
+D3 Crossbow faithful-empty; D4 checkpoint hooks no-op. Ponytail trims: 0 new
+files (spec had called for `engine/commit.lua` + `ui/menu.lua` + 2 spec files).
+
+**Gates:** engine subset 72/0, full busted 94/0, oracle-corpus 8887/8887,
+headless `kodev` load clean, `main.lua` parses. **Not done:** owner on-device
+playthrough (spec §9 last box) → then spec `stable` + branch merge.
+
+**Out of Phase II (unchanged):** achievement `"1"→"2"` "seen" bump stays with
+the Phase V toast.
+
+**Next:** owner device run; then Phase III (saves) — its own spec cycle.
 
 ### 2026-09-01 (session 24) — oracle case matrix auto-derived; full-corpus sweep now runnable
 

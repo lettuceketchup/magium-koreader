@@ -27,6 +27,7 @@ local Reader = InputContainer:extend{
   locale = nil,
   advance = nil,     -- function(button) -> new render_model (caller-supplied, Task 18)
   on_close = nil,    -- function()
+  on_menu = nil,     -- function() — opens the in-game menu (Phase II)
   covers_fullscreen = true,
   page_idx = 1,
 }
@@ -58,6 +59,12 @@ function Reader:init()
   -- (the VerticalSpan under the header is Size.padding.large > default).
   self.header_band_h = self.pad + self.header_h
 
+  -- The header band splits into a left close zone (just the "‹ Close" label
+  -- plus a gap) and a right menu zone (the rest of the width). Both sit above
+  -- the page-turn zones (_zone starts at self.header_band_h).
+  self.close_zone_w = self:_text_width(CLOSE_LABEL, Font:getFace(HEAD_FACE, 18))
+    + Size.padding.large
+
   if Device:hasKeys() then
     self.key_events = {
       NextPage = { { Device.input.group.PgFwd } },
@@ -68,9 +75,14 @@ function Reader:init()
   self.ges_events = {
     TapForward = { GestureRange:new{ ges = "tap", range = self:_zone("right") } },
     TapBackward = { GestureRange:new{ ges = "tap", range = self:_zone("left") } },
-    -- The header band closes; it sits strictly above both page-turn zones.
+    -- The header band's left part closes, the rest opens the menu; both sit
+    -- strictly above the page-turn zones.
     TapClose = { GestureRange:new{ ges = "tap", range = Geom:new{
-      x = 0, y = 0, w = self.dimen.w, h = self.header_band_h,
+      x = 0, y = 0, w = self.close_zone_w, h = self.header_band_h,
+    } } },
+    TapMenu = { GestureRange:new{ ges = "tap", range = Geom:new{
+      x = self.close_zone_w, y = 0,
+      w = self.dimen.w - self.close_zone_w, h = self.header_band_h,
     } } },
     -- Any multiswipe closes, from anywhere — the escape hatch that does not
     -- depend on hitting a band (pattern: imageviewer.lua:135 + :622-627).
@@ -110,9 +122,11 @@ end
 --  _render, _build_page, _build_header, _build_indicator)
 
 -- Page-turn half. Starts BELOW the header band so a header tap can only be a
--- TapClose — InputContainer:onGesture iterates self.ges_events with pairs()
--- (../koreader/frontend/ui/widget/container/inputcontainer.lua:265 @9192014),
--- i.e. in undefined order, so overlapping tap ranges would resolve at random.
+-- TapClose or TapMenu — InputContainer:onGesture iterates self.ges_events with
+-- pairs() (../koreader/frontend/ui/widget/container/inputcontainer.lua:265
+-- @9192014), i.e. in undefined order, so overlapping tap ranges would resolve at
+-- random. TapClose (x < close_zone_w) and TapMenu (x >= close_zone_w) don't
+-- overlap each other either.
 function Reader:_zone(side)
   local w = self.dimen.w
   return Geom:new{
@@ -126,6 +140,13 @@ function Reader:_line_height(face_name, size)
   local h = tw:getSize().h
   tw:free()
   return h
+end
+
+function Reader:_text_width(text, face)
+  local tw = TextWidget:new{ text = text, face = face }
+  local w = tw:getSize().w
+  tw:free()
+  return w
 end
 
 function Reader:_header_height()
@@ -148,6 +169,7 @@ end
 -- number self.geometry and the TapClose band are both built from.
 function Reader:_build_header()
   local close = TextWidget:new{ text = CLOSE_LABEL, face = Font:getFace(HEAD_FACE, 18) }
+  local menu = TextWidget:new{ text = "Menu", face = Font:getFace(HEAD_FACE, 18) }
   local gap = Size.padding.large
   return HorizontalGroup:new{
     close,
@@ -155,19 +177,24 @@ function Reader:_build_header()
     TextWidget:new{
       text = self.render_model.header or "",
       face = Font:getFace(HEAD_FACE, 18),
-      -- what is left of the text column after the close label + gap, so a long
-      -- header is ellipsised instead of colliding with it
-      max_width = math.max(1, self.text_width - close:getSize().w - gap),
+      -- what is left of the text column after the close label, the "Menu" label
+      -- and two gaps, so a long header is ellipsised instead of colliding
+      max_width = math.max(1,
+        self.text_width - close:getSize().w - menu:getSize().w - 2 * gap),
     },
+    HorizontalSpan:new{ width = gap },
+    menu,
   }
 end
 
 function Reader:_build_indicator()
   local total = #self.pages
   local page = self.pages[self.page_idx]
-  -- prose pages count toward the last prose page (the choices page is not one);
-  -- the choices page gets a section label, not a bogus "N / N-1".
-  local label = page.kind == "choices" and "Choices" or (self.page_idx .. " / " .. (total - 1))
+  -- prose pages: "N / (prose page count)" — the choices page doesn't count.
+  -- The choices page itself carries no footer label (the choices are the
+  -- content); a single space keeps the row height stable.
+  local label = page.kind == "choices" and " "
+    or (self.page_idx .. " / " .. (total - 1))
   return TextWidget:new{ text = label, face = Font:getFace("ffont", 14) }
 end
 
@@ -247,6 +274,10 @@ function Reader:onTapBackward() self:_turn(-1); return true end
 -- contract (autosave flush + trace flush) runs exactly once, in one place.
 function Reader:onTapClose() self:onClose(); return true end
 function Reader:onMultiSwipe(_, ges) self:onClose(); return true end  -- luacheck: ignore ges
+function Reader:onTapMenu()
+  if self.on_menu then self.on_menu() end
+  return true
+end
 
 function Reader:onClose()
   if self.on_close then self.on_close() end

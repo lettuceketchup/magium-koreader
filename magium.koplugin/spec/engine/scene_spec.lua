@@ -127,3 +127,50 @@ describe("scene.render — oracle parity (offline goldens)", function()
     assert.are.same({}, mismatches)
   end)
 end)
+
+describe("scene.persist_effects", function()
+  local Store = require("engine/store")
+
+  it("replays render_model.set_variables into the store, resolving +N in order", function()
+    local rm = {
+      set_variables = {
+        { name = "v_gold", value = "+5" },
+        { name = "v_flag", value = "1" },
+        { name = "v_gold", value = "+2" },
+      },
+    }
+    local s = Store.new({ v_gold = "10" })
+    scene.persist_effects(s, rm)
+    assert.are.equal("17", s:get("v_gold"))
+    assert.are.equal("1", s:get("v_flag"))
+  end)
+
+  it("respects the v_ac_* latch on write-back", function()
+    local rm = { set_variables = { { name = "v_ac_x", value = "1" } } }
+    local s = Store.new({ v_ac_x = "2" })
+    scene.persist_effects(s, rm)
+    assert.are.equal("2", s:get("v_ac_x"))
+  end)
+
+  it("is a no-op when the scene set nothing", function()
+    local s = Store.new({ v_a = "1" })
+    scene.persist_effects(s, { set_variables = {} })
+    assert.are.equal("1", s:get("v_a"))
+  end)
+end)
+
+describe("scene.render — special case #8 (device-lock label)", function()
+  local b3, loc
+  setup(function()
+    b3 = parser.parse(helper.data_dir_en .. "/b3ch1.magium")
+    loc = Locale.load(helper.data_dir_en:gsub("/en$", ""), "en")
+  end)
+
+  it("renders an empty device-lock label on B3-Ch01a-Crossbow", function()
+    local rm = scene.render(b3["B3-Ch01a-Crossbow"],
+      { v_current_scene = "B3-Ch01a-Crossbow", v_b3_ch1_unlock = "2" }, loc)
+    assert.are.equal(1, #rm.stat_checks)
+    assert.is_false(rm.stat_checks[1].success)
+    assert.are.equal("", rm.stat_checks[1].text)
+  end)
+end)

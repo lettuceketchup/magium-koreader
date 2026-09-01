@@ -115,6 +115,51 @@ describe("SaveManager", function()
     assert.are.equal(1, w.writes)          -- the debounced write never fires
   end)
 
+  it("save_checkpoint / load_checkpoint round-trip currentState, keeping later achievements", function()
+    local store = Store.new({ v_current_scene = "B2-Ch03a-Start", v_gold = "5", v_ac_x = "1" })
+    local w, s = FakeWriter.new(), make_sched()
+    local mgr = SaveManager.new{ store = store, writer = w,
+      schedule = s.schedule, unschedule = s.unschedule, debounce = 5 }
+
+    assert.is_false(mgr:has_checkpoint())
+    mgr:save_checkpoint()
+    assert.is_true(mgr:has_checkpoint())
+    assert.are.equal("B2-Ch03a-Start", w.data.checkpoint.state.v_current_scene)
+    assert.is_nil(w.data.checkpoint.state.v_ac_x)   -- achievements are a separate blob
+
+    store:set("v_current_scene", "B2-Ch07a-Kill")
+    store:set("v_gold", "0")
+    store:set("v_ac_y", "1")
+    mgr:on_achievement_unlocked()   -- main.lua flushes the achievements blob on every unlock
+
+    local scene_id = mgr:load_checkpoint()
+    assert.are.equal("B2-Ch03a-Start", scene_id)
+    assert.are.equal("5", store:get("v_gold"))
+    assert.are.equal("1", store:get("v_ac_x"))
+    assert.are.equal("1", store:get("v_ac_y"))   -- earned after the checkpoint, kept
+  end)
+
+  it("load_checkpoint returns nil and leaves the store alone when there is no checkpoint", function()
+    local store = Store.new({ v_current_scene = "X" })
+    local w, s = FakeWriter.new(), make_sched()
+    local mgr = SaveManager.new{ store = store, writer = w,
+      schedule = s.schedule, unschedule = s.unschedule, debounce = 5 }
+    assert.is_nil(mgr:load_checkpoint())
+    assert.are.equal("X", store:get("v_current_scene"))
+  end)
+
+  it("save_checkpoint preserves the slots blob and the live currentState/achievements", function()
+    local store = Store.new({ v_current_scene = "X", v_ac_x = "1" })
+    local w = FakeWriter.new{ slots = { [1] = "s" } }
+    local s = make_sched()
+    local mgr = SaveManager.new{ store = store, writer = w,
+      schedule = s.schedule, unschedule = s.unschedule, debounce = 5 }
+    mgr:save_checkpoint()
+    assert.are.equal("s", w.data.slots[1])
+    assert.are.equal("X", w.data.currentState.v_current_scene)
+    assert.are.equal("1", w.data.achievements.v_ac_x)
+  end)
+
   it("on_achievement_unlocked flushes immediately", function()
     local store = Store.new({ v_ac_x = "1" })
     local w, s = FakeWriter.new(), make_sched()

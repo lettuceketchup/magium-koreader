@@ -96,9 +96,54 @@ Verified working end-to-end 2026-08-31 in such a session, headless via
 display, so no e-ink refresh simulation either way — see
 [spike 04](../docs/spikes/04-ui-plugin-skeleton/FINDING.md)).
 
-## On-device debugging (the real target)
+## Headless UI testing (do this before every device deploy)
 
-USB copy the plugin to `koreader/plugins/` on the Kindle, restart KOReader, read
-`koreader/crash.log` — all `logger` output + tracebacks, last 500 KB
-(`../koreader/platform/kindle/koreader.sh:323-334`). No hot reload. Feel of the
-choice→page loop on real e-ink is still spike A / OQ-007.
+The engine layer is oracle-tested; the **UI layer** now has headless coverage too
+— run it in the emulator's real KOReader env, no X server:
+
+| Command (from repo root, via WSL) | What |
+|---|---|
+| `bash tools/mgm.sh test` | all busted specs (engine + save + `spec/flow` playthrough + `spec/engine/navigation`) |
+| `bash tools/mgm.sh test-ui` | `spec/ui/*_smoke.lua` — drives real tap events at the `Reader` widget (header-left = close, header-right/middle = menu, body = page-turn) |
+| `bash tools/mgm.sh koenv spec/ui/<x>.lua` | run one Lua script inside the emulator's KOReader env (real frontend widgets, `Screen` from `EMULATE_READER_W/H`) |
+| `bash tools/mgm.sh oracle-corpus` | full 8887-case per-scene render parity vs magium-dev (~15 min) |
+
+`spec/support/headless_game.lua` mirrors `main.lua`'s advance/render flow (choice
+→ `set_vars` → `special:` → `persist_effects` → re-render) so a spec can *play*
+the game — `spec/flow/playthrough_spec.lua` walks 100+ scenes of real choices and
+exercises checkpoint / restart. `spec/engine/navigation_spec.lua` statically
+checks every choice target resolves + reachability from `Ch1-Intro1`.
+
+## On-device deployment & debugging (the real target)
+
+Restart KOReader after any copy, then read `koreader/crash.log` — all `logger`
+output + tracebacks, last 500 KB (`../koreader/platform/kindle/koreader.sh:323-334`).
+No hot reload. E-ink feel of the choice→page loop is still spike A / OQ-007.
+
+**Deploy — two ways:**
+
+- **SSH over WiFi (preferred, repeatable):** a three-script family, state in
+  `tools/.kindle/` (gitignored — one `id_ed25519` deploy keypair +
+  `devices/<name>.json` per Kindle):
+  1. On the device once: KOReader → Tools → Network → **SSH server** → tick
+     **"Login with key only (SECURE)"**, optionally "Start SSH server with
+     KOReader", Start it once (creates `settings/SSH/`, shows IP + port 2222).
+  2. `tools/kindle-ssh-setup.ps1 -Name <name>` — USB-connected; generates the
+     keypair if needed and plants the pubkey at
+     `koreader/settings/SSH/authorized_keys` over MTP (delete-first + size-verify),
+     writes `devices/<name>.json`.
+  3. `tools/kindle-ssh-test.ps1 -Name <name> -Ip <addr>` — verifies key auth,
+     saves the IP + real koreader dir back to the config.
+  4. `tools/kindle-ssh-deploy.ps1 -Name <name>` — tests the connection, then
+     `rm -rf` + `sftp put -r` a fresh copy. `-Ip <addr>` alone still works ad hoc.
+- **USB / MTP:** `tools/deploy-kindle.ps1`. **MTP `CopyHere` silently does NOT
+  overwrite existing files** (this shipped stale code to the device for weeks
+  before it was caught — 2026-09-01). The script now deletes the device plugin
+  folder first and **verifies every file by size**, failing loudly on a
+  mismatch. If MTP refuses the delete, it tells you to remove
+  `This PC → Kindle → Internal Storage → koreader → plugins → magium.koplugin`
+  in File Explorer once, then rerun.
+
+For fast iteration, prefer the **emulator** (`bash tools/mgm.sh emu-deploy`
+symlinks the plugin — always current — then `emu-run`); reserve device deploys
+for e-ink / real-hardware checks.

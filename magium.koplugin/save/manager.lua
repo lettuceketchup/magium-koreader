@@ -70,4 +70,38 @@ function SaveManager:on_achievement_unlocked()
   self:_write("achievement")
 end
 
+-- --- checkpoint blob (special:checkpoint_save / _load) ------------------------
+-- magium-dev: the `checkpoint` slot is a full `currentState` snapshot (no
+-- v_ac_*, which live in their own blob). checkpoint_save copies currentState ->
+-- checkpoint; checkpoint_load copies it back. The 50 manual slots stay Phase III.
+
+function SaveManager:save_checkpoint()
+  local current, ach = self:_split()
+  local existing = self.writer.read() or {}
+  self.writer.write({
+    currentState = current,
+    achievements = ach,
+    checkpoint = { state = current, date = os.time() },
+    slots = existing.slots,
+  })
+end
+
+function SaveManager:has_checkpoint()
+  local data = self.writer.read() or {}
+  return data.checkpoint ~= nil and data.checkpoint.state ~= nil
+end
+
+-- Restore currentState from the checkpoint; keep the live achievements blob
+-- (parity: v_ac_* are permanent across a checkpoint reload). Returns the resume
+-- scene id, or nil if there is no checkpoint (store left untouched).
+function SaveManager:load_checkpoint()
+  local data = self.writer.read() or {}
+  if not (data.checkpoint and data.checkpoint.state) then return nil end
+  local merged = {}
+  for k, v in pairs(data.checkpoint.state) do merged[k] = v end
+  for k, v in pairs(data.achievements or {}) do merged[k] = v end
+  self.store:restore(merged)
+  return self.store:get("v_current_scene")
+end
+
 return SaveManager
