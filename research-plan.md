@@ -153,6 +153,35 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-01 (session 22) — Task 21: first on-device ch1 playthrough
+
+Owner deployed the Phase I plugin to the real Kindle PW12 (new `tools/deploy-kindle.ps1` —
+MTP overlay copy, no manual delete; `Shell.Application` `InvokeVerb('delete')` hangs headless,
+`CopyHere` with `FOF_NOCONFIRMATION` does not) and played ch1. Full result matrix in the SDD
+ledger's "Task 21" section; headline:
+
+- **Passes:** C1 close affordance (header-tap **and** multiswipe both work — the review Critical
+  is confirmed fixed on real hardware); prose + pagination; choices + stat-gated filtering;
+  autosave/resume across reader-close, suspend, and full KOReader restart (device
+  `koreader/magium/state` blob verified: carries `v_current_scene` + `v_ac_*`). **No e-ink
+  ghosting/refresh problems.** Deferred-eager parse (~2.2 s on first open) "not very noticeable".
+  No crashes/tracebacks in `crash.log`.
+- **Working as specified but surprised the owner — all out of Phase I scope:** achievements
+  unlock + persist but show **no toast/screen** (`ui/toast.lua` = Phase V; §11.1 says Phase I
+  only *computes* the list); `special:stats` does nothing (stats screen = Phase IV); no in-game
+  menu for save/load/achievements/restart/stats/log-toggle (menu = Phase II, screens III–VI;
+  §11.1 "No title/menu screen in Phase I").
+- **Spec inconsistency found (not fixed):** §6 line ~274 says "achievement toasts fire on the
+  render right after the unlocking choice" — contradicts the Phase V deferral of `ui/toast.lua`
+  in the §11 phase table. Wording bug in the spec; implementation followed the phase table.
+- **Genuine Phase I nits (not fixed):** (1) the choices page's bottom indicator shows the bare
+  literal `"choices"` (`ui/reader.lua:168`) instead of a page count — looks like a debug
+  artifact. (2) Magium is 4 taps deep (≡ → More tools → Magium → Open Magium); it already
+  registers a `Dispatcher` action (`MagiumOpen`) bindable to a gesture with no code change.
+- **Next:** owner to decide fixes vs. defer for the nits above; spec §11.2 exit-criteria
+  sign-off still pending (achievement/stats/menu gaps are expected, so they don't block it).
+  Branch still local-only, not pushed.
+
 ### 2026-09-01 (sessions 19–21) — Phase I implementation finished (SDD): Tasks 7–23, final review, fix wave
 
 Continued executing [the Milestone 0 + Phase I plan](docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md)
