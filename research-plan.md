@@ -157,6 +157,14 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-02 (session 27b) — Phase II merged to main
+
+Owner on-device sign-off ("All seems good") after a clean key-only-SSH deploy.
+Spec → **stable**. `feat/phase-ii-full-corpus-nav` merged to `main` (`bbcd114`,
+`--no-ff`) and deleted; busted **104/0** on the merged tree. Not pushed
+(`origin/main` unchanged). Phase III (50-slot saves UI + real checkpoint blob) is
+next per the roadmap.
+
 ### 2026-09-02 (session 27) — SSH deploy: per-device key setup (owner: "all or nothing" passwordless is no good)
 
 KOReader's "Login without password" is global, so the WiFi deploy now uses
