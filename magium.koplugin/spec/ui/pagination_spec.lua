@@ -49,6 +49,32 @@ describe("paginate", function()
     assert.are.equal("choices", pages[1].kind)
   end)
 
+  -- prose_blocks IS exercised on ch1: <br/> is parser-generated (engine/parser.lua:224
+  -- appends one to every prose line, asserted for Ch1-Intro1 in parser_spec.lua:32),
+  -- so ch1's 22 scenes split into ~98 display blocks. The Task-16 deferral ("ch1 has
+  -- zero <br tags") looked at the .magium source, not the render model.
+  it("splits a paragraph on <br/><br/> into separate prose blocks", function()
+    local rm = {
+      paragraphs = { "A<br/><br/>B" }, stat_checks = {}, checkpoint = false,
+      choices = { { text = "Go", target = "S", set_variables = {} } },
+    }
+    local pages = pagination.paginate(rm, GEO, measure)
+    assert.are.equal("prose", pages[1].kind)
+    assert.are.equal(2, #pages[1].blocks)
+    assert.are.equal("A", pages[1].blocks[1].text)
+    assert.are.equal("B", pages[1].blocks[2].text)
+  end)
+
+  it("keeps a single <br/> as a newline inside one prose block", function()
+    local rm = {
+      paragraphs = { "A<br/>B" }, stat_checks = {}, checkpoint = false,
+      choices = { { text = "Go", target = "S", set_variables = {} } },
+    }
+    local pages = pagination.paginate(rm, GEO, measure)
+    assert.are.equal(1, #pages[1].blocks)
+    assert.are.equal("A\nB", pages[1].blocks[1].text)
+  end)
+
   it("puts banner + stat checks as blocks on page 1 only", function()
     local rm = {
       paragraphs = { "P1", "P2" },
