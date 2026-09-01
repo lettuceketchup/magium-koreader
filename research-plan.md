@@ -15,13 +15,16 @@
   [ADR-007](docs/decisions/ADR-007-saves-scope.md)) — 50 manual save slots +
   `ui/savespage.lua`; import/export + rename cut, delete added. Owner on-device
   sign-off; busted 111/0, oracle-corpus 8887/8887, not pushed.
-  **Phase IV implemented 2026-09-03** on `feat/phase-iv-stats`
-  ([spec](docs/specs/2026-09-03-phase-iv-stats.md)) — `ui/statspage.lua` (the
-  `KeyValuePage` allocation screen, faithful Confirm/Cancel), three stats-screen
-  gates in `specials.lua` (#5/#9/#10), "Full immersion" unlock (#11), `main.lua`
-  wiring (`special:stats`, menu row). busted 114/0, oracle-corpus 8887/8887
-  (no `engine/scene` change), UI smokes green. Owner device sign-off pending.
-  **Next: Phase V** (achievements).
+  **Phase IV merged to `main` 2026-09-03** ([spec](docs/specs/2026-09-03-phase-iv-stats.md)
+  → stable) — `ui/statspage.lua` (the `KeyValuePage` allocation screen, faithful
+  Confirm/Cancel, `?`-button tutorial), three stats-screen gates in
+  `specials.lua` (#5/#9/#10), "Full immersion" unlock (#11), `main.lua` wiring
+  (`special:stats`, menu row). Owner device sign-off after a first-pass fix
+  (lingering tutorial popup → `?` button). busted 116/0, oracle-corpus 8887/8887
+  (no `engine/scene` change), UI + flow smokes green. Not pushed.
+  **New enforced convention:** every `ui/` change is emulator-verified + lands a
+  `spec/ui`/`spec/flow` check before owner testing (CLAUDE.md). **Next: Phase V**
+  (achievements).
 - **Last updated:** 2026-09-03
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -196,8 +199,14 @@ stack behind the reopened reader, flashed on repaint, and surfaced as a stuck
 - **Gates:** busted **116/0** (+2 flow), `test-ui` green (`statspage_smoke`
   25 checks), headless emu load clean. `oracle-corpus` unchanged (no
   render-path change — `specials.lua` only gained unused-by-render functions).
-- **Next:** redeploy, owner re-tests the `?` button + confirms the stuck-window
-  bug is gone, then spec `stable` + merge.
+- **New enforced convention** (owner ask): every `ui/` change is verified in the
+  emulator **and** lands a `spec/ui/*_smoke.lua` / `spec/flow/*` check before the
+  owner is asked to test — the device pass is the final e-ink/input
+  confirmation, not the first check. Codified in `CLAUDE.md` "Doing
+  implementation work" + `09-roadmap-effort.md` §1.
+- **Owner device re-test 2026-09-03: "Good, it works".** Spec → **stable**,
+  `feat/phase-iv-stats` merged to `main` (`--no-ff`), branch deleted; busted
+  **116/0** on the merged tree. Not pushed. **Next:** Phase V (achievements).
 
 ### 2026-09-03 (session 29) — Phase IV implemented: stat-allocation screen
 

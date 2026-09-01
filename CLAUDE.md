@@ -103,8 +103,15 @@ Scene header ("Book X - Chapter Y") is derived from the scene ID:
   behavioral reference for every engine question.
 - `ui/` needs the KOReader emulator (WSL2, see `reference/`) or the device. No
   hot reload: copy to `koreader/plugins/`, restart, read `koreader/crash.log`.
-- Anything depending on real on-device behavior (e-ink refresh feel, ARM parse
-  time, MTP deploy) needs the actual Paperwhite, not the emulator.
+- **Every `ui/` change is verified in the emulator before the owner is asked to
+  test it, and lands an automated UI check.** `mgm.sh test-ui` runs the real
+  KOReader widget stack headlessly (`spec/ui/*_smoke.lua` — widget construction,
+  tap/callback dispatch, screen assembly, title-bar affordances) and
+  `spec/flow/*` covers navigation/special-hook flows through `headless_game`.
+  A new screen or a changed interaction adds/extends one of these so the
+  regression is caught without the device; `mgm.sh emu-smoke` confirms the
+  plugin still loads. The owner's device pass is the *final* confirmation of
+  e-ink feel and real input — never the first check that the code works.
 - Still-open items that need device time or code are tracked as roadmap work, not
   `OQ-NNN` (see `docs/research/07-risks-open-questions.md` blocking-status note).
 

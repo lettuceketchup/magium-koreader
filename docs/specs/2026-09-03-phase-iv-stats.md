@@ -1,6 +1,6 @@
 # Spec: Phase IV — Stats & the stat-allocation screen
 
-- **Status:** in review — automated gates green (busted **116/0**, `oracle-corpus` **8887/8887** unchanged, `statspage` + `savespage` + `reader` UI smokes green, headless emu load clean). Built on `feat/phase-iv-stats`. First device pass 2026-09-03: 2–6 work; the auto-popup tutorial lingered un-closeable → reworked into a `?` button (below). Owner re-test pending.
+- **Status:** stable — automated gates green (busted **116/0**, `oracle-corpus` **8887/8887** unchanged, `statspage` + `savespage` + `reader` UI smokes green, headless emu load clean) + owner on-device sign-off 2026-09-03 ("Good, it works"). First device pass caught the auto-popup tutorial lingering un-closeable → reworked into a `?` button; re-test passed. Built on `feat/phase-iv-stats`.
 - **Last updated:** 2026-09-03
 - **Phase:** Implementation — design cycle 4 (roadmap [Phase IV](../research/09-roadmap-effort.md#phase-iv--stats--stat-checks))
 - **Sources:**
@@ -126,8 +126,9 @@ StatsPage:new{
 
 ## 5. Exit criteria
 
-- [ ] Automated gates green (see Status).
-- [ ] Owner on device: menu → Stats; spend → Cancel reverts; spend → Confirm
+- [x] Automated gates green (see Status).
+- [x] Owner on device: menu → Stats; spend → Cancel reverts; spend → Confirm
       persists across a KOReader restart; Return to game re-renders the scene;
       an in-story "Invest points now" choice lands on the `-spent` scene with
-      the screen over it.
+      the screen over it. *(2026-09-03; the `?` button replaced the lingering
+      auto-popup after the first pass.)*

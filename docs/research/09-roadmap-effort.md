@@ -65,6 +65,14 @@
 
 ## 1. Phased implementation roadmap *(8.1)*
 
+> **UI-verification standard for every remaining phase (V–VIII), from
+> session 29b (2026-09-03):** any `ui/` change is confirmed in the WSL emulator
+> and lands an automated check — a `spec/ui/*_smoke.lua` against the real
+> KOReader widget stack (`mgm.sh test-ui`) and/or a `spec/flow/*` navigation
+> test — *before* the owner is asked to test on-device. The device pass
+> confirms e-ink feel and real input only; it is never the first check that the
+> code works. Codified in `CLAUDE.md` → "Doing implementation work".
+
 ### Milestone 0 — Pre-flight: on-device parse-timing gate
 
 **Resolves the [`04` §4](04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34)
@@ -181,13 +189,14 @@ Design doc §3 "Multi-slot saves with name + date."
 
 ### Phase IV — Stats & stat-checks
 
-> **Implemented 2026-09-03** — [`docs/specs/2026-09-03-phase-iv-stats.md`](../specs/2026-09-03-phase-iv-stats.md).
-> The stat-check *display* (`stat_checks_to_display` etc.) shipped in Phase I/II;
-> this phase added `ui/statspage.lua` (the `KeyValuePage` allocation screen with
-> faithful Confirm/Cancel), the three stats-screen gates in `specials.lua`
-> (#5/#9/#10), the "Full immersion" unlock (#11), and `main.lua` wiring
-> (`special:stats`, in-game menu row). No `engine/scene` change → `oracle-corpus`
-> unchanged at 8887/8887. busted 114/0.
+> **Merged to `main` 2026-09-03** — [`docs/specs/2026-09-03-phase-iv-stats.md`](../specs/2026-09-03-phase-iv-stats.md)
+> → stable. The stat-check *display* (`stat_checks_to_display` etc.) shipped in
+> Phase I/II; this phase added `ui/statspage.lua` (the `KeyValuePage` allocation
+> screen with faithful Confirm/Cancel + a `?`-button tutorial), the three
+> stats-screen gates in `specials.lua` (#5/#9/#10), the "Full immersion" unlock
+> (#11), and `main.lua` wiring (`special:stats`, in-game menu row). Owner device
+> sign-off after a first-pass fix (auto-popup tutorial → `?` button). No
+> `engine/scene` change → `oracle-corpus` unchanged at 8887/8887. busted 116/0.
 
 Design doc §3 "Stat variables + stat-check display."
 
