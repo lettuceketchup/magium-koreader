@@ -11,10 +11,10 @@
   **Phase II merged to `main` 2026-09-02** (owner on-device sign-off) — full-corpus
   oracle parity **8887/8887**, in-game menu, back-nav cut
   ([ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md)).
-  **Phase III implemented 2026-09-02** ([spec](docs/specs/2026-09-02-phase-iii-saves.md),
-  branch `feat/phase-iii-saves`) — 50 manual save slots + `ui/savespage.lua`;
-  import/export + rename cut, delete added ([ADR-007](docs/decisions/ADR-007-saves-scope.md));
-  busted 111/0, UI smokes green, owner device pass pending. **Next: Phase IV** (stats).
+  **Phase III merged to `main` 2026-09-02** ([spec](docs/specs/2026-09-02-phase-iii-saves.md) → stable,
+  [ADR-007](docs/decisions/ADR-007-saves-scope.md)) — 50 manual save slots +
+  `ui/savespage.lua`; import/export + rename cut, delete added. Owner on-device
+  sign-off; busted 111/0, oracle-corpus 8887/8887, not pushed. **Next: Phase IV** (stats).
 - **Last updated:** 2026-09-02
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -187,9 +187,10 @@ the manual slots.
 - No `engine/` change → `oracle-corpus` unaffected (sweep re-run as a regression
   gate). Headless emulator load clean.
 
-**Next:** owner device pass (save/load round-trip, survives restart + suspend,
-saves screen opens without lag → validates the no-index bet); then merge to
-`main`. Then Phase IV (stats).
+**Owner device pass** (session end): save/load round-trip via the menu row,
+overwrite/delete, survives a KOReader restart — "All good". Spec → **stable**,
+merged to `main` (`c242473`, `--no-ff`); `feat/phase-iii-saves` deleted; busted
+**111/0** on the merged tree. Not pushed. **Next:** Phase IV (stats).
 
 ### 2026-09-02 (session 27b) — Phase II merged to main
 
