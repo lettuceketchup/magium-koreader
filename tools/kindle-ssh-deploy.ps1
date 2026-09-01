@@ -53,8 +53,12 @@ Write-Host "device koreader dir: $kodir"
 # --- wipe + push fresh (rm -rf is busybox; sftp put -r for the copy) ---
 $sshArgs = Get-KindleSshArgs $dev
 & ssh @sshArgs "rm -rf '$target'"
-$batch = "put -r `"$($dest -replace '\\','/')`" `"$kodir/plugins/`""
-$batch | & sftp -i $KeyPath -P $dev.port -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new "$($dev.user)@$($dev.host)" | Out-Null
+# sftp reads the batch from a file, NOT a pipe: PS 5.1 prepends a BOM to piped
+# stdin, which sftp rejects with "Invalid command."
+$destFwd = $dest.Replace([char]92, [char]47)
+$batchFile = Join-Path $env:TEMP 'magium-sftp-batch.txt'
+[IO.File]::WriteAllText($batchFile, ('put -r "{0}" "{1}/plugins/"' -f $destFwd, $kodir) + "`n", (New-Object Text.UTF8Encoding($false)))
+& sftp -i $KeyPath -P $dev.port -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new -b $batchFile "$($dev.user)@$($dev.host)" | Out-Null
 
 # --- verify by file count ---
 $got = [int](& ssh @sshArgs "find '$target' -type f | wc -l").Trim()

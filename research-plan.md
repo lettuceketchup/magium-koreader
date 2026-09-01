@@ -176,8 +176,13 @@ KOReader's "Login without password" is global, so the WiFi deploy now uses
   resolves the target from the device config, runs `Test-KindleSsh` before
   touching the device, uses `-i <key> -o BatchMode=yes`. `-Ip` alone still works.
 - On device, one-time: SSH server → tick **"Login with key only (SECURE)"**.
-- Smoke: 4 scripts parse-clean; common-helper round-trip/update/error paths pass;
-  keypair generated. Device key placement pending owner USB-connect.
+- Smoke: 4 scripts parse-clean; common-helper round-trip/update/error paths pass.
+- **End-to-end verified on the owner's PW12** (192.168.1.11): key planted over
+  USB, key-auth test OK, deploy pushed 75/75 files, all 4 spot-checked files
+  md5-identical to staging (no stale-MTP problem). Two PS-5.1 fixes en route:
+  `2>&1` on native `ssh` throws under `EAP=Stop` (guard with local `EAP=Continue`);
+  piping the sftp batch to stdin prepends a BOM → "Invalid command." (write the
+  batch to a file, `sftp -b`).
 
 ### 2026-09-01 (session 26) — Phase II: owner device test → deploy bug found, checkpoint blob, UI test harness
 

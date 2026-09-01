@@ -59,7 +59,12 @@ function Test-KindleSsh {
   $probe = 'echo MAGIUM_SSH_OK; for d in ' + $Device.koreader_dir +
            ' /mnt/us/koreader /mnt/base-us/koreader /mnt/onboard/.adds/koreader; do ' +
            '[ -d "$d/plugins" ] && echo "KODIR=$d" && break; done'
-  $out = & ssh @(Get-KindleSshArgs $Device) $probe 2>&1 | ForEach-Object { "$_" }
+  # PS 5.1 wraps native stderr from 2>&1 in ErrorRecords; under EAP=Stop the
+  # first-connect "known hosts" warning would then throw. Neutralize locally.
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { $out = & ssh @(Get-KindleSshArgs $Device) $probe 2>&1 | ForEach-Object { "$_" } }
+  finally { $ErrorActionPreference = $prev }
   $ok = ($LASTEXITCODE -eq 0) -and ($out -match 'MAGIUM_SSH_OK')
   if (-not $Quiet) { $out | ForEach-Object { Write-Host "  $_" } }
   if ($ok) {
