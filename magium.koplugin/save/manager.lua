@@ -29,7 +29,10 @@ end
 -- `writer` is the injected { read()->table|nil, write(table) } adapter — plain
 -- functions, NOT methods, so call them with a dot (a `:` would pass `self.writer`
 -- as the argument and silently drop the real payload).
-function SaveManager:_write(reason)
+-- `reason` is intentionally unused here: callers pass it so the main.lua layer
+-- can attach it to the trace/log record for that flush ("close", "suspend",
+-- "achievement", "debounce"). This module stays pure — no logger dependency.
+function SaveManager:_write(reason)   -- luacheck: ignore reason
   local current, ach = self:_split()
   local existing = self.writer.read() or {}
   self.writer.write({
