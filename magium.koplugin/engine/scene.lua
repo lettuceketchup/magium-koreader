@@ -14,6 +14,16 @@ local function shallow_copy(t)
   return o
 end
 
+-- Collapse horizontal whitespace runs and trim. The oracle's canonical form
+-- applies exactly this to every text field it recovers from the rendered HTML —
+-- paragraphs (../magium-dev/reference/tools/oracle-diff.js:110), choice labels
+-- (:127) and achievement captions (:139) — so all three have to be normalized
+-- here too. (0/145 achievement labels corpus-wide actually differ under it: this
+-- is faithfulness to the oracle contract, not a bug fix.)
+local function norm(s)
+  return (s:gsub("[ \t\f\v]+", " "):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
 -- +N/-N in a scene's own set() is applied LITERALLY into the working view
 -- (magium-dev renderScene step 5 defers the arithmetic to the client). The
 -- persisted arithmetic happens in store:set() when a choice commits.
@@ -52,11 +62,14 @@ function M.render(scene_table, view, locale)
   local achievements = {}
   for _, a in ipairs(st.achievements) do
     if work[a.variable] == "1" then
-      achievements[#achievements + 1] = { variable = a.variable, text = a.text }
+      achievements[#achievements + 1] = { variable = a.variable, text = norm(a.text) }
     end
   end
   for _, a in ipairs(specials.extra_achievements(work)) do
-    achievements[#achievements + 1] = a
+    -- the always-on prize renders through the same achievement-modal caption the
+    -- oracle normalizes at oracle-diff.js:139, so norm it on the same footing
+    -- (its text is a hardcoded literal today, so this is a no-op guard)
+    achievements[#achievements + 1] = { variable = a.variable, text = norm(a.text) }
   end
 
   -- 11. checkpoint banner: a surviving choice sets v_checkpoint_rich == "0".
@@ -73,8 +86,16 @@ function M.render(scene_table, view, locale)
   for _, sc in ipairs(raw_checks) do
     local var = sc.variable
     if var ~= "v_b3_ch1_unlock" then var = locale:str(var) end
-    local text = locale:stat_check_text{ variable = var, value = sc.value, success = sc.success }
-    out_checks[#out_checks + 1] = { success = sc.success, text = text }
+    -- stats.parse_stat_check leaves `success` nil for an unmatched operator
+    -- (`<=` / `!=`) — magium-dev leaves it `undefined` too (utils.js:158-171),
+    -- but the oracle's canonical form derives success from the rendered <div>
+    -- class, so it is ALWAYS a boolean (false = the fail template). Coerce once
+    -- here so the render model is total. Reachable at
+    -- ../magium-dev/data/en/ch11b.magium:1049 (Ch11b-Hole, `v_hearing <= 4`);
+    -- no ch1 impact — every ch1 check has a matched operator.
+    local ok = sc.success and true or false
+    local text = locale:stat_check_text{ variable = var, value = sc.value, success = ok }
+    out_checks[#out_checks + 1] = { success = ok, text = text }
   end
   local out_setvars = {}
   for _, sv in ipairs(set_vars) do
@@ -82,14 +103,14 @@ function M.render(scene_table, view, locale)
   end
   local out_paras = {}
   for _, p in ipairs(paragraphs) do
-    out_paras[#out_paras + 1] = (p.text:gsub("[ \t\f\v]+", " "):gsub("^%s+", ""):gsub("%s+$", ""))
+    out_paras[#out_paras + 1] = norm(p.text)
   end
   local out_choices = {}
   for _, c in ipairs(choices) do
     local sv = {}
     for k, v in pairs(c.set_vars) do sv[k] = v end
     out_choices[#out_choices + 1] = {
-      text = (c.text:gsub("[ \t\f\v]+", " "):gsub("^%s+", ""):gsub("%s+$", "")),
+      text = norm(c.text),
       target = c.target,
       special = c.special,
       set_variables = sv,
