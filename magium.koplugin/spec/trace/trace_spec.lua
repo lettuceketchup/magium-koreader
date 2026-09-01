@@ -67,7 +67,6 @@ describe("util/trace", function()
   -- propagate out of event()/flush(), and the tracer degrades permanently to off
   -- rather than re-throwing on every later flush.
   it("survives a throwing writer and degrades to disabled", function()
-    local w = FakeTrace.new()
     local logs = {}
     trace.configure{
       enabled = true,
@@ -81,9 +80,8 @@ describe("util/trace", function()
     end)
     assert.is_false(trace.enabled)
     assert.is_truthy(logs[#logs]:match("trace disabled after write error"))
-    -- and it stays off + silent from here on
+    -- and it stays off from here on, still without throwing
     assert.has_no.errors(function() trace.event("choice"); trace.flush() end)
-    assert.are.equal(0, #w.lines)
   end)
 
   it("does not propagate a throwing log fn", function()
