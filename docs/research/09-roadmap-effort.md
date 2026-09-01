@@ -157,6 +157,12 @@ narrative + choices. **Implemented 2026-09-01** —
 
 ### Phase III — Saves
 
+> **Implemented 2026-09-02** — [`docs/specs/2026-09-02-phase-iii-saves.md`](../specs/2026-09-02-phase-iii-saves.md).
+> `checkpoint` blob landed early (Phase II). Actual design deviates from the
+> deliverables below: one `Persist` blob per slot, **no `{NN→{date,name}}`
+> index**; **import/export and rename cut**, delete added
+> ([ADR-007](../decisions/ADR-007-saves-scope.md)). Slot name = chapter header.
+
 Design doc §3 "Multi-slot saves with name + date."
 
 - **Deliverables:** the four save blobs (`currentState` autosave,

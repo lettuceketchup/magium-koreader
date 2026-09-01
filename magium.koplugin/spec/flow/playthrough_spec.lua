@@ -156,6 +156,27 @@ describe("playthrough (headless, whole engine)", function()
     assert.are.equal(saved_at, g.store:get("v_current_scene"))
   end)
 
+  it("save_slot then load_slot round-trips the scene + vars after playing on", function()
+    local g = HeadlessGame.new(DATA_ROOT)
+    g:start("Ch1-Intro1")
+    g:choose(1)                                   -- one real choice in
+    local saved_at, saved_gold = g:scene_id(), g.store:get("v_gold")
+    g.save:save_slot(0, "test")
+
+    for _ = 1, 5 do                                -- play further
+      if #g:choices() == 0 then break end
+      g:choose(1)
+    end
+    assert.are_not.equal(saved_at, g:scene_id())   -- we actually moved on
+
+    local restored = g.save:load_slot(0)
+    g:render()
+    assert.are.equal(saved_at, restored)
+    assert.are.equal(saved_at, g.store:get("v_current_scene"))
+    assert.are.equal(saved_gold, g.store:get("v_gold"))
+    assert.is_nil(g.save:load_slot(7))             -- empty slot: no-op
+  end)
+
   it("special:restart returns to the start and keeps achievements", function()
     local g = HeadlessGame.new(DATA_ROOT)
     g:start("B2-Ch07a-Kill")               -- a death scene with a real special:restart choice

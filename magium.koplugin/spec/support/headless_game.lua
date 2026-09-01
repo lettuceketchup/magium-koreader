@@ -12,6 +12,7 @@ local specials = require("engine/specials")
 local Locale = require("engine/locale")
 local SaveManager = require("save/manager")
 local FakeWriter = require("spec/support/fake_writer")
+local FakeSlotStore = require("spec/support/fake_slotstore")
 
 local HeadlessGame = {}
 HeadlessGame.__index = HeadlessGame
@@ -23,7 +24,7 @@ function HeadlessGame.new(data_root)
   self.locale = Locale.load(data_root, "en")
   self.store = Store.new()
   self.save = SaveManager.new{
-    store = self.store, writer = FakeWriter.new(),
+    store = self.store, writer = FakeWriter.new(), slotstore = FakeSlotStore.new(),
     schedule = function(_, fn) return fn end,   -- no real timers in a spec
     unschedule = function() end,
     debounce = 5,

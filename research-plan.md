@@ -8,11 +8,14 @@
   **Implementation underway** — the [Phase I spec](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
   ([ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md)) is approved
   and **Phase I is complete** (on-device sign-off 2026-09-01).
-  **Phase II implemented 2026-09-01** ([spec](docs/specs/2026-09-01-phase-ii-full-corpus-and-navigation.md),
-  branch `feat/phase-ii-full-corpus-nav`) — full-corpus oracle parity
-  **8887/8887**, in-game menu, back-nav cut ([ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md));
-  automated gates green, owner device playthrough pending. **Next: Phase III** (saves).
-- **Last updated:** 2026-09-01
+  **Phase II merged to `main` 2026-09-02** (owner on-device sign-off) — full-corpus
+  oracle parity **8887/8887**, in-game menu, back-nav cut
+  ([ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md)).
+  **Phase III implemented 2026-09-02** ([spec](docs/specs/2026-09-02-phase-iii-saves.md),
+  branch `feat/phase-iii-saves`) — 50 manual save slots + `ui/savespage.lua`;
+  import/export + rename cut, delete added ([ADR-007](docs/decisions/ADR-007-saves-scope.md));
+  busted 111/0, UI smokes green, owner device pass pending. **Next: Phase IV** (stats).
+- **Last updated:** 2026-09-02
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
   doc uses the standard header; every claim is cited; findings carry a confidence tag.
@@ -156,6 +159,37 @@ proceeds to Phase 8 in the meantime.
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-09-02 (session 28) — Phase III implemented: 50 manual save slots
+
+Branch `feat/phase-iii-saves`. Spec: [`docs/specs/2026-09-02-phase-iii-saves.md`](docs/specs/2026-09-02-phase-iii-saves.md).
+Checkpoint was already done (pulled forward in Phase II), so this phase is just
+the manual slots.
+
+- **`save/manager.lua`** — new optional injected `slotstore` adapter
+  (`{load,save,remove}`) + 4 methods: `save_slot` / `load_slot` / `delete_slot` /
+  `slots_meta`. `load_checkpoint` + `load_slot` now share `_restore_snapshot`,
+  which merges the **live** `v_ac_*` from the store (not the last-flushed blob) —
+  robust regardless of achievement-flush timing. Autosave never touches
+  `slotstore`. +6 manager cases + 1 headless slot round-trip flow case (→ busted **111/0**).
+- **`ui/savespage.lua`** (new) — fullscreen `Menu` of 50 slots; tap → `ButtonDialog`
+  (Save here / Load / Overwrite / Delete), Overwrite+Delete behind a `ConfirmBox`.
+  Refreshes in place via `switchItemTable`. New `spec/ui/savespage_smoke.lua`
+  (plain-assert, `mgm.sh koenv`) — green.
+- **`main.lua`** — `slot_store()` adapter (one `Persist` blob per slot under
+  `magium/slots/NN.blob`, no index — spec D2); `Magium:openSaves()`; the in-game
+  menu "Save / Load game" row and `special:saves` both open it now (were disabled
+  / routed to the menu in Phase II).
+- **[ADR-007](docs/decisions/ADR-007-saves-scope.md)** — three deviations from
+  `magium-dev`'s saves screen: import/export cut (no clipboard on device; owner
+  has USB/SSH), rename cut (slot name = chapter header, no keyboard prompt),
+  delete added.
+- No `engine/` change → `oracle-corpus` unaffected (sweep re-run as a regression
+  gate). Headless emulator load clean.
+
+**Next:** owner device pass (save/load round-trip, survives restart + suspend,
+saves screen opens without lag → validates the no-index bet); then merge to
+`main`. Then Phase IV (stats).
 
 ### 2026-09-02 (session 27b) — Phase II merged to main
 

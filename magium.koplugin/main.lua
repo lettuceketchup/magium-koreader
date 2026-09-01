@@ -89,6 +89,20 @@ local function state_writer()
   }
 end
 
+-- Phase III: one Persist blob per manual slot under magium/slots/. A
+-- { load(n), save(n,t), remove(n) } adapter — plain functions, dot-called.
+-- Slot ops are rare and user-initiated, so a fresh Persist per call is fine.
+local function slot_store()
+  local dir = save_dir() .. "/slots"
+  lfs.mkdir(dir)
+  local function path(n) return dir .. "/" .. n .. ".blob" end
+  return {
+    load = function(n) return Persist:new{ path = path(n), codec = "luajit" }:load() end,
+    save = function(n, t) Persist:new{ path = path(n), codec = "luajit" }:save(t) end,
+    remove = function(n) os.remove(path(n)) end,
+  }
+end
+
 -- (Milestone 0 chose `eager` + parse-on-first-open, so there is no lazy
 --  disk-cache adapter in Phase I. The `cache_store` seam stays on `Story.new`
 --  for the deferred lazy path — a later phase backs it with `Persist`.)
@@ -104,7 +118,7 @@ function Magium:init()
   self.story = shared_story   -- nil until the first successful _ensureLoaded()
   self.store = Store.new()
   self.save = SaveManager.new{
-    store = self.store, writer = state_writer(),
+    store = self.store, writer = state_writer(), slotstore = slot_store(),
     schedule = function(d, fn) UIManager:scheduleIn(d, fn); return fn end,
     unschedule = function(fn) UIManager:unschedule(fn) end,
     debounce = 8,
@@ -373,8 +387,7 @@ function Magium:openReader()
           UIManager:show(InfoMessage:new{ text = _("The stats screen arrives in a later version.") })
         end)
       elseif button.special == "saves" then
-        -- the 50-slot save/load screen is Phase III; the menu shows it disabled
-        UIManager:nextTick(function() self:openMenu() end)
+        UIManager:nextTick(function() self:openSaves() end)
       end
       trace.event("choice", {
         label = button.label,
@@ -397,10 +410,9 @@ function Magium:openReader()
   UIManager:show(self.reader)
 end
 
--- The in-game menu (spec §6, D2). The full magium-dev menu.ejs shell; Load
--- checkpoint / Save-Load / Achievements / Settings are disabled until their
--- phases (III–VI). Reached from the reader header's "Menu" tap zone and from
--- special:saves / special:stats choices.
+-- The in-game menu (spec §6, D2). The full magium-dev menu.ejs shell;
+-- Achievements / Settings are disabled until their phases (V–VI). Reached from
+-- the reader header's "Menu" tap zone and from the special:stats choice.
 function Magium:openMenu()
   local ButtonDialog = require("ui/widget/buttondialog")
   local TextViewer = require("ui/widget/textviewer")
@@ -419,7 +431,10 @@ function Magium:openMenu()
         enabled = self.save:has_checkpoint(),
         callback = act(function() self:loadCheckpoint() end),
       }},
-      {{ text = _("Save / Load game"), enabled = false }},
+      {{
+        text = self.locale:str("menuSaveLoadText") or _("Save / Load game"),
+        callback = act(function() self:openSaves() end),
+      }},
       {{ text = _("Achievements"), enabled = false }},
       {{ text = _("Settings"), enabled = false }},
       {{ text = _("About"), callback = act(function()
@@ -457,6 +472,36 @@ function Magium:loadCheckpoint()
   self.save:flush_now("checkpoint-load")
   trace.event("choice", { label = "load checkpoint", target = scene_id, special = "checkpoint_load" })
   self:_reopenReader()
+end
+
+-- The 50-slot save/load screen (spec §5, ADR-007). Reached from the in-game
+-- menu's "Save / Load game" row and the in-story special:saves choice. Save
+-- names itself after the current chapter; load mirrors loadCheckpoint (restore →
+-- flush → reopen the reader on the saved scene).
+function Magium:openSaves()
+  local SavesPage = require("ui/savespage")
+  self.saves = SavesPage:new{
+    slots_meta = function() return self.save:slots_meta() end,
+    on_save = function(n)
+      local name = self.locale:header(self.store:get("v_current_scene")) or "Magium"
+      self.save:save_slot(n, name)
+      trace.event("save", { op = "slot_save", n = n })
+    end,
+    on_delete = function(n)
+      self.save:delete_slot(n)
+      trace.event("save", { op = "slot_delete", n = n })
+    end,
+    on_load = function(n)
+      local scene_id = self.save:load_slot(n)
+      if not scene_id then return end
+      self.save:flush_now("slot-load")
+      trace.event("choice", { label = "load slot " .. n, target = scene_id, special = "saves" })
+      self:_reopenReader()
+    end,
+    on_close = function() trace.event("menu", { action = "saves_close" }) end,
+  }
+  UIManager:show(self.saves)
+  trace.event("menu", { action = "saves" })
 end
 
 -- Close the current reader (flushing) and re-open on the current v_current_scene.
