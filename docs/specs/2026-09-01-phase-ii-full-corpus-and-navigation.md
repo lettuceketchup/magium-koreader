@@ -1,7 +1,7 @@
 # Spec: Phase II — Full corpus & navigation
 
-- **Status:** implemented — automated gates green (engine 72/0, busted 94/0, `oracle-corpus` **8887/8887**, headless load clean); on-device playthrough pending (§9). Built on `feat/phase-ii-full-corpus-nav`.
-- **Last updated:** 2026-09-01
+- **Status:** stable — automated gates green (engine 72/0, busted 104/0, `oracle-corpus` **8887/8887**, headless load clean) + owner on-device sign-off 2026-09-02 ("All seems good"). Built on `feat/phase-ii-full-corpus-nav`.
+- **Last updated:** 2026-09-02
 - **Phase:** Implementation — design cycle 2 (roadmap [Phase II](../research/09-roadmap-effort.md#phase-ii--full-story--navigation))
 - **Sources:**
   - [`2026-08-31-plugin-architecture-and-phase-i.md`](2026-08-31-plugin-architecture-and-phase-i.md) — the permanent architecture; §12 row II + §12.1 carry-forward
@@ -260,15 +260,11 @@ sweep over all 54 files vs `magium-dev` @ `51f5aa9`.
       (`restart` keeps `v_ac_*` — already covered by the Phase I `main.lua`
       `reset_to_intro` behaviour, unchanged.)
 - [x] Headless `kodev` load clean; plugin registers; `crash.log` empty.
-- [ ] **On device (owner) — retest after a CLEAN deploy** (2026-09-01: the first
-      device test ran stale code — MTP deploy was not overwriting; `deploy-kindle.ps1`
-      now wipes + verifies). Open the in-game menu from the header-right "Menu"
-      tap; disabled rows greyed; Back to game returns to the same page; About
-      readable. New Game → `ConfirmBox` → resets, achievements kept. Reach a
-      `checkpoint_save` "Next chapter" choice; later hit a death scene →
-      "Load from last checkpoint" restores to the chapter start. `special:restart`
-      → `Ch1-Intro1`. Close/reopen mid-chapter → resumes. No "Choices" footer.
-      `crash.log` clean.
+- [x] **On device (owner) — retest after a CLEAN deploy** (2026-09-02): clean
+      key-only-SSH deploy to the PW12 (`kindle-ssh-deploy.ps1`, 75/75 files
+      md5-verified vs staging), owner playthrough — menu, checkpoint save/load,
+      `special:restart`, no "Choices" footer — "All seems good". The earlier
+      "menu broken" report was confirmed stale code (MTP not overwriting).
 - [x] The §5 table: render-time cases #1–#4, #6–#8, #12, #13(`0`-default) live
       and sweep-covered; stats-screen #5, #9–#11 stay declared-inert (Phase IV).
 
@@ -293,10 +289,8 @@ sweep over all 54 files vs `magium-dev` @ `51f5aa9`.
 
 ## 11. Status
 
-Implemented on `feat/phase-ii-full-corpus-nav` (2026-09-01). Plan:
+**Stable.** Implemented on `feat/phase-ii-full-corpus-nav`; automated gates green
+(§9) + owner on-device sign-off 2026-09-02. Plan:
 [`../superpowers/plans/2026-09-01-phase-ii-full-corpus-and-navigation.md`](../superpowers/plans/2026-09-01-phase-ii-full-corpus-and-navigation.md).
-
-Automated gates green (§9). **Remaining:** the owner on-device playthrough (§9
-last box) → then this spec → `stable` and the branch merges.
 
 Then Phase III (saves) opens its own spec cycle.
