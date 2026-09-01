@@ -6,6 +6,11 @@ local ButtonTable = require("ui/widget/buttontable")
 local M = {}
 
 function M.build(opts)
+  -- Contract: a choices page always has at least one button. Unreachable today
+  -- (pagination.lua only emits a choices page for a scene's surviving choices,
+  -- and every ch1 scene has some) — the assert documents the invariant and makes
+  -- a future empty-choices scene fail loudly instead of rendering a blank page.
+  assert(opts.buttons and #opts.buttons > 0, "choices.build: no buttons")
   local rows = {}
   for _, b in ipairs(opts.buttons) do
     -- `b` is a fresh per-iteration local (Lua 5.1) → each callback closes over

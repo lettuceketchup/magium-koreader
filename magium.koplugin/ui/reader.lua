@@ -1,7 +1,6 @@
 -- ui/reader.lua — custom fullscreen paginated reading widget (spec §8, OQ-013).
 -- Not TextViewer: a bespoke fullscreen FrameContainer with real pagination.
 
-local BD = require("ui/bidi")  -- luacheck: ignore (kept per Task 17 brief requires)
 local Blitbuffer = require("ffi/blitbuffer")
 local Device = require("device")
 local Font = require("ui/font")
@@ -183,12 +182,18 @@ function Reader:_build_page()
   local vg = VerticalGroup:new{ align = "left" }
   for _, blk in ipairs(page.blocks) do
     if blk.type == "banner" then
+      -- TextWidget does not wrap; without max_width a long localized banner or
+      -- stat-check line paints straight past the text column (the banner is
+      -- reachable in a ch1 playthrough at Ch2-Intro).
       table.insert(vg, TextWidget:new{
         text = self.locale:str("mainCheckpointReachedText") or "[ Checkpoint reached: Game saved. ]",
         face = Font:getFace(HEAD_FACE, 16),
+        max_width = self.text_width,
       })
     elseif blk.type == "stat_check" then
-      table.insert(vg, TextWidget:new{ text = blk.text, face = Font:getFace(HEAD_FACE, 16) })
+      table.insert(vg, TextWidget:new{
+        text = blk.text, face = Font:getFace(HEAD_FACE, 16), max_width = self.text_width,
+      })
     else
       table.insert(vg, TextBoxWidget:new{
         text = blk.text, face = self.face, width = self.text_width,
