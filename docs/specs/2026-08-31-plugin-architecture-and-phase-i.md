@@ -405,9 +405,10 @@ Pure function `paginate(render_model, geometry, measure_fn) → { pages }`:
   screen height already net of the frame padding, the header row, the indicator
   row and the two spans around the body; `first_page_offset` is the banner +
   stat-check block height, subtracted from page 1's budget only.
-- Greedily fill each prose page: accumulate paragraph lines until the next line
-  would exceed `height`; the first page also subtracts the banner + stat-check
-  block height.
+- Greedily fill each prose page: accumulate display blocks (paragraphs split on
+  the `<br/><br/>` blank-line marker) until the next block would exceed the page
+  budget (`prose_height`, minus `first_page_offset` on page 1). A block that alone
+  exceeds the budget is split at word boundaries, its tail riding the next page.
 - `measure_fn(text, width) → height` is injected. Real caller: a thin wrapper
   over `TextBoxWidget:new{…}:getSize()` (or its line-count API,
   [`03` §3](../research/03-koreader-platform.md#3-ui-toolkit-inventory-23)). Specs
@@ -653,11 +654,13 @@ this is now their home.
    Ruling 8 closed — `v_ac_b3_ch9_consolation` reaches `2` through its own `+1`
    increments, it is not an `achievement()` variable, so the deferred write-back
    has no bearing on it.
-2. **`B3-Ch01a-Crossbow` device-locked stat suppression** (`main.ejs:17-20`) —
-   an unported render-time special case. Port it when Book 3 scenes arrive
-   (Phase II's 13-special-case audit).
-3. **`v_hearing <= 4` unmatched-operator stat check** (`../magium-dev/data/en/ch11b.magium:1049`,
-   scene `Ch11b-Hole`). `engine/stats.lua` leaves `success` nil for `<=` / `!=`;
+2. **`B3-Ch01a-Crossbow` device-locked stat suppression**
+   (`../magium-dev/templates/main.ejs:17-20` @51f5aa9) — an unported render-time
+   special case. Port it when Book 3 scenes arrive (Phase II's 13-special-case
+   audit).
+3. **`v_hearing <= 4` unmatched-operator stat check**
+   (`../magium-dev/data/en/ch11b.magium:1049` @51f5aa9, scene `Ch11b-Hole`).
+   `engine/stats.lua` leaves `success` nil for `<=` / `!=`;
    `engine/scene.lua` now coerces it to `false` so the render model is total.
    Flag this scene in the first full-corpus oracle run (Phase VIII) to confirm
    the coercion matches the oracle's canonical form on a real unmatched operator.
