@@ -5,10 +5,12 @@
   roadmap written — [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md));
   **Phase 7 deferred** (personal-use-only scope confirmed by owner —
   [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
-  **Implementation-design cycle open** — first spec
-  [`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
-  ([ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md)) in review.
-- **Last updated:** 2026-08-31
+  **Implementation underway** — the [Phase I spec](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
+  ([ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md)) is approved
+  and **Phase I is complete** (full engine + `ch1` playable + autosave/resume;
+  on-device sign-off 2026-09-01, spec §11.2). **Next: Phase II** (full corpus +
+  navigation) — needs its own spec cycle.
+- **Last updated:** 2026-09-01
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
   doc uses the standard header; every claim is cited; findings carry a confidence tag.
@@ -152,6 +154,54 @@ proceeds to Phase 8 in the meantime.
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-09-01 (session 23) — Phase I formally closed out
+
+Bookkeeping only — no plugin code changed. Phase I was already code-complete and
+merged to `main` (session 22); this session lands the paperwork so the Phase II
+design cycle starts from a clean slate.
+
+- **Doc reframe committed** (`488ca26`): `CLAUDE.md` + `README.md` moved from
+  "feasibility study, no code" to "the port; Phase I landed, Phase II next".
+- **Spec §11.2 exit criteria signed off** (`f5817b0`): all 7 boxes ticked.
+  Automated gates re-confirmed on `main` HEAD — `busted` **89/0/0/0**, engine
+  subset `luajit spec/run.lua` **67/0/0/0**, oracle diff **102/102** (96 `ch1`
+  matrix + 6 goldens, fresh oracle vs fresh Lua render). Owner's session-22
+  on-device playthrough covers the device-only criteria (ch1 start→finish,
+  resume across close/suspend/restart, `crash.log` clean). Spec Status →
+  **Phase I complete**.
+- **SDD execution rulings archived** (`bcc18c7`) to
+  [`docs/specs/phase-i-execution-notes.md`](docs/specs/phase-i-execution-notes.md) —
+  `.superpowers/` is git-ignored, so the 13 controller rulings + the ledger
+  self-review would have been lost on workspace deletion. Each ruling is one
+  line + its "cost if wrong"; the Ruling 8 `achievement()`-variable caveat is
+  flagged for the Phase II special-case-#12 audit; ADR-005 (the mid-execution
+  debug-trace scope addition) noted.
+- **Teardown:** `feat/magium-plugin-phase-i` deleted (local + origin — its tree
+  was identical to `main` before this session's doc commits); the SDD workspace
+  `.superpowers/sdd/2026-08-31-magium-plugin-milestone-0-phase-i/` removed. The
+  5 stale research-era `origin/claude/phase-*` branches and the local
+  `backup-local-main-pre-reset` were left (owner's call).
+
+**Phase I outcome (the fuller write-up spec §11.2 called for):** the complete
+Lua engine (parser · conditions · store · stats · locale · specials · 12-step
+`scene.render`), the bespoke fullscreen **paginated** reader widget (OQ-013
+resolved — not `TextViewer`), choices-as-final-page, debounced `currentState`
+autosave + `v_ac_*` immediate flush + resume, and the optional debug
+action-trace — all shipped and validated 102/102 against the `magium-dev`
+oracle @ `51f5aa9`. Chapter 1 plays start to finish on the real Kindle
+Paperwhite 12 with no e-ink ghosting and a ~2.2 s once-per-session parse behind
+a progress bar. Not in Phase I by design (roadmap order unchanged): the in-game
+menu (Phase II), the achievement unlock toast (Phase V), the `special:stats`
+screen (Phase IV) — each computes/persists correctly, it just has no UI yet.
+
+**Next:** Phase II design cycle — `superpowers:brainstorming` → a Phase II spec
+under `docs/specs/` → `writing-plans` → SDD execution. Scope per the roadmap
+([`09` Phase II](docs/research/09-roadmap-effort.md#phase-ii--full-story--navigation))
++ spec §12: all 54 files loading, back/history stack in `ui/reader.lua`, the
+13 hardcoded special cases audited + ported against real scenes, the four
+`special:` hooks as navigation stubs, the new-game/continue menu, and the
+spec §12.1 Phase I→II carry-forward (render-model→store write-back, etc.).
 
 ### 2026-09-01 (session 22) — Task 21: first on-device ch1 playthrough
 

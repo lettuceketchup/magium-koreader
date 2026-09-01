@@ -2,17 +2,17 @@
 
 - **Status:** research phase complete (Phases 0–6, 8 done; Phase 7 deferred —
   [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
-  **Phase I in progress** — the design cycle produced
-  [`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
-  + [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md) + a 21-task
-  plan, now executing on branch `feat/magium-plugin-phase-i`. As of 2026-08-31
-  (session 18): the complete Lua engine (parser · conditions · store · stats ·
-  locale · specials · 12-step render) is built and **verified 6/6 against the
-  `magium-dev` oracle on the first integrated run**; **Milestone 0 measured on
-  the owner's Kindle (2.2 s cold parse → `eager`, deferred to first reader-open;
-  lazy strategy deferred)**. Remaining: the reader widget, autosave, `main.lua`
-  wiring, on-device sign-off.
-- **Last updated:** 2026-08-31
+  **Phase I complete** ([spec](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
+  + [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md); on-device
+  sign-off 2026-09-01, spec §11.2): the full Lua engine (parser · conditions ·
+  store · stats · locale · specials · 12-step render), the bespoke fullscreen
+  paginated reader widget (OQ-013 resolved), debounced autosave + resume, and an
+  optional debug action-trace — all validated **102/102 against the `magium-dev`
+  oracle**; `ch1` plays start→finish on the real Kindle PW12. Milestone 0:
+  2.2 s device cold parse → `eager`, deferred to first reader-open (lazy
+  strategy deferred to Phase VIII). **Next: Phase II** (full corpus + navigation),
+  its own spec cycle.
+- **Last updated:** 2026-09-01
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
   file is updated at the end of each research phase.
@@ -219,16 +219,21 @@ See [`docs/decisions/`](docs/decisions/).
 
 ## Next steps
 
-Phase I is executing on branch `feat/magium-plugin-phase-i` (plan:
-[`docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md`](docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md),
-21 tasks; live progress in the git-ignored SDD ledger).
+**Phase I is complete** (all 21 tasks + Milestone 0; on-device sign-off
+2026-09-01 — spec §11.2). The
+[Milestone 0 + Phase I plan](docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md)
+executed under subagent-driven development; the 13 controller rulings from that
+run are preserved in
+[`docs/specs/phase-i-execution-notes.md`](docs/specs/phase-i-execution-notes.md).
+Task 15 (the `lazy` parse strategy) was deferred to Phase VIII (finding 36).
 
-**Done (session 18):** Tasks 1–13 + Milestone 0 — scaffolding, the full engine,
-oracle-diff validation (6/6), the on-device parse-timing measurement.
-
-**Remaining:** Task 14 (ch1 branch-matrix oracle diff) → 16 (pagination, pure) →
-17–18 (the custom fullscreen paginated reader widget + choices) → 19
-(autosave/resume) → 20 (`main.lua` wiring). Then **Task 21** — on-device
-chapter-1 playthrough + the Phase I exit-criteria checklist (spec §11.2), on the
-owner's Kindle. Task 15 (the `lazy` parse strategy) was deferred to Phase VIII
-(finding 36).
+**Next: Phase II** — full corpus + navigation. Needs its own spec cycle
+(`brainstorming` → spec under `docs/specs/` → `writing-plans`). Scope per
+[`09` Phase II](docs/research/09-roadmap-effort.md#phase-ii--full-story--navigation)
++ [spec §12](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md#12-phases-iiviii--architectural-notes):
+all 54 `.magium` files, back/history stack, the 13 hardcoded special cases
+audited + ported against real scenes, the four `special:` hooks as navigation
+stubs, the new-game/continue menu, and the spec §12.1 Phase I→II carry-forward
+(render-model→store write-back, `B3-Ch01a-Crossbow` device-lock suppression,
+`v_hearing <= 4` unmatched-operator check). Roadmap phase order is unchanged —
+the achievement toast stays Phase V, the stats screen Phase IV.
