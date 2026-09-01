@@ -63,6 +63,40 @@ describe("util/trace", function()
     assert.are.equal(0, #w.lines)       -- old event dropped
   end)
 
+  -- A diagnostic must never break the game (ADR-005): a throwing writer must not
+  -- propagate out of event()/flush(), and the tracer degrades permanently to off
+  -- rather than re-throwing on every later flush.
+  it("survives a throwing writer and degrades to disabled", function()
+    local w = FakeTrace.new()
+    local logs = {}
+    trace.configure{
+      enabled = true,
+      writer = function() error("disk full") end,
+      log = function(msg) logs[#logs + 1] = msg end,
+      clock = function() return 0 end,
+    }
+    assert.has_no.errors(function()
+      trace.event("render", { scene = "X" })
+      trace.flush()
+    end)
+    assert.is_false(trace.enabled)
+    assert.is_truthy(logs[#logs]:match("trace disabled after write error"))
+    -- and it stays off + silent from here on
+    assert.has_no.errors(function() trace.event("choice"); trace.flush() end)
+    assert.are.equal(0, #w.lines)
+  end)
+
+  it("does not propagate a throwing log fn", function()
+    trace.configure{
+      enabled = true,
+      writer = function() end,
+      log = function() error("logger exploded") end,
+      clock = function() return 0 end,
+    }
+    assert.has_no.errors(function() trace.event("render", { scene = "X" }) end)
+    assert.is_true(trace.enabled)   -- a bad log fn is not a write failure
+  end)
+
   it("round-trips a nested data table", function()
     local w = fresh(true)
     trace.event("choice", { set = { v_ch1_intro_feeling = "1", v_current_scene = "Ch1-Intro2" } })

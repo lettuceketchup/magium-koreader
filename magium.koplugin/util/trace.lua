@@ -50,14 +50,27 @@ function M.event(kind, data)
     for k, v in pairs(data) do rec[k] = v end
   end
   M._buf[#M._buf + 1] = rec
-  if M._log then M._log("[MGM] " .. summary(kind, data)) end
+  -- injected log fn: guarded for the same reason flush() is (below)
+  if M._log then pcall(M._log, "[MGM] " .. summary(kind, data)) end
   M._count = M._count + 1
   if M._count >= M._flush_every then M.flush() end
 end
 
+-- A diagnostic must never break the game (ADR-005). json.encode and the injected
+-- writer are both throw-capable (a non-scalar in a future call site; a full disk
+-- / closed handle on device), and flush() is reached from the choice-commit and
+-- reader-close paths — so a throw here would take gameplay down with it. Wrap
+-- once, and on failure degrade permanently to off rather than throwing again on
+-- every subsequent flush.
 function M.flush()
   if M.enabled and M._writer then
-    for _, rec in ipairs(M._buf) do M._writer(json.encode(rec)) end
+    local ok, err = pcall(function()
+      for _, rec in ipairs(M._buf) do M._writer(json.encode(rec)) end
+    end)
+    if not ok then
+      if M._log then pcall(M._log, "[MGM] trace disabled after write error: " .. tostring(err)) end
+      M.enabled = false
+    end
   end
   M._buf = {}
   M._count = 0
