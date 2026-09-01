@@ -2,6 +2,7 @@ require("spec/spec_helper")
 local Store = require("engine/store")
 local SaveManager = require("save/manager")
 local FakeWriter = require("spec/support/fake_writer")
+local FakeSlotStore = require("spec/support/fake_slotstore")
 
 -- A controllable scheduler that mirrors the REAL adapter's handle contract
 -- (main.lua:99 — `schedule` returns the scheduled fn itself and `unschedule`
@@ -168,5 +169,76 @@ describe("SaveManager", function()
     mgr:on_achievement_unlocked()
     assert.are.equal(1, w.writes)
     assert.are.equal("1", w.data.achievements.v_ac_x)
+  end)
+
+  -- --- Phase III: the 50 manual slots (over an injected `slotstore`) -----------
+
+  local function slot_mgr(store, extra)
+    local w, s, ss = FakeWriter.new(), make_sched(), FakeSlotStore.new()
+    local opts = { store = store, writer = w, slotstore = ss,
+      schedule = s.schedule, unschedule = s.unschedule, debounce = 5 }
+    for k, v in pairs(extra or {}) do opts[k] = v end
+    return SaveManager.new(opts), ss, w, s
+  end
+
+  it("save_slot writes a { state, date, name } blob without v_ac_*", function()
+    local store = Store.new({ v_current_scene = "B2-Ch04a-Intro", v_gold = "7", v_ac_x = "1" })
+    local mgr, ss = slot_mgr(store)
+    mgr:save_slot(3, "Book 2 - Chapter 4")
+    assert.are.equal("Book 2 - Chapter 4", ss.data[3].name)
+    assert.are.equal("B2-Ch04a-Intro", ss.data[3].state.v_current_scene)
+    assert.are.equal("7", ss.data[3].state.v_gold)
+    assert.is_nil(ss.data[3].state.v_ac_x)
+    assert.is_true(type(ss.data[3].date) == "number")
+  end)
+
+  it("load_slot restores the slot state, keeps live achievements, returns the scene", function()
+    local store = Store.new({ v_current_scene = "Now", v_ac_earned_later = "1" })
+    local mgr, ss = slot_mgr(store)
+    ss.data[5] = { state = { v_current_scene = "B1-Ch09a-Duel", v_gold = "2" }, date = 1, name = "n" }
+    local scene_id = mgr:load_slot(5)
+    assert.are.equal("B1-Ch09a-Duel", scene_id)
+    assert.are.equal("2", store:get("v_gold"))
+    assert.are.equal("1", store:get("v_ac_earned_later"))  -- own blob, not clobbered
+  end)
+
+  it("load_slot returns nil and leaves the store alone for an empty slot", function()
+    local store = Store.new({ v_current_scene = "X", v_gold = "9" })
+    local mgr = slot_mgr(store)
+    assert.is_nil(mgr:load_slot(12))
+    assert.are.equal("X", store:get("v_current_scene"))
+    assert.are.equal("9", store:get("v_gold"))
+  end)
+
+  it("delete_slot removes the blob", function()
+    local store = Store.new({ v_current_scene = "X" })
+    local mgr, ss = slot_mgr(store)
+    ss.data[8] = { state = {}, date = 1, name = "n" }
+    mgr:delete_slot(8)
+    assert.is_nil(ss.data[8])
+    assert.are.equal(1, ss.removes)
+  end)
+
+  it("slots_meta lists only occupied slots, name + date", function()
+    local store = Store.new({ v_current_scene = "X" })
+    local mgr, ss = slot_mgr(store)
+    ss.data[0] = { state = {}, date = 111, name = "first" }
+    ss.data[42] = { state = {}, date = 222, name = "later" }
+    local meta = mgr:slots_meta()
+    assert.are.same({ name = "first", date = 111 }, meta[0])
+    assert.are.same({ name = "later", date = 222 }, meta[42])
+    assert.is_nil(meta[1])
+    assert.is_nil(meta[41])
+  end)
+
+  it("a debounced autosave never touches the slotstore", function()
+    local store = Store.new({ v_current_scene = "X" })
+    local mgr, ss, _, s = slot_mgr(store)
+    mgr:touch()
+    s.fire_all()
+    mgr:flush_now("t")
+    mgr:save_checkpoint()
+    assert.are.equal(0, ss.writes)
+    assert.are.equal(0, ss.removes)
   end)
 end)

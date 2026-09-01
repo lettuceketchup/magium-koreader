@@ -132,7 +132,7 @@ own structure. `main.lua` constructs and holds those two.
 | `choices.lua` | Renders the choice list as the final page — a vertical `ButtonTable`; each button carries `{ label, target, set_vars, special }` and a tap callback into `reader.lua`. | I |
 | `refresh.lua` | Refresh-type policy: which of `ui`/`partial`/`full`/`flashui` for page-turn vs scene-change vs modal vs periodic de-ghost. Phase I uses a conservative default; **OQ-007 tuning lands here** in Phase VIII. | I (stub) / VIII |
 | `statspage.lua` | `KeyValuePage` stats screen. | IV |
-| `savespage.lua` | `Menu`-based slot list + `InputDialog` for slot names. | III |
+| `savespage.lua` | `Menu`-based slot list; per-slot `ButtonDialog` (Save/Load/Overwrite/Delete). No `InputDialog` — name = chapter header ([ADR-007](../decisions/ADR-007-saves-scope.md)). | III |
 | `toast.lua` | Achievement unlock — `Notification`. | V |
 
 ### 3.3 `save/` — persistence
@@ -446,7 +446,12 @@ Maps `magium-dev`'s four `localStorage` blobs
 | `currentState` (live vars minus `v_ac_*`) | key in `magium/state.lua` (`LuaSettings`) | I |
 | `achievements` (`v_ac_*` flags) | key in `magium/state.lua` | I |
 | `checkpoint` (snapshot + `date` + `name`) | key in `magium/state.lua` | III |
-| `save0…save49` (snapshot + `date` + `name`) | `magium/slots/NN.blob` (`Persist`, `luajit`), plus a `{NN → {date,name}}` index in `state.lua` | III |
+| `save0…save49` (snapshot + `date` + `name`) | `magium/slots/NN.blob` (`Persist`, `luajit`) | III |
+
+> **Phase III as built (2026-09-02):** no `{NN → {date,name}}` index — the saves
+> screen reads the ≤50 slot files on open. `name` is the chapter header (no user
+> entry). Import/export and rename cut, delete added.
+> [ADR-007](../decisions/ADR-007-saves-scope.md) · [Phase III spec](2026-09-02-phase-iii-saves.md).
 
 `state.lua` is small (single-digit KB, [`04` F-23](../research/04-constraints-budget.md#findings))
 and loads every launch; slot blobs load only when the saves screen opens or a
@@ -646,7 +651,7 @@ code is written to accommodate it without rework:
 | Phase | Adds | Touches (existing) | New modules |
 |---|---|---|---|
 | **II — full corpus & nav** | **→ done, see [2026-09-01-phase-ii spec](2026-09-01-phase-ii-full-corpus-and-navigation.md).** All 54 files (already eager-loaded); scene `set()` write-back; special case #8 (sweep 8887/8887); in-game menu; `special:` hooks routed. **Back/history stack cut** — [ADR-006](../decisions/ADR-006-no-scene-back-navigation.md), `magium-dev` has none. | `scene` (`persist_effects`), `specials` (#8), `reader` (header split), `main` (menu) | — |
-| **III — saves** | `checkpoint` blob; 50 manual slots; `checkpoint_save`/`checkpoint_load` real; slot name/date UI | `save/manager`, `reader` (special dispatch) | `ui/savespage.lua` |
+| **III — saves** | 50 manual slots (`save/manager` slot API + one `Persist` blob each, no index); slot screen; wire menu row + `special:saves`. `checkpoint` shipped in II. See [Phase III spec](2026-09-02-phase-iii-saves.md) / [ADR-007](../decisions/ADR-007-saves-scope.md). | `save/manager`, `main` (special dispatch) | `ui/savespage.lua` |
 | **IV — stats** | `KeyValuePage` stats screen; the `v_available_points`/`v_max_stat` spend flow; stats-screen special cases #9–#11 | `specials` (activate #9–#11), `store` (stat vars), `reader` (special dispatch) | `ui/statspage.lua` |
 | **V — achievements** | unlock toast; the 136-entry `achievements{1,2,3}.json` menu; `b2ch41` group quirk; always-on `v_ac_b3_ch9_prize` | `scene` already computes the list; `locale` (achievements JSON) | `ui/toast.lua`, `ui/achievementsmenu.lua` |
 | **VI — settings** | a scoping pass first — most of `settings.ejs` (font/theme) is KOReader's job ([`01` §8](../research/01-magium-analysis.md#8-saves--settings-task-18)); port only genuinely game-specific settings | `main` (menu) | maybe none |
