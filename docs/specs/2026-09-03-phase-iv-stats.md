@@ -1,6 +1,6 @@
 # Spec: Phase IV — Stats & the stat-allocation screen
 
-- **Status:** in review — automated gates green (busted **114/0**, `oracle-corpus` **8887/8887** unchanged, `statspage` + `savespage` + `reader` UI smokes green, headless emu load clean). Built on `feat/phase-iv-stats`. Owner on-device sign-off pending.
+- **Status:** in review — automated gates green (busted **116/0**, `oracle-corpus` **8887/8887** unchanged, `statspage` + `savespage` + `reader` UI smokes green, headless emu load clean). Built on `feat/phase-iv-stats`. First device pass 2026-09-03: 2–6 work; the auto-popup tutorial lingered un-closeable → reworked into a `?` button (below). Owner re-test pending.
 - **Last updated:** 2026-09-03
 - **Phase:** Implementation — design cycle 4 (roadmap [Phase IV](../research/09-roadmap-effort.md#phase-iv--stats--stat-checks))
 - **Sources:**
@@ -60,6 +60,10 @@
   `Return to game` returns **without** persisting — unconfirmed pending is lost.
 - **First open**: a one-time tutorial modal (`stats_intro_seen` cookie) —
   `statsIntroductionText` + a mock failed and a mock successful check line.
+  **Ported as an always-available `?` title-bar button, not an auto-popup**
+  (owner report 2026-09-03: an auto-shown `TextViewer` from `init()` lingered
+  un-closeable behind the reopened reader and surfaced as a stuck dictionary
+  window on game-close).
 - **#5 / #11**: at `Ch6-Eiden-vs-dragon` with `v_maximized_stats_used == "1"`
   the screen unlocks "Full immersion" (`v_ac_ch6_immersion = 1`) if not already.
 
@@ -89,8 +93,9 @@ StatsPage:new{
   refresh — stays on the screen (magium-dev reloads).
 - `_cancel`: reset pending, refresh.
 - `Return to game` = the page's normal close (X / Back / swipe → `on_close`).
-- First open: a `TextViewer` with `statsIntroductionText` + the two mock lines,
-  gated by `G_reader_settings` key `magium_stats_intro_seen`.
+- A `?` title-bar button (`title_bar_left_icon = "notice-question"`) opens a
+  `TextViewer` with `statsIntroductionText` + the two mock check lines. No
+  auto-popup, no seen-flag — always available, always user-dismissable.
 
 ### 3.2 `main.lua`
 
@@ -110,9 +115,14 @@ StatsPage:new{
 - `spec/engine/specials_spec.lua` — the three gates, boundary cases
   (`B3-Ch04a-*` yes / `B3-Ch3a-*` / `B3-Ch4-*` no; magic set / unset / `""`).
 - `spec/ui/statspage_smoke.lua` — against the real `KeyValuePage`: row
-  count/labels/values, magic + book-3 gates, `_bump` (raise + cap + 0-points
-  no-op), `Confirm` map contents, `Cancel` clears pending. Auto-run by `test-ui`.
-- Regression: `oracle-corpus` must stay **8887/8887** (no render-pipeline change).
+  count/labels/values, magic + book-3 gates (incl. combined = 17 rows) with
+  real book-3 scene ids, the `?` button, `_bump` (raise + cap + 0-points no-op),
+  `Confirm` map contents, `Cancel` clears pending. Auto-run by `test-ui`.
+- `spec/flow/playthrough_spec.lua` — headless: a `special:stats` "Invest points
+  now" choice navigates to `<Scene>-Stats-spent` (one "Continue" choice → next
+  scene); a Book 3 ch ≥ 4 `-spent` scene trips `stats_show_book3_rows`. This is
+  the "book 3 without a device" coverage.
+- Regression: `oracle-corpus` stays **8887/8887** (no render-pipeline change).
 
 ## 5. Exit criteria
 

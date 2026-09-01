@@ -167,6 +167,38 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-03 (session 29b) — Phase IV: first device pass, tutorial reworked
+
+Owner ran Phase IV on the PW12. **2–6 (spend / Confirm / Cancel / persist /
+in-story invest) all work.** One bug: the first-visit tutorial `TextViewer`,
+shown from `StatsPage:init()`, was never closed — it lingered in the UIManager
+stack behind the reopened reader, flashed on repaint, and surfaced as a stuck
+"dictionary window" on game-close.
+
+- **`ui/statspage.lua`** — dropped `_maybe_intro` + the `magium_stats_intro_seen`
+  `G_reader_settings` flag. Added a **`?` title-bar button**
+  (`title_bar_left_icon = "notice-question"` → `_show_help()` opens the same
+  `TextViewer` on demand, on top, user-dismissable). Owner's own suggestion;
+  also kills the "first time per save" question (no seen-state at all now).
+- **Device crosscheck** — pulled `crash.log` + `magium/` over SSH: no magium
+  traceback; `state` blob confirms a persisted spend (`v_premonition = 3`,
+  `v_available_points = 0`). The lingering widget doesn't throw, it's a
+  UI-stacking mistake.
+- **"-spent scene" explained + tested** — a `special:stats` "Invest points now"
+  choice carries *both* `v_current_scene = <Scene>-Stats-spent` and
+  `special:stats`, so it navigates to a near-duplicate scene (only choice:
+  "Continue" → the real next scene) and opens the stats screen over it. Nothing
+  mechanically special about the id. 2 new `spec/flow/playthrough_spec.lua`
+  cases (ch2 `Ch2-Stats` → `Ch2-Stats-spent` → `Ch2-Fallen-trees`; `B3-Ch04a`
+  `-spent` trips the book-3 row gate) — the emulator-side "book 3 without a
+  device" coverage the owner asked for. `statspage_smoke` extended: real
+  book-3 scene ids, combined magic+book3 = 17 rows, the `?` button.
+- **Gates:** busted **116/0** (+2 flow), `test-ui` green (`statspage_smoke`
+  25 checks), headless emu load clean. `oracle-corpus` unchanged (no
+  render-path change — `specials.lua` only gained unused-by-render functions).
+- **Next:** redeploy, owner re-tests the `?` button + confirms the stuck-window
+  bug is gone, then spec `stable` + merge.
+
 ### 2026-09-03 (session 29) — Phase IV implemented: stat-allocation screen
 
 Branch `feat/phase-iv-stats`. Spec: [`docs/specs/2026-09-03-phase-iv-stats.md`](docs/specs/2026-09-03-phase-iv-stats.md).

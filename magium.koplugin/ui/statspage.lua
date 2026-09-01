@@ -12,6 +12,8 @@
 -- }
 --
 -- Pending point spends live in this widget; only Confirm calls back to persist.
+-- magium-dev's first-visit tutorial is a "?" title-bar button here (a lingering
+-- auto-popup was un-closeable behind the reader — owner report 2026-09-03).
 
 local KeyValuePage = require("ui/widget/keyvaluepage")
 local TextViewer = require("ui/widget/textviewer")
@@ -39,9 +41,10 @@ function StatsPage:init()
   self.base_points = tonumber(self.view.v_available_points or 0) or 0
   self.title = self.locale:str("statsHeaderText") or _("Stats")
   self.close_callback = self.on_close
+  self.title_bar_left_icon = "notice-question"
+  self.title_bar_left_icon_tap_callback = function() self:_show_help() end
   self.kv_pairs = self:_build()
   KeyValuePage.init(self)
-  self:_maybe_intro()
 end
 
 -- ---- state helpers ----------------------------------------------------------
@@ -142,10 +145,9 @@ function StatsPage:_cancel()
   self:_refresh()
 end
 
--- ---- first-visit tutorial (stats_intro_seen parity) ----------------------
+-- ---- "?" tutorial (statsIntroductionText, magium-dev's first-visit modal) ----
 
-function StatsPage:_maybe_intro()
-  if G_reader_settings:isTrue("magium_stats_intro_seen") then return end
+function StatsPage:_show_help()
   local L = self.locale
   local intro = (L:str("statsIntroductionText") or ""):gsub("<br%s*/?>%s*", "\n")
   local fail = L:stat_check_text{ variable = L:str("statsAncientLanguagesText"), value = 3, success = false }
@@ -154,7 +156,6 @@ function StatsPage:_maybe_intro()
     title = self.title,
     text = intro .. "\n\n" .. fail .. "\n" .. ok,
   })
-  G_reader_settings:makeTrue("magium_stats_intro_seen")
 end
 
 return StatsPage
