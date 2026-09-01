@@ -354,12 +354,28 @@ function Magium:openReader()
       end
       if button.special == "restart" then
         reset_to_intro(self.store)   -- keep achievements (parity: clearState)
-      elseif button.special == "saves" or button.special == "stats" then
-        UIManager:nextTick(function() self:openMenu() end)   -- real screens: Phases III / IV
+      elseif button.special == "checkpoint_save" then
+        -- the choice's v_current_scene (next-chapter intro) is already applied
+        self.save:save_checkpoint()
+      elseif button.special == "checkpoint_load" then
+        if self.save:load_checkpoint() then
+          self.save:flush_now("checkpoint-load")
+        else
+          UIManager:nextTick(function()
+            UIManager:show(InfoMessage:new{
+              text = _('No checkpoint saved yet. Choose "Restart game" to start over.'),
+            })
+          end)
+        end
+      elseif button.special == "stats" then
+        -- stats screen is Phase IV; navigation (if any) already happened above
+        UIManager:nextTick(function()
+          UIManager:show(InfoMessage:new{ text = _("The stats screen arrives in a later version.") })
+        end)
+      elseif button.special == "saves" then
+        -- the 50-slot save/load screen is Phase III; the menu shows it disabled
+        UIManager:nextTick(function() self:openMenu() end)
       end
-      -- special:checkpoint_save / :checkpoint_load — no-op until Phase III (D4).
-      -- The choice's own v_current_scene assignment (applied in the loop above)
-      -- still navigates.
       trace.event("choice", {
         label = button.label,
         target = button.target or "",
@@ -398,7 +414,11 @@ function Magium:openMenu()
     buttons = {
       {{ text = _("Back to game"), callback = act(function() end) }},
       {{ text = _("New game / Restart book"), callback = act(function() self:newGame() end) }},
-      {{ text = _("Load from last checkpoint"), enabled = false }},
+      {{
+        text = _("Load from last checkpoint"),
+        enabled = self.save:has_checkpoint(),
+        callback = act(function() self:loadCheckpoint() end),
+      }},
       {{ text = _("Save / Load game"), enabled = false }},
       {{ text = _("Achievements"), enabled = false }},
       {{ text = _("Settings"), enabled = false }},
@@ -424,10 +444,25 @@ function Magium:newGame()
       reset_to_intro(self.store)
       self.save:flush_now("new-game")
       trace.event("choice", { label = "new game", target = specials.DEFAULT_SCENE })
-      if self.reader then UIManager:close(self.reader) end
-      UIManager:nextTick(function() self:openReader() end)
+      self:_reopenReader()
     end,
   })
+end
+
+-- Menu → Load from last checkpoint. Same restore path as an in-story
+-- special:checkpoint_load, then re-open the reader on the restored scene.
+function Magium:loadCheckpoint()
+  local scene_id = self.save:load_checkpoint()
+  if not scene_id then return end   -- button is disabled when has_checkpoint() is false
+  self.save:flush_now("checkpoint-load")
+  trace.event("choice", { label = "load checkpoint", target = scene_id, special = "checkpoint_load" })
+  self:_reopenReader()
+end
+
+-- Close the current reader (flushing) and re-open on the current v_current_scene.
+function Magium:_reopenReader()
+  if self.reader then UIManager:close(self.reader) end
+  UIManager:nextTick(function() self:openReader() end)
 end
 
 -- flush on suspend / shutdown — but only once THIS instance has opened the reader

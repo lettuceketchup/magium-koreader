@@ -110,9 +110,37 @@ case "$cmd" in
     fi
     cd "$PLUGIN" && exec busted spec/engine "$@"   # "$@" here is only flags, if any
     ;;
+  test-ui)
+    # Headless UI regression checks — run the real KOReader widget stack via
+    # `koenv` (below). Every spec/ui/*_smoke.lua must exit 0.
+    [ -x "$EMU/koreader/luajit" ] || die "emulator not built ($EMU)"
+    rc=0
+    for s in "$PLUGIN"/spec/ui/*_smoke.lua; do
+      [ -f "$s" ] || continue
+      echo "── ${s##*/}"
+      out=$(bash "$0" koenv "spec/ui/${s##*/}" 2>&1) || rc=1
+      echo "$out" | grep -E "^\s+(ok|FAIL)|^(PASS|FAIL)" || echo "$out" | tail -5
+    done
+    exit $rc
+    ;;
   lua)
     [ -n "${1:-}" ] || die "usage: mgm.sh lua <file> [args]"
     cd "$PLUGIN" && exec luajit "$@"
+    ;;
+  koenv)
+    # Run a Lua script inside the built EMULATOR's KOReader environment (real
+    # frontend widgets available) with the plugin dir on LUA_PATH. Headless:
+    # EMULATE_READER_W/H give Screen its size with no X server. Use for reader/UI
+    # smoke tests that need require("ui/widget/...").  Usage:
+    #   mgm.sh koenv spec/ui/reader_smoke.lua      (path is relative to the plugin dir)
+    [ -n "${1:-}" ] || die "usage: mgm.sh koenv <script.lua> [args]"
+    [ -x "$EMU/koreader/luajit" ] || die "emulator not built ($EMU)"
+    script="$PLUGIN/$1"; shift
+    [ -f "$script" ] || die "no such script: $script"
+    export EMULATE_READER_W="${EMULATE_READER_W:-1272}"
+    export EMULATE_READER_H="${EMULATE_READER_H:-1696}"
+    cd "$EMU/koreader" && exec ./luajit -e \
+      "dofile('setupkoenv.lua'); package.path='$PLUGIN/?.lua;$KO/spec/unit/?.lua;'..package.path; arg={...}; dofile('$script')" "$@"
     ;;
   gen-cases)
     [ -d "$PLUGIN" ] || die "no magium.koplugin/ yet"
