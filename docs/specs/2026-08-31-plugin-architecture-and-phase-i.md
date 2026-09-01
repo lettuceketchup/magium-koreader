@@ -1,6 +1,6 @@
 # Spec: Plugin architecture & Phase I (MVP)
 
-- **Status:** stable — approved; Phase I executing (Tasks 1–13 + Milestone 0 done as of 2026-08-31). Milestone 0 result folded into §7 / §10. §8.1 close model, §8.2 fixed-font scope and §12.1 Phase I→II carry-forward updated by fix wave 1 (2026-09-01).
+- **Status:** stable — **Phase I complete** (all 21 tasks + Milestone 0; on-device sign-off 2026-09-01, §11.2 checklist below). Milestone 0 result folded into §7 / §10. §8.1 close model, §8.2 fixed-font scope and §12.1 Phase I→II carry-forward updated by fix wave 1 (2026-09-01). Phases II–VIII get their own spec cycles (§12).
 - **Last updated:** 2026-09-01
 - **Phase:** Implementation — design cycle 1 (roadmap [Milestone 0](../research/09-roadmap-effort.md#milestone-0--pre-flight-on-device-parse-timing-gate) + [Phase I](../research/09-roadmap-effort.md#phase-i--mvp-engine-core--the-real-reading-widget))
 - **Sources:**
@@ -599,18 +599,34 @@ Phase II (entry actions) and III–VI (the screens it links to).
 
 ### 11.2 Exit criteria
 
-- [ ] `ch1` plays start → finish on the **real Kindle** (or WSL2 `kodev` as an
-      interim), every choice reaching its correct target scene.
-- [ ] `spec/oracle_diff.lua` reports **0 diffs** across the 6 goldens + the full
-      `ch1` fixture set.
-- [ ] `parser.lua` produces the exact corpus counts (§11.1) with 0 anomalies
-      logged.
-- [ ] Close the reader mid-chapter, reopen from the menu → resumes on the same
-      scene with the same variable state.
-- [ ] `koreader/crash.log` clean (no Lua tracebacks, no `logger.warn/err` from
-      the plugin) across a full `ch1` playthrough + a resume.
-- [ ] All busted specs pass in both runners.
-- [ ] Milestone 0's `FINDING.md` committed; §7 default recorded.
+**Signed off 2026-09-01** (owner on-device playthrough — session 22 running-log
+entry; automated gates re-confirmed on `main` HEAD 2026-09-01).
+
+- [x] `ch1` plays start → finish on the **real Kindle**, every choice reaching
+      its correct target scene. *(owner playthrough, Kindle PW12)*
+- [x] `spec/oracle_diff.lua` reports **0 diffs** across the 6 goldens + the full
+      `ch1` fixture set. *(96/96 ch1 matrix + 6/6 goldens = 102/102, fresh
+      oracle vs fresh Lua render)*
+- [x] `parser.lua` produces the exact corpus counts (§11.1) with 0 anomalies
+      logged. *(`parser_spec` / `parser_constructs_spec`)*
+- [x] Close the reader mid-chapter, reopen from the menu → resumes on the same
+      scene with the same variable state. *(owner: verified across reader-close,
+      suspend, and full KOReader restart; device `magium/state` blob carries
+      `v_current_scene` + `v_ac_*`)*
+- [x] `koreader/crash.log` clean (no Lua tracebacks, no `logger.warn/err` from
+      the plugin) across a full `ch1` playthrough + a resume. *(owner)*
+- [x] All busted specs pass in both runners. *(`busted` 89/0/0/0; `luajit
+      spec/run.lua` engine subset 67/0/0/0)*
+- [x] Milestone 0's `FINDING.md` committed; §7 default recorded.
+      *(`docs/spikes/06-ondevice-parse-timing/`; §7 = `eager`, deferred to first
+      reader-open)*
+
+**Out of Phase I scope, verified working-as-specified, not exit blockers:** the
+achievement unlock toast (Phase V — §6 computes the list, `ui/toast.lua` not
+built), the `special:stats` screen (Phase IV), and the in-game
+new-game/continue/saves/… menu (Phase II — §11.1 "No title/menu screen in
+Phase I"). The owner noted their absence during the playthrough; each is
+deferred by design (§12) and its roadmap position is unchanged.
 
 ### 11.3 Effort
 
