@@ -6,7 +6,8 @@ new brainstorming/spec cycle after
 
 | Spec | Status | Covers |
 |---|---|---|
-| [2026-08-31-plugin-architecture-and-phase-i.md](2026-08-31-plugin-architecture-and-phase-i.md) | in-review | The permanent three-layer module architecture; **Milestone 0** (on-device parse-timing gate) and **Phase I** (MVP) in build-ready detail; phases II–VIII as architectural notes. |
+| [2026-08-31-plugin-architecture-and-phase-i.md](2026-08-31-plugin-architecture-and-phase-i.md) | Phase I complete (signed off 2026-09-01) | The permanent three-layer module architecture; **Milestone 0** (on-device parse-timing gate) and **Phase I** (MVP) in build-ready detail; phases II–VIII as architectural notes. |
+| [phase-i-execution-notes.md](phase-i-execution-notes.md) | archival | The 13 controller rulings from Phase I's SDD execution + the ledger self-review, preserved before the git-ignored ledger is deleted. |
 
 Decisions recorded from these specs are ADRs in
 [`../decisions/`](../decisions/) — see
