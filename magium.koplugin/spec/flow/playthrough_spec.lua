@@ -2,6 +2,7 @@ require("spec/spec_helper")
 local HeadlessGame = require("spec/support/headless_game")
 local parser = require("engine/parser")
 local Story = require("engine/story")
+local specials = require("engine/specials")
 
 local DATA_ROOT = require("spec/spec_helper").data_dir_en:gsub("/en$", "")
 
@@ -185,6 +186,42 @@ describe("playthrough (headless, whole engine)", function()
     g:choose(function(c) return c.special == "restart" end)
     assert.are.equal("Ch1-Intro1", g:scene_id())
     assert.are.equal("1", g.store:get("v_ac_ch1_coward"))
+  end)
+
+  -- The "-spent" scene: a special:stats "Invest points now" choice carries BOTH
+  -- v_current_scene = <Scene>-Stats-spent AND special:stats. So the choice
+  -- navigates the player to a near-duplicate scene whose only choice is
+  -- "Continue" (the author's "you have already decided to invest" branch) and
+  -- main.lua opens the stats screen over it. Nothing mechanically special about
+  -- the -spent scene — it is just the id you land on.
+  it("special:stats 'Invest points now' lands on the -spent scene with a Continue choice", function()
+    local g = HeadlessGame.new(DATA_ROOT)
+    g:start("Ch2-Stats")
+    local invest
+    for _, c in ipairs(g:choices()) do
+      if c.special == "stats" then invest = c end
+    end
+    assert.is_truthy(invest, "no special:stats choice at Ch2-Stats")
+    assert.are.equal("Ch2-Stats-spent", invest.set_variables.v_current_scene)
+
+    g:choose(function(c) return c.special == "stats" end)
+    assert.are.equal("Ch2-Stats-spent", g:scene_id())
+    local labels = {}
+    for _, c in ipairs(g:choices()) do labels[#labels + 1] = c.text end
+    assert.are.equal(1, #labels)
+    assert.is_truthy(labels[1]:find("Continue"))
+    g:choose(1)
+    assert.are.equal("Ch2-Fallen-trees", g:scene_id())
+  end)
+
+  it("a Book 3 ch>=4 stats screen shows the bluff / magical-sense / aura rows", function()
+    local g = HeadlessGame.new(DATA_ROOT)
+    g:start("B3-Ch04a-Introduction2")
+    g:choose(function(c) return c.special == "stats" end)
+    assert.are.equal("B3-Ch04a-Stats-spent", g:scene_id())
+    -- specials gate (#10) drives ui/statspage.lua's row list
+    assert.is_true(specials.stats_show_book3_rows("B3-Ch04a-Stats-spent"))
+    assert.is_false(specials.stats_show_book3_rows("Ch2-Stats-spent"))
   end)
 
   it("checkpoint_load on a death scene with no checkpoint does not navigate", function()

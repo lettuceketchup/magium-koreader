@@ -18,6 +18,32 @@ function M.suppress_stat_checks(scene_id)
   return NO_STAT_CHECK_SCENES[scene_id] == true
 end
 
+-- ---- stats-screen special cases (#5, #9, #10) --------------------------------
+-- Display-only gates for ui/statspage.lua. Ports the inline checks in
+-- magium-dev/templates/stats.ejs + renderers.js:renderStats @ 51f5aa9.
+
+M.MAXIMIZED_SCENE = "Ch6-Eiden-vs-dragon"                            -- case #5
+
+-- case #5: the "all stats max out" screen. Animation is cosmetic (end state ==
+-- real values) — only the v_ac_ch6_immersion unlock (#11, in main.lua) is real.
+function M.maximized_stats(scene_id, view)
+  return scene_id == M.MAXIMIZED_SCENE and view.v_maximized_stats_used == "1"
+end
+
+-- case #9: magical power / knowledge rows. JS gate is `if (v_b3_ch11_magic || 0)`
+-- — "0" is truthy in JS, so the gate is "set and not empty string", not "> 0".
+function M.stats_show_magic_rows(view)
+  return view.v_b3_ch11_magic ~= nil and view.v_b3_ch11_magic ~= ""
+end
+
+-- case #10: bluff / magical-sense / aura-hardening rows. sceneAfter(): the [a-c]
+-- is MANDATORY here (unlike locale:header's `[a-c]?`); the optional `B<n>-` group
+-- being absent leaves book undefined in JS → never equals "3".
+function M.stats_show_book3_rows(scene_id)
+  local book, chapter = scene_id:match("^B(%d*)%-Ch(%d*)[a-c]%-")
+  return book == "3" and (tonumber(chapter) or 0) >= 4
+end
+
 function M.extra_achievements(view)                                  -- case #3
   if view.v_ac_b3_ch9_prize == "1" then
     return { { text = M.CONSOLATION.text, variable = M.CONSOLATION.variable } }
