@@ -22,12 +22,24 @@
 #   test-engine         run `busted spec/engine` (pure layer, fastest) — takes NO
 #                       path args; use `test <path>` for a single file
 #   lua <file> [args]   run luajit from magium.koplugin/
+#   gen-cases [data-dir] [out.json] [pattern]
+#                       luajit spec/gen_cases.lua — derive an oracle case matrix
+#                       from parsed scene conditions (no oracle needed). Defaults:
+#                       data-dir=./data/en, out=spec/out/cases.json. pattern is an
+#                       optional Lua pattern filtering which *.magium files to use
+#                       (e.g. '^ch1%.magium$' to scope to one chapter).
 #   diff <args...>      oracle-diff.js <args...>, with the oracle auto-started
 #                       around the call and torn down after (file-only subcommands
 #                       like `diff <a> <b>` work too — the oracle just goes unused)
 #   with-oracle <cmd..> start the oracle, run <cmd..> (cwd = repo root), stop it
 #   oracle-diff-lua <args..>  luajit spec/oracle_diff.lua <args..> from the plugin
 #                       dir, with the oracle live for the duration
+#   oracle-corpus [out-dir]  full-corpus parity sweep: derive cases for every
+#                       .magium file, capture oracle goldens, render the same
+#                       cases through the Lua port, diff the two. One-shot,
+#                       output goes under spec/out/ (gitignored) by default —
+#                       this is a run-it-and-read-the-report command, not a
+#                       golden-producing one.
 #   emu-deploy          symlink magium.koplugin into the built emulator
 #   emu-run             xvfb-run kodev run (kindle-paperwhite, no rebuild) — blocks
 #   emu-smoke [SECS]    deploy + launch headless for SECS (default 25), kill it,
@@ -102,6 +114,10 @@ case "$cmd" in
     [ -n "${1:-}" ] || die "usage: mgm.sh lua <file> [args]"
     cd "$PLUGIN" && exec luajit "$@"
     ;;
+  gen-cases)
+    [ -d "$PLUGIN" ] || die "no magium.koplugin/ yet"
+    cd "$PLUGIN" && exec luajit spec/gen_cases.lua "${1:-./data/en}" "${2:-spec/out/cases.json}" ${3:+"$3"}
+    ;;
   diff)
     # oracle-diff.js. `capture`/`scene` need the live oracle; `diff <a> <b>` does
     # not — starting it unconditionally is harmless and keeps the recipe uniform.
@@ -117,6 +133,16 @@ case "$cmd" in
     [ -d "$PLUGIN" ] || die "no magium.koplugin/ yet"
     _start_oracle
     cd "$PLUGIN" && luajit spec/oracle_diff.lua "$@"
+    ;;
+  oracle-corpus)
+    [ -d "$PLUGIN" ] || die "no magium.koplugin/ yet"
+    out="${1:-$PLUGIN/spec/out/corpus}"
+    mkdir -p "$out"
+    _start_oracle
+    ( cd "$PLUGIN" && luajit spec/gen_cases.lua ./data/en "$out/cases.json" ) || exit 1
+    ( cd "$REPO" && node reference/tools/oracle-diff.js capture --cases "$out/cases.json" --out "$out/oracle" ) || exit 1
+    ( cd "$PLUGIN" && luajit spec/oracle_diff.lua "$out/cases.json" "$out/port" ) || exit 1
+    cd "$REPO" && node reference/tools/oracle-diff.js diff "$out/oracle" "$out/port"
     ;;
   emu-deploy)
     [ -d "$PLUGIN" ] || die "no magium.koplugin/ yet"

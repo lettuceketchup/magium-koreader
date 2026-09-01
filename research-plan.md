@@ -155,6 +155,50 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-01 (session 24) — oracle case matrix auto-derived; full-corpus sweep now runnable
+
+Tooling, not plugin behaviour — the Lua engine is unchanged.
+
+- **`magium.koplugin/spec/gen_cases.lua`** (new) replaces `tools/gen-ch1-cases.js`.
+  Derives the oracle case matrix per scene straight from the parsed condition
+  DNFs (`set()/choice()/#if`) + achievement vars — baseline, per-atom
+  true/false boundary flips, one case per multi-var AND-group, one per
+  achievement flag — with a generation-time coverage self-check
+  (`conditions.eval` must see each DNF both true and false; warns, doesn't
+  abort). No more hand-reading a chapter's variables. Linear in atom count,
+  not a cross-product.
+- **`spec/oracle_diff.lua`** de-hardcoded — globs all `data/en/*.magium` via
+  `Story._list_magium` instead of the `ch1/ch3/b2ch1` literal.
+- **`tools/mgm.sh`**: `gen-cases` and `oracle-corpus` (full generate → capture
+  → render → diff sweep in one WSL invocation; output under the git-ignored
+  `spec/out/`).
+- **ch1 committed goldens regenerated through the new path**: 37 derived cases
+  (was a 96-case hand matrix), 37/37 vs a fresh oracle, offline spec green.
+  The hand-picked 6-case fixture (`oracle-cases.json` + its goldens +
+  `_index.json`) is untouched — it covers text-quoting / scene-id / checkpoint
+  edge cases the condition-derivation can't reach.
+- **First full-corpus parity sweep — 8887 derived cases across all 54 files.**
+  Started 8617/8887; every miss was one of two pre-existing blind spots in
+  `reference/tools/oracle-diff.js`'s HTML normalizer, both fixed:
+  1. choiceless scenes — `main.ejs` emits an orphan `</div>` before the header
+     div; it was counted as a fake paragraph. Now bare closing-tag lines are
+     dropped.
+  2. choiceless scene **with** an achievement — the modal became the head/tail
+     cut point, stranding its `storeVariable(v,"2")` script in the head (→
+     phantom setVariable, starved achievements match). Cut now anchors on that
+     script; the four brittle literal cut-markers (one with a hard `\n` that
+     CRLF responses defeated) collapsed to a `min()` of three computed
+     offsets; dead `firstIndex` removed.
+  End state: **8886/8887**.
+- **The one remaining diff** — `B3-Ch01a-Crossbow` @ `v_b3_ch1_unlock == 2`:
+  magium-dev renders an *empty* stat-check label for the "stat device locked"
+  sentinel; our `locale:stat_check_text` returns the readable
+  `mainStatDeviceLockedText`. Not a tooling bug — logged as a Phase II
+  hardcoded-special-case audit item (spec special-case #12 family; see
+  [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md) Phase II).
+- **Next:** Phase II proper (full corpus load + navigation) — its spec cycle.
+  Run `mgm.sh oracle-corpus` as the parity gate for that work.
+
 ### 2026-09-01 (session 23) — Phase I formally closed out
 
 Bookkeeping only — no plugin code changed. Phase I was already code-complete and

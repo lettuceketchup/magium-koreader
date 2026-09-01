@@ -10,6 +10,7 @@ local json = require("engine/vendor/json")
 local parser = require("engine/parser")
 local scene = require("engine/scene")
 local Locale = require("engine/locale")
+local Story = require("engine/story")
 
 local DATA_EN = "./data/en"
 local DATA_ROOT = "./data"
@@ -18,9 +19,10 @@ local function read(path)
   local f = assert(io.open(path, "r")); local s = f:read("*a"); f:close(); return s
 end
 
--- Load every ch we might need. Cases in Phase I stay within these files;
--- extend as fixtures grow.
-local FILES = { "ch1.magium", "ch3.magium", "b2ch1.magium" }
+-- Load every .magium file present — whatever the cases file references,
+-- from any chapter (Story._list_magium is the same glob engine/story.lua's
+-- eager-load strategy uses).
+local FILES = Story._list_magium(DATA_EN)
 
 local function to_canonical(rm)
   -- rm is engine/scene render_model; reshape to the oracle-diff.js key names.
@@ -53,8 +55,8 @@ local cases_path, out_dir = arg[1], arg[2]
 assert(cases_path and out_dir, "usage: luajit spec/oracle_diff.lua <cases.json> <out_dir>")
 
 local scenes = {}
-for _, f in ipairs(FILES) do
-  for id, s in pairs(parser.parse(DATA_EN .. "/" .. f)) do scenes[id] = s end
+for _, path in ipairs(FILES) do
+  for id, s in pairs(parser.parse(path)) do scenes[id] = s end
 end
 local loc = Locale.load(DATA_ROOT, "en")
 

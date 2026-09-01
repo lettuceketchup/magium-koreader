@@ -66,13 +66,29 @@ function normalizeSceneHtml(html, sceneId, uiStrings) {
   const checkpointText = normalizeText(uiStrings.mainCheckpointReachedText || "");
 
   // Everything up to the first choice / achievement / footer is the "head"
-  // (setVariables scripts, checkpoint div, stat-check divs) + prose.
-  const cut = firstIndex(html, [
-    '<div class="response">',
-    '<div\n    class="achievement-modal"',
-    'class="achievement-modal"',
-    '<div style="display:none">',
-  ]);
+  // (setVariables scripts, checkpoint div, stat-check divs) + prose; the rest
+  // is the "tail" (choice buttons, achievement modals, out-of-band header).
+  //
+  // The achievement block is `<script>storeVariable(V,"2")</script>` then its
+  // `<div ... class="achievement-modal">` (the class attr may wrap to the next
+  // line). That leading script belongs with the modal in the tail — in a
+  // scene with choices it lands there naturally, but when the modal itself is
+  // the cut point the script would be stranded at the end of the head, where
+  // it gets miscounted as a setVariable and starves the achievements match.
+  // So anchor the achievement cut at the script, not the modal div.
+  const responseCut = html.indexOf('<div class="response">');
+  const displayCut = html.indexOf('<div style="display:none">');
+  let achCut = -1;
+  const modal = html.match(/<div\s+class="achievement-modal"/);
+  if (modal) {
+    achCut = modal.index;
+    const scripts = html
+      .slice(0, modal.index)
+      .match(/(?:<script>\s*storeVariable\("[^"]*","2"\)\s*<\/script>\s*)+$/);
+    if (scripts) achCut = scripts.index;
+  }
+  const candidates = [responseCut, achCut, displayCut].filter((x) => x !== -1);
+  const cut = candidates.length ? Math.min(...candidates) : -1;
   const headAndProse = cut === -1 ? html : html.slice(0, cut);
   const tail = cut === -1 ? "" : html.slice(cut);
 
@@ -107,6 +123,12 @@ function normalizeSceneHtml(html, sceneId, uiStrings) {
     const line = rawLine.trim();
     if (!line) continue;
     if (line.startsWith("<script") || line.startsWith("<div ")) continue;
+    // main.ejs emits an orphaned closing </div> right before the header's
+    // hidden div whenever a scene has zero surviving choices (no matching
+    // open tag in this fragment — verified against a live zero-choice
+    // response). A bare closing tag is never real prose; drop it so it
+    // doesn't get counted as a fake extra paragraph.
+    if (/^<\/[a-zA-Z][\w-]*>$/.test(line)) continue;
     paragraphs.push(normalizeText(line));
   }
 
@@ -146,14 +168,6 @@ function normalizeSceneHtml(html, sceneId, uiStrings) {
   return { sceneId, header, checkpoint, statChecks, setVariables, paragraphs, choices, achievements };
 }
 
-function firstIndex(haystack, needles) {
-  let best = -1;
-  for (const n of needles) {
-    const i = haystack.indexOf(n);
-    if (i !== -1 && (best === -1 || i < best)) best = i;
-  }
-  return best;
-}
 
 // --------------------------------------------------------------- oracle client
 
