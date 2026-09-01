@@ -139,6 +139,18 @@ narrative + choices.
 - **Effort band: 15–25 hrs.** Mostly mechanical once the harness validates
   each file — the long tail is auditing the 13 special cases against real
   behavior, not writing new architecture.
+- **Harness ready (session 24):** `magium.koplugin/spec/gen_cases.lua` derives
+  an oracle case matrix for any/all chapters from the parsed conditions;
+  `mgm.sh oracle-corpus` runs the whole generate→capture→render→diff sweep.
+  First full run: **8886 / 8887** derived cases match `magium-dev` @ `51f5aa9`.
+  Use it as this phase's parity gate.
+- **Known corpus diff to resolve here (special-case audit):** at
+  `B3-Ch01a-Crossbow` with `v_b3_ch1_unlock == 2`, `magium-dev` renders an
+  *empty* stat-check label for the "stat device locked" sentinel;
+  `engine/locale.lua:stat_check_text` returns `mainStatDeviceLockedText`
+  instead. Decide faithful-empty vs. deliberate-readable during the
+  special-case #12 pass (the `achievement()`/sentinel family flagged in
+  [`phase-i-execution-notes.md`](../specs/phase-i-execution-notes.md)).
 
 ### Phase III — Saves
 
