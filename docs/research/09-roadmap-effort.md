@@ -181,6 +181,14 @@ Design doc §3 "Multi-slot saves with name + date."
 
 ### Phase IV — Stats & stat-checks
 
+> **Implemented 2026-09-03** — [`docs/specs/2026-09-03-phase-iv-stats.md`](../specs/2026-09-03-phase-iv-stats.md).
+> The stat-check *display* (`stat_checks_to_display` etc.) shipped in Phase I/II;
+> this phase added `ui/statspage.lua` (the `KeyValuePage` allocation screen with
+> faithful Confirm/Cancel), the three stats-screen gates in `specials.lua`
+> (#5/#9/#10), the "Full immersion" unlock (#11), and `main.lua` wiring
+> (`special:stats`, in-game menu row). No `engine/scene` change → `oracle-corpus`
+> unchanged at 8887/8887. busted 114/0.
+
 Design doc §3 "Stat variables + stat-check display."
 
 - **Deliverables:** 14 stat vars, `varToStat`, `parseStatCheck`'s 4 branches

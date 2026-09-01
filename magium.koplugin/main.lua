@@ -382,10 +382,9 @@ function Magium:openReader()
           end)
         end
       elseif button.special == "stats" then
-        -- stats screen is Phase IV; navigation (if any) already happened above
-        UIManager:nextTick(function()
-          UIManager:show(InfoMessage:new{ text = _("The stats screen arrives in a later version.") })
-        end)
+        -- v_current_scene (the -spent scene) is already applied above; open the
+        -- allocation screen over the reader.
+        UIManager:nextTick(function() self:openStats() end)
       elseif button.special == "saves" then
         UIManager:nextTick(function() self:openSaves() end)
       end
@@ -435,6 +434,7 @@ function Magium:openMenu()
         text = self.locale:str("menuSaveLoadText") or _("Save / Load game"),
         callback = act(function() self:openSaves() end),
       }},
+      {{ text = _("Stats"), callback = act(function() self:openStats() end) }},
       {{ text = _("Achievements"), enabled = false }},
       {{ text = _("Settings"), enabled = false }},
       {{ text = _("About"), callback = act(function()
@@ -502,6 +502,42 @@ function Magium:openSaves()
   }
   UIManager:show(self.saves)
   trace.event("menu", { action = "saves" })
+end
+
+-- The stat-allocation screen (spec §12 row IV). Reached from the in-game menu's
+-- "Stats" row and the in-story special:stats choice. Point spends are pending in
+-- the widget; on_confirm persists them, on_close (Return to game) re-renders the
+-- reader since a confirmed spend can open a stat-gated choice on the -spent scene.
+function Magium:openStats()
+  local StatsPage = require("ui/statspage")
+  local scene_id = self.store:get("v_current_scene")
+
+  -- special case #5/#11: at Ch6-Eiden-vs-dragon with v_maximized_stats_used the
+  -- screen unlocks "Full immersion" (renderStats + stats.ejs:175). The count-up
+  -- animation is cosmetic and cut; only the unlock is ported. Toast is Phase V.
+  if specials.maximized_stats(scene_id, self.store:view())
+     and tonumber(self.store:get("v_ac_ch6_immersion") or 0) == 0 then
+    self.store:set("v_ac_ch6_immersion", "1")
+    self.save:on_achievement_unlocked()
+    trace.event("stats", { op = "immersion" })
+  end
+
+  self.stats = StatsPage:new{
+    view = self.store:snapshot(),
+    scene_id = scene_id,
+    locale = self.locale,
+    on_confirm = function(pending)
+      for k, v in pairs(pending) do self.store:set(k, tostring(v)) end
+      self.save:flush_now("stats")
+      trace.event("stats", { op = "confirm" })
+    end,
+    on_close = function()
+      trace.event("stats", { op = "return" })
+      self:_reopenReader()
+    end,
+  }
+  UIManager:show(self.stats)
+  trace.event("menu", { action = "stats" })
 end
 
 -- Close the current reader (flushing) and re-open on the current v_current_scene.

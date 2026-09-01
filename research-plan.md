@@ -14,8 +14,15 @@
   **Phase III merged to `main` 2026-09-02** ([spec](docs/specs/2026-09-02-phase-iii-saves.md) → stable,
   [ADR-007](docs/decisions/ADR-007-saves-scope.md)) — 50 manual save slots +
   `ui/savespage.lua`; import/export + rename cut, delete added. Owner on-device
-  sign-off; busted 111/0, oracle-corpus 8887/8887, not pushed. **Next: Phase IV** (stats).
-- **Last updated:** 2026-09-02
+  sign-off; busted 111/0, oracle-corpus 8887/8887, not pushed.
+  **Phase IV implemented 2026-09-03** on `feat/phase-iv-stats`
+  ([spec](docs/specs/2026-09-03-phase-iv-stats.md)) — `ui/statspage.lua` (the
+  `KeyValuePage` allocation screen, faithful Confirm/Cancel), three stats-screen
+  gates in `specials.lua` (#5/#9/#10), "Full immersion" unlock (#11), `main.lua`
+  wiring (`special:stats`, menu row). busted 114/0, oracle-corpus 8887/8887
+  (no `engine/scene` change), UI smokes green. Owner device sign-off pending.
+  **Next: Phase V** (achievements).
+- **Last updated:** 2026-09-03
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
   doc uses the standard header; every claim is cited; findings carry a confidence tag.
@@ -159,6 +166,44 @@ proceeds to Phase 8 in the meantime.
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-09-03 (session 29) — Phase IV implemented: stat-allocation screen
+
+Branch `feat/phase-iv-stats`. Spec: [`docs/specs/2026-09-03-phase-iv-stats.md`](docs/specs/2026-09-03-phase-iv-stats.md).
+The stat-check *display* half of "stats" already shipped in Phase I/II; this
+phase is the interactive screen.
+
+- **`ui/statspage.lua`** (new) — a fullscreen `KeyValuePage`: available points +
+  one row per stat (`value / max`), tap an allocatable row to spend a *pending*
+  point, `Confirm changes` / `Cancel changes` rows, `Return to game` = the
+  page's normal close. **Owner chose to port magium-dev's Confirm/Cancel
+  faithfully** (pending overlay in the widget; only Confirm persists; Return to
+  game drops pending). First-visit tutorial modal ported (one `TextViewer`,
+  `G_reader_settings` flag `magium_stats_intro_seen`).
+- **`engine/specials.lua`** — three pure gates from `stats.ejs`:
+  `maximized_stats` (#5), `stats_show_magic_rows` (#9, faithful to the JS
+  `|| 0` truthiness — `"0"` still shows the rows), `stats_show_book3_rows`
+  (#10, `sceneAfter`: book 3, chapter ≥ 4, `[a-c]` mandatory). +1 `specials_spec`
+  block (boundary cases).
+- **`main.lua`** — `Magium:openStats()`; `special:stats` now opens it (was an
+  `InfoMessage` stub); a **Stats** row in the in-game `ButtonDialog` (the
+  persistent `STATS`-button equivalent); the "Full immersion" unlock (#11 —
+  `v_ac_ch6_immersion = 1` + `on_achievement_unlocked` at `Ch6-Eiden-vs-dragon`
+  with `v_maximized_stats_used`). `on_confirm` replays the pending map through
+  `store:set` + `flush_now("stats")`; `on_close` re-renders via the existing
+  `_reopenReader()` (a confirmed spend can open a stat-gated choice on the
+  `-spent` scene).
+- **Cut** (ponytail): no new `engine/` module — the row list is a static array +
+  two predicates, assembled in the UI file; no `Reader:refresh_scene` — reused
+  `_reopenReader()`. **Out of Phase IV:** the "Full immersion" toast (Phase V);
+  the `maximized` count-up animation (cosmetic, end state == real values).
+- **Gates:** busted **114/0** (was 111), `test-ui` green incl. new
+  `spec/ui/statspage_smoke.lua` (19 checks), `oracle-corpus` **8887/8887**
+  (no `engine/scene` change — pure regression), headless emu load clean.
+  Not pushed.
+- **Next:** owner deploys + on-device sign-off (menu → Stats, spend/Confirm/
+  Cancel, restart-persistence, an in-story "Invest points now"), then spec
+  `stable` + merge to `main`. Then Phase V (achievements).
 
 ### 2026-09-02 (session 28) — Phase III implemented: 50 manual save slots
 
