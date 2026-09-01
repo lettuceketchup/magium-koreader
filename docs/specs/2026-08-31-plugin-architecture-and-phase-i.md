@@ -363,7 +363,7 @@ the screen (`covers_fullscreen = true`), modeled structurally on
 
 ```
 ┌───────────────────────────────────────────┐
-│ Book 1 - Chapter 1                         │  header (locale.header)
+│ ‹ Close   Book 1 - Chapter 1               │  header bar: close label + locale.header
 │                                            │
 │ [ Checkpoint reached: Game saved. ]        │  banner — first page only, if render_model.checkpoint
 │ [ Observation check successful - level 3 ] │  stat-check lines — first page only
@@ -375,10 +375,15 @@ the screen (`covers_fullscreen = true`), modeled structurally on
 │                                            │
 │                              2 / 4         │  page indicator
 └───────────────────────────────────────────┘
-        tap right / PgFwd → next page
+        tap right / PgFwd → next page   (both zones start BELOW the header bar)
         tap left  / PgBack → prev page
-        Back → close (flush autosave, pop to FileManager)
+        tap the header bar, or any multiswipe → close (flush autosave, pop to FileManager)
+        Back → close as well, on devices that have keys
 ```
+
+The close affordance is **not** optional chrome: the target Paperwhite 12 is
+keyless (`Device:hasKeys()` is false), so the labelled header tap and the
+multiswipe are the only ways out of a `covers_fullscreen` widget.
 
 The **final page** (`kind = "choices"`) replaces the prose area with the choice
 `ButtonTable`; the indicator reads e.g. `choices`. Selecting a choice:
