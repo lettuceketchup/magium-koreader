@@ -263,23 +263,22 @@ function Magium:onDispatcherRegisterActions()
 end
 
 function Magium:addToMainMenu(menu_items)
+  -- Two flat entries under More tools rather than a submenu: opening Magium is
+  -- the common action and shouldn't cost an extra tap. (A gesture can also be
+  -- bound to the "magium_open" Dispatcher action registered above.)
   menu_items.magium = {
     text = _("Magium"),
     sorting_hint = "more_tools",
-    sub_item_table = {
-      {
-        text = _("Open Magium"),
-        callback = function() self:openReader() end,
-      },
-      {
-        text = _("Record debug log"),
-        help_text = _("Writes a trace-*.jsonl of your play session under koreader/magium/ for bug reports. Takes effect the next time you open Magium."),
-        checked_func = function() return G_reader_settings:isTrue("magium_trace") end,
-        -- flipNilOrFalse is the default-OFF pairing for checked_func→isTrue:
-        -- nil/false → true, true → nil. (flipNilOrTrue never writes true.)
-        callback = function() G_reader_settings:flipNilOrFalse("magium_trace") end,
-      },
-    },
+    callback = function() self:openReader() end,
+  }
+  menu_items.magium_trace = {
+    text = _("Magium: record debug log"),
+    sorting_hint = "more_tools",
+    help_text = _("Writes a trace-*.jsonl of your play session under koreader/magium/ for bug reports. Takes effect the next time you open Magium."),
+    checked_func = function() return G_reader_settings:isTrue("magium_trace") end,
+    -- flipNilOrFalse is the default-OFF pairing for checked_func→isTrue:
+    -- nil/false → true, true → nil. (flipNilOrTrue never writes true.)
+    callback = function() G_reader_settings:flipNilOrFalse("magium_trace") end,
   }
 end
 

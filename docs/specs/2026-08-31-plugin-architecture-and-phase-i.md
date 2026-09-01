@@ -270,8 +270,10 @@ Order is parity-critical:
 11. `checkpoint = any surviving choice sets v_checkpoint_rich == "0"` (special case #4).
 12. `header = locale.header(scene_id)`.
 
-Then `ui/` renders: banner → stat-check lines → prose → (final page) choices;
-achievement toasts fire on the render right after the unlocking choice
+Then `ui/` renders: banner → stat-check lines → prose → (final page) choices.
+The `achievements` list is computed here but **not displayed in Phase I** — the
+unlock toast is Phase V (§11.1, phase table). `scene.render` still returns it so
+the oracle diff stays whole and `save` can flush `v_ac_*` on unlock
 ([`01` §6.1](../research/01-magium-analysis.md#6-achievements-task-16)).
 
 ---
@@ -568,7 +570,8 @@ spec's §7 default updated with the result.
 
 **Plugin:**
 
-- `main.lua` — `more_tools` menu (`Open Magium` + `Record debug log`) + `Dispatcher`
+- `main.lua` — two flat `more_tools` entries (`Magium` opens the reader directly;
+  `Magium: record debug log` toggles the trace) + a `magium_open` `Dispatcher`
   action; the eager `story:preload()` (~2.2 s) runs once, on the **first
   `openReader()`** of the session, behind a `Trapper` progress bar (`init()` does
   no parsing); the parsed `story` is session-scoped (module upvalue), not

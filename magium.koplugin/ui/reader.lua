@@ -165,7 +165,9 @@ end
 function Reader:_build_indicator()
   local total = #self.pages
   local page = self.pages[self.page_idx]
-  local label = page.kind == "choices" and "choices" or (self.page_idx .. " / " .. (total - 1))
+  -- prose pages count toward the last prose page (the choices page is not one);
+  -- the choices page gets a section label, not a bogus "N / N-1".
+  local label = page.kind == "choices" and "Choices" or (self.page_idx .. " / " .. (total - 1))
   return TextWidget:new{ text = label, face = Font:getFace("ffont", 14) }
 end
 
