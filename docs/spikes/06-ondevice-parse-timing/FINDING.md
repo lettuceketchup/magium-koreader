@@ -1,14 +1,14 @@
 # Finding — Spike 06 (on-device parse-timing gate, Milestone 0)
 
 - **Status:** stable — measured on the owner's Kindle Paperwhite 12th gen, 2026-08-31. **Verdict: `story` = `eager`, `preload()` deferred to the first reader-open** (cold parse ≈ 2.2 s is over the ~1 s gate; owner chose deferred-eager over building the lazy path). Lazy strategy (Task 15) deferred out of Phase I.
-- **Last updated:** 2026-08-31
+- **Last updated:** 2026-09-01 (citation pinned; findings unchanged)
 - **Phase:** Implementation — Milestone 0
-- **Sources:** this spike's harness = [`../../../magium.koplugin/main.lua`](../../../magium.koplugin/main.lua) (temporary; Task 20 replaces it) driving [`engine/story.lua`](../../../magium.koplugin/engine/story.lua) `strategy="eager"` → [`engine/parser.lua`](../../../magium.koplugin/engine/parser.lua); emulator run via `tools/mgm.sh emu-smoke 35` on **LuaJIT 2.1** in `koreader-emulator-x86_64-linux-gnu-debug` (KOReader v2026.07.1, `9192014`), this session's x86_64 container — **not** the Kindle
+- **Sources:** this spike's harness = [`../../../magium.koplugin/main.lua`](../../../magium.koplugin/main.lua)`@b881967` — **volatile citation, pinned**: Task 20 replaced that file wholesale, so only the `b881967` revision contains the timing harness described below — driving [`engine/story.lua`](../../../magium.koplugin/engine/story.lua) `strategy="eager"` → [`engine/parser.lua`](../../../magium.koplugin/engine/parser.lua); emulator run via `tools/mgm.sh emu-smoke 35` on **LuaJIT 2.1** in `koreader-emulator-x86_64-linux-gnu-debug` (KOReader v2026.07.1, `9192014`), this session's x86_64 container — **not** the Kindle
 - **Related:** [`HYPOTHESIS.md`](HYPOTHESIS.md), [`../../specs/2026-08-31-plugin-architecture-and-phase-i.md` §7 / §10](../../specs/2026-08-31-plugin-architecture-and-phase-i.md#10-milestone-0--on-device-parse-timing-gate), [spike 03](../03-full-corpus-memory-parse/FINDING.md), [ADR-002](../../decisions/ADR-002-porting-approach.md), OQ-001
 
 ## Method
 
-`magium.koplugin/main.lua` (temporary harness) calls `time_parse(data_root)`,
+`magium.koplugin/main.lua@b881967` (temporary harness) calls `time_parse(data_root)`,
 which runs `Story.new{…, strategy="eager"}:preload()` — a full parse of all 54
 English `.magium` files — three times: once **cold** (first call after a KOReader
 restart), then twice **warm**. Each result is `logger.info`'d with a

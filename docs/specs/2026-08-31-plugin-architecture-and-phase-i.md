@@ -1,7 +1,7 @@
 # Spec: Plugin architecture & Phase I (MVP)
 
-- **Status:** stable — approved; Phase I executing (Tasks 1–13 + Milestone 0 done as of 2026-08-31). Milestone 0 result folded into §7 / §10.
-- **Last updated:** 2026-08-31
+- **Status:** stable — approved; Phase I executing (Tasks 1–13 + Milestone 0 done as of 2026-08-31). Milestone 0 result folded into §7 / §10. §8.1 close model, §8.2 fixed-font scope and §12.1 Phase I→II carry-forward updated by fix wave 1 (2026-09-01).
+- **Last updated:** 2026-09-01
 - **Phase:** Implementation — design cycle 1 (roadmap [Milestone 0](../research/09-roadmap-effort.md#milestone-0--pre-flight-on-device-parse-timing-gate) + [Phase I](../research/09-roadmap-effort.md#phase-i--mvp-engine-core--the-real-reading-widget))
 - **Sources:**
   - [`../research/09-roadmap-effort.md`](../research/09-roadmap-effort.md) — the roadmap this spec opens
@@ -399,8 +399,12 @@ The **final page** (`kind = "choices"`) replaces the prose area with the choice
 
 Pure function `paginate(render_model, geometry, measure_fn) → { pages }`:
 
-- `geometry` = `{ width, height, line_height, header_h, indicator_h }` supplied by
-  `reader.lua` from the real screen + face metrics.
+- `geometry` = `{ width, prose_height, first_page_offset }` supplied by
+  `reader.lua` from the real screen + face metrics (Ruling 1; built in
+  `ui/reader.lua:init` and consumed in `pagination.lua`). `prose_height` is the
+  screen height already net of the frame padding, the header row, the indicator
+  row and the two spans around the body; `first_page_offset` is the banner +
+  stat-check block height, subtracted from page 1's budget only.
 - Greedily fill each prose page: accumulate paragraph lines until the next line
   would exceed `height`; the first page also subtracts the banner + stat-check
   block height.
@@ -409,7 +413,11 @@ Pure function `paginate(render_model, geometry, measure_fn) → { pages }`:
   [`03` §3](../research/03-koreader-platform.md#3-ui-toolkit-inventory-23)). Specs
   pass a deterministic fake (`#lines * fixed_height`).
 - Append exactly one `kind = "choices"` page.
-- Re-paginate on font-size change or rotation (`reader.lua` listens for the events).
+- **Phase I ships a fixed prose size** — `PROSE_SIZE` in `ui/reader.lua`,
+  DPI-scaled by `Font:getFace`. There is no in-reader font control, and no
+  `onSetDimensions` / `onSetRotationMode` handler: rotation events dispatch to
+  `self.ui`, which this standalone widget does not have, so they never arrive.
+  Re-pagination on font-size / rotation change is deferred to Phase VIII (§12).
 
 ### 8.3 Refresh (`ui/refresh.lua`, Phase I default)
 
@@ -623,11 +631,40 @@ code is written to accommodate it without rework:
 | **V — achievements** | unlock toast; the 136-entry `achievements{1,2,3}.json` menu; `b2ch41` group quirk; always-on `v_ac_b3_ch9_prize` | `scene` already computes the list; `locale` (achievements JSON) | `ui/toast.lua`, `ui/achievementsmenu.lua` |
 | **VI — settings** | a scoping pass first — most of `settings.ejs` (font/theme) is KOReader's job ([`01` §8](../research/01-magium-analysis.md#8-saves--settings-task-18)); port only genuinely game-specific settings | `main` (menu) | maybe none |
 | **VII — i18n** | `data/fr/` bundle + `fr/ui.json`; `l10n/<lang>/*.po` for plugin chrome; a locale switch | `locale` (already parameterised), `story` (`locale` arg exists) | `l10n/` |
-| **VIII — polish** | OQ-007 e-ink tuning in `refresh.lua`; OQ-011 490 KB-condition mitigation in `conditions`/`story`; **the deferred `lazy` parse strategy (§7.2) — index + per-chapter `Persist` cache — if the first-open ~2.2 s wait grates**; LuaJIT GC tuning; full-corpus `oracle_diff` over all 2159 scenes; `crash.log` bug bash; bare `koreader/plugins/` packaging | `refresh`, `conditions`, `story`, `spec/oracle_diff` | (`spec/support/mem_cache.lua`, `story_lazy_spec.lua`) |
+| **VIII — polish** | OQ-007 e-ink tuning in `refresh.lua`; OQ-011 490 KB-condition mitigation in `conditions`/`story`; **the deferred `lazy` parse strategy (§7.2) — index + per-chapter `Persist` cache — if the first-open ~2.2 s wait grates**; **in-reader font-size control + re-paginate on font/rotation change (deferred from Phase I, §8.2)**; LuaJIT GC tuning; full-corpus `oracle_diff` over all 2159 scenes; `crash.log` bug bash; bare `koreader/plugins/` packaging | `refresh`, `conditions`, `story`, `reader`, `spec/oracle_diff` | (`spec/support/mem_cache.lua`, `story_lazy_spec.lua`) |
 
 The engine/ui split means III–V and VII only **add** modules — they do not reopen
 `engine/` core or `ui/reader.lua`
 ([`09` §3](../research/09-roadmap-effort.md#3-critical-path--parallelism-83), F-37).
+
+### 12.1 Carried from Phase I
+
+Facts established while building Phase I that a later phase has to act on. They
+lived in the SDD execution ledger, which is deleted when the branch finishes —
+this is now their home.
+
+1. **`render_model → store` write-back (Phase II).** A scene's surviving `set()`
+   effects are applied to the *working view* only (`engine/scene.lua` step 4);
+   they are never persisted. Phase II must write them back to the store on
+   choice-commit, and bump displayed achievement flags from `"1"` to `"2"` on the
+   achievements screen (`../magium-dev/templates/main.ejs:1-3,66-67` @51f5aa9).
+   Phase I omits it because ch1 contains **0** `set()` constructs (Ruling 3).
+   *Ruling 8 nuance:* this does **not** reopen the consolation-trigger divergence
+   Ruling 8 closed — `v_ac_b3_ch9_consolation` reaches `2` through its own `+1`
+   increments, it is not an `achievement()` variable, so the deferred write-back
+   has no bearing on it.
+2. **`B3-Ch01a-Crossbow` device-locked stat suppression** (`main.ejs:17-20`) —
+   an unported render-time special case. Port it when Book 3 scenes arrive
+   (Phase II's 13-special-case audit).
+3. **`v_hearing <= 4` unmatched-operator stat check** (`../magium-dev/data/en/ch11b.magium:1049`,
+   scene `Ch11b-Hole`). `engine/stats.lua` leaves `success` nil for `<=` / `!=`;
+   `engine/scene.lua` now coerces it to `false` so the render model is total.
+   Flag this scene in the first full-corpus oracle run (Phase VIII) to confirm
+   the coercion matches the oracle's canonical form on a real unmatched operator.
+4. **Achievement-text normalization** — done in Phase I: `engine/scene.lua`'s
+   shared `norm()` now covers paragraphs, choice labels **and** achievement
+   captions, matching `oracle-diff.js:110,127,139`. No carry-forward work; noted
+   so a future reader knows it was considered and closed.
 
 ---
 
