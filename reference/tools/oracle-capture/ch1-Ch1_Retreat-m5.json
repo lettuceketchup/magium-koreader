@@ -6,7 +6,6 @@
   "setVariables": [],
   "paragraphs": [
     "<br/><br/>\"I'm going to give you until the count of ten to get out of my sight,\" I tell him.<br/><br/>\"Hah! Empty words. That's all you've got. Arm yourself, fool! Today, I become a legend!\"<br/><br/>",
-    "Once he's done talking, the mage throws five daggers simultaneously towards me. I try to dodge them but they're so fast I barely even get the time to blink. It was all over in an instant. As I feel the pain from the daggers, my consciousness slowly starts fading away.<br/>",
     "<br/>"
   ],
   "choices": [
@@ -25,5 +24,10 @@
       "setVariables": {}
     }
   ],
-  "achievements": []
+  "achievements": [
+    {
+      "variable": "v_ac_ch1_die",
+      "text": "Off to a good start"
+    }
+  ]
 }

@@ -17,5 +17,10 @@
       }
     }
   ],
-  "achievements": []
+  "achievements": [
+    {
+      "variable": "v_ac_ch1_honesty",
+      "text": "Honesty is the best policy."
+    }
+  ]
 }
