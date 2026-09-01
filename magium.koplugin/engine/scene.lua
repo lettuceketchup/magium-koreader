@@ -94,7 +94,12 @@ function M.render(scene_table, view, locale)
     -- ../magium-dev/data/en/ch11b.magium:1049 (Ch11b-Hole, `v_hearing <= 4`);
     -- no ch1 impact — every ch1 check has a matched operator.
     local ok = sc.success and true or false
-    local text = locale:stat_check_text{ variable = var, value = sc.value, success = ok }
+    local text
+    if var == "v_b3_ch1_unlock" and specials.HIDE_DEVICE_LOCK_TEXT[st.id] then
+      text = ""                                              -- special case #8
+    else
+      text = locale:stat_check_text{ variable = var, value = sc.value, success = ok }
+    end
     out_checks[#out_checks + 1] = { success = ok, text = text }
   end
   local out_setvars = {}
@@ -127,6 +132,24 @@ function M.render(scene_table, view, locale)
     choices = out_choices,
     achievements = achievements,
   }
+end
+
+-- Persist a rendered scene's own surviving set() effects into the real store.
+-- magium-dev emits a storeVariable() script per surviving setVariable on EVERY
+-- render (magium-dev/templates/main.ejs:1-3 @51f5aa9); the client persists them
+-- with +N/-N resolved. render_model.set_variables is already filtered + ordered
+-- by render(), so this just replays it through store:set (which does the
+-- +N/-N arithmetic and the v_ac_* latch).
+--
+-- ponytail: re-applies on every scene entry, INCLUDING a resume onto the same
+-- scene — a scene with set(v_x, +N) adds N again per resume, exactly as
+-- magium-dev does (each resume re-POSTs and re-emits the script). ~10 relative
+-- set() lines corpus-wide, most conditional. Upgrade path if the owner hits a
+-- runaway counter: gate this on a per-session visited-scene set.
+function M.persist_effects(store, render_model)
+  for _, sv in ipairs(render_model.set_variables) do
+    store:set(sv.name, sv.value)
+  end
 end
 
 return M

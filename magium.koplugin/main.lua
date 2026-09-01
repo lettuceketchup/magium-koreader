@@ -319,6 +319,7 @@ function Magium:openReader()
       st = self.story:get_scene(specials.DEFAULT_SCENE)
     end
     local rm = scene.render(st, self.store:view(), self.locale)
+    scene.persist_effects(self.store, rm)   -- persist this scene's own set() effects (spec §4)
     trace.event("render", {
       scene = rm.scene_id,
       paras = #rm.paragraphs,
@@ -332,6 +333,7 @@ function Magium:openReader()
   self.reader = Reader:new{
     render_model = render_current(),
     locale = self.locale,
+    on_menu = function() self:openMenu() end,
     on_close = function()
       self.save:flush_now("close")
       trace.event("save", { op = "flush", reason = "close" })
@@ -352,8 +354,12 @@ function Magium:openReader()
       end
       if button.special == "restart" then
         reset_to_intro(self.store)   -- keep achievements (parity: clearState)
+      elseif button.special == "saves" or button.special == "stats" then
+        UIManager:nextTick(function() self:openMenu() end)   -- real screens: Phases III / IV
       end
-      -- special:saves / :stats / :checkpoint_* are Phase II/III — no-op nav for now
+      -- special:checkpoint_save / :checkpoint_load — no-op until Phase III (D4).
+      -- The choice's own v_current_scene assignment (applied in the loop above)
+      -- still navigates.
       trace.event("choice", {
         label = button.label,
         target = button.target or "",
@@ -373,6 +379,55 @@ function Magium:openReader()
     end,
   }
   UIManager:show(self.reader)
+end
+
+-- The in-game menu (spec §6, D2). The full magium-dev menu.ejs shell; Load
+-- checkpoint / Save-Load / Achievements / Settings are disabled until their
+-- phases (III–VI). Reached from the reader header's "Menu" tap zone and from
+-- special:saves / special:stats choices.
+function Magium:openMenu()
+  local ButtonDialog = require("ui/widget/buttondialog")
+  local TextViewer = require("ui/widget/textviewer")
+  local dialog
+  local function act(fn) return function() UIManager:close(dialog); fn() end end
+  local about = (self.locale:str("aboutIntroText")
+    or "Magium — a Choose Your Own Adventure game by Cristian Mihailescu.")
+    :gsub("<br%s*/?>", "\n")
+  dialog = ButtonDialog:new{
+    title = _("Magium"), title_align = "center",
+    buttons = {
+      {{ text = _("Back to game"), callback = act(function() end) }},
+      {{ text = _("New game / Restart book"), callback = act(function() self:newGame() end) }},
+      {{ text = _("Load from last checkpoint"), enabled = false }},
+      {{ text = _("Save / Load game"), enabled = false }},
+      {{ text = _("Achievements"), enabled = false }},
+      {{ text = _("Settings"), enabled = false }},
+      {{ text = _("About"), callback = act(function()
+        UIManager:show(TextViewer:new{ title = _("About"), text = about })
+      end) }},
+    },
+  }
+  UIManager:show(dialog)
+  trace.event("menu", { action = "open" })
+end
+
+-- New game / Restart book: a fresh playthrough, achievements kept
+-- (reset_to_intro, parity with magium-dev clearState). A save always exists here
+-- (openReader flushed one on load), so always confirm. Reuses the whole open
+-- path rather than a bespoke reader-reload.
+function Magium:newGame()
+  local ConfirmBox = require("ui/widget/confirmbox")
+  UIManager:show(ConfirmBox:new{
+    text = _("Start a new game? Your progress will be lost. Achievements are kept."),
+    ok_text = _("New game"),
+    ok_callback = function()
+      reset_to_intro(self.store)
+      self.save:flush_now("new-game")
+      trace.event("choice", { label = "new game", target = specials.DEFAULT_SCENE })
+      if self.reader then UIManager:close(self.reader) end
+      UIManager:nextTick(function() self:openReader() end)
+    end,
+  })
 end
 
 -- flush on suspend / shutdown — but only once THIS instance has opened the reader
