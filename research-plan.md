@@ -186,9 +186,20 @@ tap closes the game), `checkpoint_load`/`saves` softlock on death scenes, the
 - **Gates:** busted **97/0**, engine **72/0**, `test-ui` **9/9**, headless load
   clean, oracle-corpus still 8887/8887 (no `engine/` change). Commits `e70c8ee`
   (code) + this doc pass.
-- **Next:** owner deletes `koreader/plugins/magium.koplugin` in Explorer (MTP
-  won't let the script do it), re-runs `deploy-kindle.ps1` (now verifies), and
-  retests. Then spec `stable` + branch merge.
+- **Deploy workaround (owner asked for one):** `tools/deploy-kindle-ssh.ps1` —
+  deploy over WiFi via KOReader's SSH server (`rm -rf` + `sftp put -r`), no USB,
+  no MTP, no manual delete. One-time: enable the SSH server in KOReader (Tools →
+  Network). Now the preferred device loop. `deploy-kindle.ps1` (USB) kept as a
+  fallback, now with the wipe+verify.
+- **Emulator playthrough testing (owner asked — "no manual Book 1"):**
+  `spec/support/headless_game.lua` plays the game headlessly (engine+save wired
+  like `main.lua`); `spec/flow/playthrough_spec.lua` walks 100+ scenes of real
+  choices + exercises checkpoint/restart/softlock paths;
+  `spec/engine/navigation_spec.lua` statically checks every choice target +
+  reachability. `mgm.sh test` 104/0, bare-luajit subset 89/0, `test-ui` 9/9.
+- **Next:** owner enables the KOReader SSH server, runs `deploy-kindle-ssh.ps1`,
+  spot-checks Phase II on device (menu, a checkpoint, restart, the footer). Then
+  spec `stable` + branch merge.
 
 ### 2026-09-01 (session 25) — Phase II implemented: full-corpus parity 8887/8887, in-game menu, back-nav cut
 
