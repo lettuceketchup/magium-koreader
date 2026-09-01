@@ -68,7 +68,7 @@
 | D1 | **No in-game back / history stack.** `magium-dev` has none — navigation is purely forward via `v_current_scene` (verified: no `history` / `back` / `goBack` in `src/`, `templates/`, or client scripts). Closing the reader still exits to FileManager (Phase I behaviour). | [ADR-006](../decisions/ADR-006-no-scene-back-navigation.md) |
 | D2 | **In-game menu = full `menu.ejs` shell, later-phase rows disabled.** Rows: Back to game · New game/Restart book · Load checkpoint · Save/Load · Achievements · Settings · About. Phase II wires **Back to game**, **New game**, **About**; the rest show "Coming in a later version." | this spec §6 |
 | D3 | **`B3-Ch01a-Crossbow` device-lock label → faithful-empty (match `magium-dev`).** The scene's prose delivers the lock explicitly ("the screen of my device turns red… 'this device has been locked…'"), so the stat-check meta-line is redundant there — which is why `magium-dev` (`templates/main.ejs:17-20`) suppresses it on that scene id only. Readable `mainStatDeviceLockedText` stays everywhere else. → sweep 8887 / 8887. | this spec §5 |
-| D4 | **`special:checkpoint_save` / `checkpoint_load` → full no-op in Phase II.** Real checkpoint blob is Phase III. Continuous autosave already persists position; a `checkpoint_save` choice still navigates via its own `v_current_scene` assignment. `checkpoint_load` does nothing until Phase III. | this spec §7 |
+| D4 | ~~`checkpoint_save` / `checkpoint_load` → full no-op~~ **→ revised after owner device test (2026-09-01): the single `checkpoint` blob is pulled forward from Phase III.** No-op `checkpoint_load` softlocked death scenes (e.g. `B2-Ch07a-Kill` offers only `restart` / `checkpoint_load` / `saves`). Now `checkpoint_save` snapshots `currentState`, `checkpoint_load` restores it (achievements kept, parity with `magium-dev`); no checkpoint yet → an `InfoMessage`, never a silent no-op. The 50 manual slots (`special:saves`) stay Phase III. | this spec §7, §9 |
 
 D2 / D3 / D4 are spec decisions, not ADRs — none permanently closes an
 architectural door. D1 gets an ADR because it closes the roadmap's stated
@@ -186,8 +186,8 @@ greys a row). No separate file / `menu_spec.lua` — the only logic is
 |---|---|---|
 | Back to game | `menuBackToGameText` | dismiss the menu |
 | New game / Restart book | `menuNewGameText` | if a save exists → `ConfirmBox` → `reset_to_intro(store)` (keeps `v_ac_*`) + re-render scene 1 |
-| Load from last checkpoint | `menuLoadCheckpointText` | `enabled = false` (greyed) |
-| Save / Load game | `menuSaveLoadText` | `enabled = false` |
+| Load from last checkpoint | `menuLoadCheckpointText` | enabled iff `save:has_checkpoint()` → `save:load_checkpoint()` + reopen |
+| Save / Load game | `menuSaveLoadText` | `enabled = false` (50 slots = Phase III) |
 | Achievements | `menuAchievementsText` | `enabled = false` |
 | Settings | `menuSettingsText` | `enabled = false` |
 | About | `menuAboutText` | `TextViewer` with `aboutIntroText` (`<br>` → `\n`) |
@@ -211,17 +211,17 @@ literal `"Menu"` `TextWidget` is appended to `_build_header` as the affordance
 Dispatched in `main.lua` `advance`, after the `button.set_vars` loop
 ([`01` §7](../research/01-magium-analysis.md#7-special-hooks-task-17)):
 
-| `special:` | Corpus count | Phase II behaviour |
+| `special:` | Corpus count | Phase II behaviour (as built) |
 |---|---|---|
-| *(none)* | — | navigate to target via `v_current_scene` (already works) |
-| `restart` | 145 | `reset_to_intro(store)` — keeps `v_ac_*` (already works) |
-| `saves` | 145 | `UIManager:nextTick(openMenu)` (the disabled Save/Load row is visible there); the choice's `v_current_scene` assignment still applies, so on menu-dismiss the reader shows the target scene |
-| `stats` | 13 | `UIManager:nextTick(openMenu)` (disabled Stats… → Phase IV gives it a real screen); target scene applies as above |
-| `checkpoint_save` | 73 | **no-op** — navigate to target only (D4). Continuous autosave covers persistence. |
-| `checkpoint_load` | 144 | **no-op** (D4) — nothing to load until Phase III. Target scene (if any) still applies. |
+| *(none)* | — | navigate to target via `v_current_scene` |
+| `restart` | 145 | `reset_to_intro(store)` — keeps `v_ac_*` |
+| `checkpoint_save` | 73 | `save:save_checkpoint()` — snapshot `currentState` (the choice's next-chapter `v_current_scene` is already applied) |
+| `checkpoint_load` | 144 | `save:load_checkpoint()` → restore + `flush_now` + re-render the restored scene; **no checkpoint → `InfoMessage`** ("choose Restart game"), never a silent no-op |
+| `saves` | 145 | `UIManager:nextTick(openMenu)` — Save/Load row disabled (50 slots = Phase III) |
+| `stats` | 13 | `InfoMessage` ("stats screen arrives in a later version"); the choice's `v_current_scene` still navigates |
 
-The existing `trace.event("choice", { …, special = button.special … })` already
-records which hook fired; `openMenu` adds `trace.event("menu", { action = "open" })`.
+`trace.event("choice", { …, special = … })` records which hook fired; `openMenu`
+adds `trace.event("menu", …)`, `loadCheckpoint` a `checkpoint_load` choice event.
 
 **Edge case.** No corpus scene offers *only* a `special:` choice with no plain
 Continue alongside (spot-checked; the parser counts in
@@ -248,20 +248,27 @@ sweep over all 54 files vs `magium-dev` @ `51f5aa9`.
 
 - [x] `mgm.sh oracle-corpus` → **8887 / 8887**, 0 DIFF (2026-09-01).
 - [x] `mgm.sh lua spec/run.lua` (engine subset **72/0**) + `mgm.sh test`
-      (full busted **94/0**) green, including the new `scene.persist_effects`
-      and special-case-#8 blocks in `scene_spec.lua` / `specials_spec.lua`.
+      (full busted **97/0** — incl. `scene.persist_effects`, special-case #8,
+      and the 3 `save_checkpoint`/`load_checkpoint` cases).
+- [x] `mgm.sh test-ui` (new headless harness — `spec/ui/reader_smoke.lua` drives
+      real tap events at the `Reader` widget in the emulator's KOReader env):
+      **9/9** — header-left→close, header-right/middle→menu, body→page-turn,
+      choices page has no literal "Choices" footer. This is the regression test
+      the stale-deploy menu report exposed the need for.
 - [x] `scene.persist_effects` tests: `+N` resolves against the live store value
       in array order; `v_ac_*` latch respected; empty `set_variables` is a no-op.
       (`restart` keeps `v_ac_*` — already covered by the Phase I `main.lua`
       `reset_to_intro` behaviour, unchanged.)
 - [x] Headless `kodev` load clean; plugin registers; `crash.log` empty.
-- [ ] **On device (owner):** New Game from a fresh state → play Book 1 → a
-      checkpoint boundary → Book 2 intro. Open the in-game menu; disabled rows
-      show the placeholder; Back to game returns to the same page. New Game from
-      the menu with a save present → `ConfirmBox` → resets to `Ch1-Intro1`,
-      achievements retained. Close/reopen mid-Book-2 → resumes same scene +
-      variable state. `special:restart` in-story → `Ch1-Intro1`, achievements
-      retained. `koreader/crash.log` clean across the run.
+- [ ] **On device (owner) — retest after a CLEAN deploy** (2026-09-01: the first
+      device test ran stale code — MTP deploy was not overwriting; `deploy-kindle.ps1`
+      now wipes + verifies). Open the in-game menu from the header-right "Menu"
+      tap; disabled rows greyed; Back to game returns to the same page; About
+      readable. New Game → `ConfirmBox` → resets, achievements kept. Reach a
+      `checkpoint_save` "Next chapter" choice; later hit a death scene →
+      "Load from last checkpoint" restores to the chapter start. `special:restart`
+      → `Ch1-Intro1`. Close/reopen mid-chapter → resumes. No "Choices" footer.
+      `crash.log` clean.
 - [x] The §5 table: render-time cases #1–#4, #6–#8, #12, #13(`0`-default) live
       and sweep-covered; stats-screen #5, #9–#11 stay declared-inert (Phase IV).
 

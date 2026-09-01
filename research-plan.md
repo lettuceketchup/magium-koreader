@@ -157,6 +157,39 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-01 (session 26) — Phase II: owner device test → deploy bug found, checkpoint blob, UI test harness
+
+Owner deployed Phase II to the Kindle and reported: menu doesn't work (any header
+tap closes the game), `checkpoint_load`/`saves` softlock on death scenes, the
+"Choices" footer is still there. Asked for emulator-based testing going forward.
+
+- **Root cause of the menu report: the MTP deploy was silently NOT overwriting
+  changed files.** The device was running a build from before session 22 (menu
+  still a submenu). `tools/deploy-kindle.ps1` rewritten — **wipe the device
+  plugin folder first**, then copy fresh, then **verify every file by size** and
+  fail loudly. Nothing about Phase II's menu is actually broken (see next).
+- **New headless UI test harness** (`tools/mgm.sh koenv` + `test-ui`,
+  `spec/ui/reader_smoke.lua`): runs the real KOReader widget stack in the built
+  emulator's Lua env, fires actual tap events at the `Reader`, asserts
+  header-left→close, header-right/middle→menu, body→page-turn, no "Choices"
+  footer. **9/9 — the Phase II header split is correct.** This is the regression
+  test whose absence let the (stale-code) menu report look like a code bug.
+- **`checkpoint` blob pulled forward from Phase III** (`save/manager.lua`:
+  `save_checkpoint`/`load_checkpoint`/`has_checkpoint`; +3 tests). Fixes the
+  real softlock: on a death scene (`B2-Ch07a-Kill` = `restart` / `checkpoint_load`
+  / `saves` only), D4's no-op `checkpoint_load` left `restart` as the sole way
+  out. Now it restores `currentState` from the checkpoint (achievements kept,
+  parity); no checkpoint → an `InfoMessage`, not silence. Menu "Load from last
+  checkpoint" enabled when one exists. `special:stats` → `InfoMessage` (Phase IV);
+  `special:saves` → the menu (50 slots = Phase III). **D4 revised in the spec.**
+- **`ui/reader.lua`**: choices page no longer shows the literal "Choices" footer.
+- **Gates:** busted **97/0**, engine **72/0**, `test-ui` **9/9**, headless load
+  clean, oracle-corpus still 8887/8887 (no `engine/` change). Commits `e70c8ee`
+  (code) + this doc pass.
+- **Next:** owner deletes `koreader/plugins/magium.koplugin` in Explorer (MTP
+  won't let the script do it), re-runs `deploy-kindle.ps1` (now verifies), and
+  retests. Then spec `stable` + branch merge.
+
 ### 2026-09-01 (session 25) — Phase II implemented: full-corpus parity 8887/8887, in-game menu, back-nav cut
 
 Brainstorming → spec → writing-plans → executed inline on `feat/phase-ii-full-corpus-nav`.

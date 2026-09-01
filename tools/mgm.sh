@@ -21,7 +21,13 @@
 #                       for one file: `mgm.sh test spec/engine/foo_spec.lua`)
 #   test-engine         run `busted spec/engine` (pure layer, fastest) — takes NO
 #                       path args; use `test <path>` for a single file
+#   test-ui             run spec/ui/*_smoke.lua under the emulator's KOReader env
+#                       (real widgets, headless) — the reader tap-zone regression
 #   lua <file> [args]   run luajit from magium.koplugin/
+#   koenv <script> [a]  run one Lua <script> (path relative to magium.koplugin/)
+#                       inside the built emulator's KOReader env: real frontend
+#                       widgets on the path, Screen sized via EMULATE_READER_W/H,
+#                       no X server. For reader/UI smoke tests.
 #   gen-cases [data-dir] [out.json] [pattern]
 #                       luajit spec/gen_cases.lua — derive an oracle case matrix
 #                       from parsed scene conditions (no oracle needed). Defaults:
