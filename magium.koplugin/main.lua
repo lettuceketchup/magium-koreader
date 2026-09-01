@@ -44,8 +44,9 @@ local shared_loaded = false
 -- re-reading + JSON-decoding data/en/ui.json in every init() is exactly the
 -- per-instance churn Ruling 12 removed for `story`.
 local shared_locale
--- The trace file handle for the current reader-open, module-scope so the next
--- open can close it (one open handle per process, not one per open).
+-- The trace file handle for the current reader-open, module-scope so
+-- _configureTrace can close it on the NEXT open — including the toggle-off open,
+-- which opens no replacement (one open handle per process, not one per open).
 local trace_file
 
 local Magium = WidgetContainer:extend{ name = "magium", is_doc_only = false }
@@ -123,6 +124,16 @@ end
 -- mid-session menu flip takes effect on the next Open (matching the help text).
 -- trace.configure resets the buffer + count, so per-open calls are safe.
 function Magium:_configureTrace()
+  -- Close the previous open's trace file FIRST, and unconditionally. Doing it
+  -- inside _trace_writer() only covered the toggle-ON path; toggling "Record
+  -- debug log" OFF and reopening passes writer=nil, never reaches
+  -- _trace_writer(), and would leak the old handle until the process exits.
+  -- The new file (if any) is opened below, after this — so the order is still
+  -- close-old-then-open-new.
+  if trace_file then
+    pcall(function() trace_file:close() end)
+    trace_file = nil
+  end
   local on = G_reader_settings:isTrue("magium_trace")
   trace.configure{
     enabled = on,
@@ -164,12 +175,8 @@ function Magium:_trace_writer()
     end
   end)
   if not pruned then logger.warn("Magium: could not prune old trace files in " .. dir) end
-  -- One trace file per reader-open — close the previous open's handle first,
-  -- otherwise every open in a session leaks an fd until the process exits.
-  if trace_file then
-    pcall(function() trace_file:close() end)
-    trace_file = nil
-  end
+  -- (the previous open's handle is already closed — _configureTrace does that
+  --  unconditionally before it gets here)
   -- os.date has 1 s resolution, so two opens landing in the same second would
   -- pick the same name and io.open(path, "w") would TRUNCATE the first one's
   -- file. Suffix -2, -3, … until the name is free (bounded).
@@ -203,14 +210,15 @@ function Magium:_ensureLoaded()
     -- half-parsed object is re-preloaded, so a retry after a transient parse
     -- failure (disk error / truncated file on device) must start clean.
     local story = new_story(self.data_dir)
-    local ok = false
+    local ok, err = false, nil
     trace.event("preload_start")
     local t0 = time.now()
     Trapper:wrap(function()
       -- pcall so Trapper:clear() runs on BOTH paths. Without it a preload()
       -- throw skipped the clear and left the "Loading Magium… n/54" InfoMessage
-      -- on screen underneath the error box. `pok` still means "did not throw".
-      local pok = pcall(function()
+      -- on screen underneath the error box. `pok` still means "did not throw";
+      -- `perr` is kept so the real cause reaches crash.log (see below).
+      local pok, perr = pcall(function()
         story:preload(function(done, total)
           -- skip_dismiss_check = true (Trapper:info's 3rd arg) is load-bearing: on
           -- its 2nd+ call Trapper:info() otherwise coroutine.yield()s back to the
@@ -226,10 +234,15 @@ function Magium:_ensureLoaded()
         end)
       end)
       Trapper:clear()
-      ok = pok   -- true only if preload() did not throw
+      ok, err = pok, perr   -- ok is true only if preload() did not throw
     end)
     if ok then
       shared_story, shared_loaded = story, true
+    else
+      -- The only breadcrumb for a truncated .magium or a disk error on the
+      -- device: openReader()'s guard below reports the generic "story data
+      -- unavailable", which says nothing about the actual cause.
+      logger.warn("Magium: preload failed: " .. tostring(err))
     end
     -- on failure: shared_loaded stays false → the next open retries from scratch.
     trace.event("preload_done", {
