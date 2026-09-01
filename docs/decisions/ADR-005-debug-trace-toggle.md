@@ -65,7 +65,9 @@ build-time one.
    records and flushes them as **JSON Lines** to `koreader/magium/trace-<YYYYMMDD-HHMMSS>.jsonl`
    — one file per reader-open-with-logging-on, newest 5 kept (older pruned on
    open). First line is a `session` header (plugin + KOReader version, device,
-   timestamp, resume scene).
+   timestamp). The resume scene is **not** in that header — it is its own
+   `resume` event, emitted once `save:load()` has run (`main.lua`, in
+   `openReader()`), because the header is written before the save is read.
 3. **Quick-look sink:** every event also mirrors a one-line `logger.info("[MGM]
    …")` summary → lands in `crash.log` immediately, so an unflushed buffer still
    survives a hard crash.

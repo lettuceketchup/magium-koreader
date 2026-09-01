@@ -3518,6 +3518,17 @@ Update `SUMMARY.md` status line: `Phase I (MVP) complete — ch1 playable on-dev
 
 `research-plan.md` — append a running-log entry (per CLAUDE.md): what shipped, the Milestone 0 number, what's next (Phase II spec cycle).
 
+- [ ] **Step 6b: Phase I → II handoff — carry forward**
+
+Four facts established during Phase I that a later phase has to act on. They are
+recorded in **[spec §12.1](../../specs/2026-08-31-plugin-architecture-and-phase-i.md#121-carried-from-phase-i)**
+— read them there, don't restate them here:
+
+1. `render_model → store` write-back + the `"1"`→`"2"` achievement-flag bump (Phase II; Ruling 3, with the Ruling 8 nuance).
+2. `B3-Ch01a-Crossbow` device-locked stat suppression (Phase II special-case audit).
+3. The `v_hearing <= 4` unmatched-operator stat check in `Ch11b-Hole` (flag it in the first full-corpus oracle run, Phase VIII).
+4. Achievement-text normalization — closed in Phase I, noted so it isn't re-derived.
+
 - [ ] **Step 7: Commit**
 
 ```bash
