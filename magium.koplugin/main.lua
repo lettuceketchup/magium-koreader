@@ -40,6 +40,13 @@ local PARSE_STRATEGY = "eager"
 -- `store` / `save` stay per-instance (they hold mutable play state).
 local shared_story
 local shared_loaded = false
+-- Same reasoning for the locale bundle: Locale is immutable after load, so
+-- re-reading + JSON-decoding data/en/ui.json in every init() is exactly the
+-- per-instance churn Ruling 12 removed for `story`.
+local shared_locale
+-- The trace file handle for the current reader-open, module-scope so the next
+-- open can close it (one open handle per process, not one per open).
+local trace_file
 
 local Magium = WidgetContainer:extend{ name = "magium", is_doc_only = false }
 
@@ -91,7 +98,8 @@ function Magium:init()
   self:onDispatcherRegisterActions()
   self.ui.menu:registerToMainMenu(self)
   self.data_dir = self.path .. "/data"
-  self.locale = Locale.load(self.data_dir, "en")
+  shared_locale = shared_locale or Locale.load(self.data_dir, "en")
+  self.locale = shared_locale
   self.story = shared_story   -- nil until the first successful _ensureLoaded()
   self.store = Store.new()
   self.save = SaveManager.new{
@@ -156,7 +164,22 @@ function Magium:_trace_writer()
     end
   end)
   if not pruned then logger.warn("Magium: could not prune old trace files in " .. dir) end
-  local path = dir .. "/trace-" .. os.date("!%Y%m%d-%H%M%S") .. ".jsonl"
+  -- One trace file per reader-open — close the previous open's handle first,
+  -- otherwise every open in a session leaks an fd until the process exits.
+  if trace_file then
+    pcall(function() trace_file:close() end)
+    trace_file = nil
+  end
+  -- os.date has 1 s resolution, so two opens landing in the same second would
+  -- pick the same name and io.open(path, "w") would TRUNCATE the first one's
+  -- file. Suffix -2, -3, … until the name is free (bounded).
+  local base = dir .. "/trace-" .. os.date("!%Y%m%d-%H%M%S")
+  local path = base .. ".jsonl"
+  local n = 1
+  while n < 100 and lfs.attributes(path, "mode") do
+    n = n + 1
+    path = base .. "-" .. n .. ".jsonl"
+  end
   local ok, f = pcall(io.open, path, "w")
   if not ok or not f then
     -- return nil, not a writer that silently drops every line:
@@ -165,6 +188,7 @@ function Magium:_trace_writer()
     logger.warn("Magium: could not open trace file " .. path)
     return nil
   end
+  trace_file = f
   return function(line)
     f:write(line); f:write("\n"); f:flush()
   end
@@ -183,21 +207,26 @@ function Magium:_ensureLoaded()
     trace.event("preload_start")
     local t0 = time.now()
     Trapper:wrap(function()
-      story:preload(function(done, total)
-        -- skip_dismiss_check = true (Trapper:info's 3rd arg) is load-bearing: on
-        -- its 2nd+ call Trapper:info() otherwise coroutine.yield()s back to the
-        -- resume() inside Trapper:wrap(), which returns — _ensureLoaded() would
-        -- fall through with the corpus only half-parsed and openReader() would
-        -- render(nil). With it, the whole preload runs synchronously to
-        -- completion. A non-dismissable ~2 s bar is the right trade (dismissing
-        -- mid-parse leaves exactly that broken half-parsed state).
-        -- Throttled to ~10 updates so the device isn't asked for 54 e-ink flashes.
-        if done == 1 or done == total or done % 6 == 0 then
-          Trapper:info(string.format("%s  %d / %d", _("Loading Magium…"), done, total), false, true)
-        end
+      -- pcall so Trapper:clear() runs on BOTH paths. Without it a preload()
+      -- throw skipped the clear and left the "Loading Magium… n/54" InfoMessage
+      -- on screen underneath the error box. `pok` still means "did not throw".
+      local pok = pcall(function()
+        story:preload(function(done, total)
+          -- skip_dismiss_check = true (Trapper:info's 3rd arg) is load-bearing: on
+          -- its 2nd+ call Trapper:info() otherwise coroutine.yield()s back to the
+          -- resume() inside Trapper:wrap(), which returns — _ensureLoaded() would
+          -- fall through with the corpus only half-parsed and openReader() would
+          -- render(nil). With it, the whole preload runs synchronously to
+          -- completion. A non-dismissable ~2 s bar is the right trade (dismissing
+          -- mid-parse leaves exactly that broken half-parsed state).
+          -- Throttled to ~10 updates so the device isn't asked for 54 e-ink flashes.
+          if done == 1 or done == total or done % 6 == 0 then
+            Trapper:info(string.format("%s  %d / %d", _("Loading Magium…"), done, total), false, true)
+          end
+        end)
       end)
       Trapper:clear()
-      ok = true   -- reached only if preload() did not throw
+      ok = pok   -- true only if preload() did not throw
     end)
     if ok then
       shared_story, shared_loaded = story, true
@@ -296,6 +325,12 @@ function Magium:openReader()
       trace.event("save", { op = "flush", reason = "close" })
       trace.event("close", { reason = "reader" })
       trace.flush()
+      -- This instance is no longer mirroring a live session. Without the reset,
+      -- a later onSuspend/onClose/onCloseWidget would append save/close records
+      -- to the PREVIOUS session's trace file (the next open opens a new one).
+      -- Nothing is lost: on_close already ran flush_now("close"), and the store
+      -- cannot change again until another openReader() sets _loaded back to true.
+      self._loaded = false
     end,
     advance = function(button)
       local touched_ac = false
