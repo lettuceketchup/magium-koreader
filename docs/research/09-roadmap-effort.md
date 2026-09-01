@@ -126,11 +126,14 @@ solved work redone.
 ### Phase II — Full story & navigation
 
 Extends Phase I's proof-of-concept to design doc §3's full scope for
-narrative + choices.
+narrative + choices. **Implemented 2026-09-01** —
+[spec](../specs/2026-09-01-phase-ii-full-corpus-and-navigation.md), sweep
+8887/8887; **back/history stack was cut** ([ADR-006](../decisions/ADR-006-no-scene-back-navigation.md)
+— `magium-dev` has no back navigation, so parity means none here).
 
 - **Deliverables:** all 54 English `.magium` files loaded per Milestone 0's
-  chosen strategy; back/history stack; all **13 hardcoded per-scene special
-  cases** audited and ported one by one
+  chosen strategy; ~~back/history stack~~ (cut, ADR-006); all **13 hardcoded
+  per-scene special cases** audited and ported one by one
   ([`01` §10](01-magium-analysis.md#10-hardcoded-scene-id--variable-special-cases-task-110));
   the four `special:` hooks (`restart`/`saves`/`stats`/`checkpoint_load`/`checkpoint_save`,
   [`01` §7](01-magium-analysis.md#7-special-hooks-task-17)) wired as

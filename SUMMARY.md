@@ -10,8 +10,13 @@
   optional debug action-trace — all validated **102/102 against the `magium-dev`
   oracle**; `ch1` plays start→finish on the real Kindle PW12. Milestone 0:
   2.2 s device cold parse → `eager`, deferred to first reader-open (lazy
-  strategy deferred to Phase VIII). **Next: Phase II** (full corpus + navigation),
-  its own spec cycle.
+  strategy deferred to Phase VIII).
+  **Phase II implemented 2026-09-01** ([spec](docs/specs/2026-09-01-phase-ii-full-corpus-and-navigation.md);
+  branch `feat/phase-ii-full-corpus-nav`): scene `set()` write-back, special
+  case #8 → full-corpus sweep **8887/8887**, in-game menu, `special:` hooks
+  routed, back/history stack cut ([ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md)).
+  Automated gates green; owner device playthrough pending. **Next: Phase III**
+  (saves).
 - **Last updated:** 2026-09-01
 - **How to read this:** every claim links to the doc that backs it, with a
   confidence tag. If a row says `low` or `TBD`, it is not yet a conclusion. This
@@ -216,24 +221,20 @@ See [`docs/decisions/`](docs/decisions/).
 - [ADR-002](docs/decisions/ADR-002-porting-approach.md) — port Magium as a standalone KOReader plugin with a Lua reimplementation of the engine (candidate A), over extending an existing plugin (B), converting to Twine/Ink + an existing player (C), or a build-time hybrid (D).
 - [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md) — defer licensing & redistribution-permission work (Phase 7, OQ-004) until the port is actually being distributed; project is personal-use-only for now.
 - [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md) — plugin internal architecture: three-layer (engine-pure / ui / save), a custom fullscreen paginated reading widget (resolves OQ-013), choices rendered as the final page.
+- [ADR-005](docs/decisions/ADR-005-debug-trace-toggle.md) — the debug action-trace is a runtime menu toggle, not a build variant.
+- [ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md) — **no** in-game "back one scene" / history stack: `magium-dev` has none, and parity is the standard. Overrides the roadmap's Phase II "back/history stack" line.
 
 ## Next steps
 
-**Phase I is complete** (all 21 tasks + Milestone 0; on-device sign-off
-2026-09-01 — spec §11.2). The
-[Milestone 0 + Phase I plan](docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md)
-executed under subagent-driven development; the 13 controller rulings from that
-run are preserved in
-[`docs/specs/phase-i-execution-notes.md`](docs/specs/phase-i-execution-notes.md).
-Task 15 (the `lazy` parse strategy) was deferred to Phase VIII (finding 36).
+**Phase I complete** (on-device sign-off 2026-09-01).
 
-**Next: Phase II** — full corpus + navigation. Needs its own spec cycle
-(`brainstorming` → spec under `docs/specs/` → `writing-plans`). Scope per
-[`09` Phase II](docs/research/09-roadmap-effort.md#phase-ii--full-story--navigation)
-+ [spec §12](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md#12-phases-iiviii--architectural-notes):
-all 54 `.magium` files, back/history stack, the 13 hardcoded special cases
-audited + ported against real scenes, the four `special:` hooks as navigation
-stubs, the new-game/continue menu, and the spec §12.1 Phase I→II carry-forward
-(render-model→store write-back, `B3-Ch01a-Crossbow` device-lock suppression,
-`v_hearing <= 4` unmatched-operator check). Roadmap phase order is unchanged —
-the achievement toast stays Phase V, the stats screen Phase IV.
+**Phase II implemented 2026-09-01** ([spec](docs/specs/2026-09-01-phase-ii-full-corpus-and-navigation.md),
+[plan](docs/superpowers/plans/2026-09-01-phase-ii-full-corpus-and-navigation.md),
+branch `feat/phase-ii-full-corpus-nav`) — scene `set()` write-back
+(`scene.persist_effects`), special case #8 (`mgm.sh oracle-corpus` now
+**8887/8887**), the in-game menu (`ButtonDialog` shell, later-phase rows
+disabled), `special:saves`/`stats` → menu. Back/history stack cut (ADR-006).
+Automated gates green; **owner on-device playthrough is the last exit box**.
+The `"1"→"2"` achievement "seen" bump stays with the Phase V toast.
+
+**Next: Phase III** — saves (checkpoint blob + 50 slots). Its own spec cycle.

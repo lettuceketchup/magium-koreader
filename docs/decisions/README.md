@@ -21,3 +21,5 @@ Record here, so the reasoning survives after the decision looks obvious.
 | [002](ADR-002-porting-approach.md) | Port Magium as a standalone KOReader plugin with a Lua engine | Accepted |
 | [003](ADR-003-defer-licensing-distribution.md) | Defer licensing & redistribution-permission work until after the port is functionally complete | Accepted |
 | [004](ADR-004-plugin-internal-architecture.md) | Plugin internal architecture — three-layer, engine-pure, custom paginated reader | Accepted |
+| [005](ADR-005-debug-trace-toggle.md) | Debug action-trace as a runtime menu toggle | Accepted |
+| [006](ADR-006-no-scene-back-navigation.md) | No in-game "back one scene" / history stack (Phase II) | Accepted |

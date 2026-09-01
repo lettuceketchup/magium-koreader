@@ -7,9 +7,11 @@
   [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
   **Implementation underway** — the [Phase I spec](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
   ([ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md)) is approved
-  and **Phase I is complete** (full engine + `ch1` playable + autosave/resume;
-  on-device sign-off 2026-09-01, spec §11.2). **Next: Phase II** (full corpus +
-  navigation) — needs its own spec cycle.
+  and **Phase I is complete** (on-device sign-off 2026-09-01).
+  **Phase II implemented 2026-09-01** ([spec](docs/specs/2026-09-01-phase-ii-full-corpus-and-navigation.md),
+  branch `feat/phase-ii-full-corpus-nav`) — full-corpus oracle parity
+  **8887/8887**, in-game menu, back-nav cut ([ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md));
+  automated gates green, owner device playthrough pending. **Next: Phase III** (saves).
 - **Last updated:** 2026-09-01
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -154,6 +156,41 @@ proceeds to Phase 8 in the meantime.
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-09-01 (session 25) — Phase II implemented: full-corpus parity 8887/8887, in-game menu, back-nav cut
+
+Brainstorming → spec → writing-plans → executed inline on `feat/phase-ii-full-corpus-nav`.
+
+**Shipped (commit `ade1a2f`):**
+- **Scene `set()` write-back** — `engine/scene.persist_effects(store, rm)` (2-line
+  pure helper, no `engine/commit.lua`), called in `main.lua` `render_current`.
+  Ports magium-dev's per-render `storeVariable()` writes. Ships the faithful
+  "re-applies on resume" quirk with a `ponytail:` upgrade comment.
+- **Special case #8** — `specials.HIDE_DEVICE_LOCK_TEXT` + a `scene.lua` branch:
+  empty device-lock stat label on `B3-Ch01a-Crossbow` only (its prose already
+  states the lock). **`mgm.sh oracle-corpus` → 8887/8887**, 0 DIFF (was 8886).
+  Carry-forward #3 (`Ch11b-Hole` `v_hearing <= 4`) confirmed clean in the sweep.
+- **In-game menu** — `Magium:openMenu()` over KOReader `ButtonDialog` (no
+  `ui/menu.lua`): full `menu.ejs` shell, Load-checkpoint/Save-Load/Achievements/
+  Settings `enabled = false`, Back-to-game + New-game + About wired. Reached via
+  a header tap-band split in `ui/reader.lua` (`close_zone_w`: left = close, right
+  = menu; `"Menu"` label affordance). `special:saves`/`stats` → the menu;
+  `checkpoint_*` stay no-op (D4).
+- **New game** = `reset_to_intro` (keeps `v_ac_*`) → flush → close+reopen reader.
+
+**Decisions:** D1 no back/history stack (**[ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md)**,
+magium-dev has none — overrides the roadmap line); D2 menu full-shell-disabled;
+D3 Crossbow faithful-empty; D4 checkpoint hooks no-op. Ponytail trims: 0 new
+files (spec had called for `engine/commit.lua` + `ui/menu.lua` + 2 spec files).
+
+**Gates:** engine subset 72/0, full busted 94/0, oracle-corpus 8887/8887,
+headless `kodev` load clean, `main.lua` parses. **Not done:** owner on-device
+playthrough (spec §9 last box) → then spec `stable` + branch merge.
+
+**Out of Phase II (unchanged):** achievement `"1"→"2"` "seen" bump stays with
+the Phase V toast.
+
+**Next:** owner device run; then Phase III (saves) — its own spec cycle.
 
 ### 2026-09-01 (session 24) — oracle case matrix auto-derived; full-corpus sweep now runnable
 

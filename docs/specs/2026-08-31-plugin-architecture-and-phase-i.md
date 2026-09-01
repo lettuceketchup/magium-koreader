@@ -645,7 +645,7 @@ code is written to accommodate it without rework:
 
 | Phase | Adds | Touches (existing) | New modules |
 |---|---|---|---|
-| **II — full corpus & nav** | all 54 files; history/back stack; audit + port all 13 special cases against real scenes; `special:` hooks as nav stubs | `story` (multi-file already there), `reader` (history stack), `specials` (finish) | — |
+| **II — full corpus & nav** | **→ done, see [2026-09-01-phase-ii spec](2026-09-01-phase-ii-full-corpus-and-navigation.md).** All 54 files (already eager-loaded); scene `set()` write-back; special case #8 (sweep 8887/8887); in-game menu; `special:` hooks routed. **Back/history stack cut** — [ADR-006](../decisions/ADR-006-no-scene-back-navigation.md), `magium-dev` has none. | `scene` (`persist_effects`), `specials` (#8), `reader` (header split), `main` (menu) | — |
 | **III — saves** | `checkpoint` blob; 50 manual slots; `checkpoint_save`/`checkpoint_load` real; slot name/date UI | `save/manager`, `reader` (special dispatch) | `ui/savespage.lua` |
 | **IV — stats** | `KeyValuePage` stats screen; the `v_available_points`/`v_max_stat` spend flow; stats-screen special cases #9–#11 | `specials` (activate #9–#11), `store` (stat vars), `reader` (special dispatch) | `ui/statspage.lua` |
 | **V — achievements** | unlock toast; the 136-entry `achievements{1,2,3}.json` menu; `b2ch41` group quirk; always-on `v_ac_b3_ch9_prize` | `scene` already computes the list; `locale` (achievements JSON) | `ui/toast.lua`, `ui/achievementsmenu.lua` |
