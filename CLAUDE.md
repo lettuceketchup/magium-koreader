@@ -4,22 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A **feasibility study and design dossier** for porting *Magium* (a text-based CYOA
-game) to run on a **Kindle Paperwhite 12th gen (2024) via KOReader** (owner's
-device: FW 5.19.5, KOReader v2026.07.1 `kindlehf`, ~1 GB RAM). There is no
-application code here yet and none should be added until the research phase
-finishes and an implementation design is separately approved.
+A port of *Magium* (a text-based CYOA game) to run on a **Kindle Paperwhite 12th
+gen (2024) via KOReader** (owner's device: FW 5.19.5, KOReader v2026.07.1
+`kindlehf`, ~1 GB RAM).
 
-Current phase: **RESEARCH** (see `research-plan.md` for status).
+**The research phase is complete** — feasibility confirmed, approach chosen
+(standalone KOReader plugin, Lua reimplementation of the `magium-dev` engine —
+[ADR-002](docs/decisions/ADR-002-porting-approach.md)), and the design dossier it
+produced lives under `docs/`. **The work now is implementing the game code**: the
+KOReader plugin in `magium.koplugin/`.
+
+Current phase: **IMPLEMENTATION** — Phase I (MVP: full engine + ch1 playable +
+autosave) has landed; next is Phase II (full corpus + navigation). See the
+running log in `research-plan.md` and the roadmap in
+`docs/research/09-roadmap-effort.md`.
 
 ## Orientation — read these first, in order
 
-1. `README.md` — project intro and status.
-2. `SUMMARY.md` — living "what we know so far": current conclusions + confidence.
-3. `research-plan.md` — the executable phase/task checklist and the dated running log at its bottom.
-4. `docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md` — the governing design doc for this phase (scope, conventions, exit criteria).
-5. `docs/decisions/` — ADRs: every decision that closed off an alternative, with reasoning.
-6. `docs/research/07-risks-open-questions.md` — open questions (`OQ-NNN`), each tagged with where to get it answered.
+1. `docs/specs/2026-08-31-plugin-architecture-and-phase-i.md` — **the implementation spec**: module map, data-shape contracts, the 12-step `scene.render` pipeline, phase roadmap. This is the authority when a plan step conflicts with it.
+2. `magium.koplugin/` — the plugin itself: `engine/` (pure Lua, no KOReader deps, oracle-tested), `ui/` (KOReader widgets), `save/`, `main.lua` glue, `spec/` (busted tests).
+3. `research-plan.md` — dated running log at the bottom (newest first) — the live status of the build.
+4. `docs/decisions/` — ADRs: every decision that closed off an alternative, with reasoning.
+5. `SUMMARY.md` — the research conclusions + confidence tags (background; research is done).
+6. `docs/research/09-roadmap-effort.md` — the phased implementation roadmap.
 
 ## Reference implementations (sibling folders, not in this repo)
 
@@ -60,7 +67,20 @@ Evaluation reference: `../magium-dev/src/utils.js:apply_conditions`.
 Scene header ("Book X - Chapter Y") is derived from the scene ID:
 `../magium-dev/src/utils.js:getHeaderFromId`.
 
-## Working conventions (enforced — see design doc §8)
+## Working style (enforced)
+
+- **Use `ponytail` for most coding tasks** — writing, adding, refactoring,
+  fixing, reviewing code, and choosing dependencies. Laziest solution that
+  actually works: stdlib and KOReader-native before custom code, one line before
+  fifty, question whether the code needs to exist. (Not for pure docs/prose.)
+- **Do not use subagents for large tasks.** Handle multi-step / multi-file work
+  inline in the main session. (Subagents on an explicit user request only.)
+- **Keep doc updates cheap.** If updating the docs for a change would cost more
+  than ~20% of the run's token budget, trim it: update only the running log +
+  the one or two docs that would otherwise be *wrong*, batch the edits, keep them
+  terse. Code is the priority; the dossier is background now.
+
+## Working conventions (dossier — see design doc §8)
 
 - **Every doc** starts with the standard header block: Status / Last updated / Phase / Sources / Related.
 - **Every non-obvious claim** carries an inline citation: code as `path:line` (add `@commit` if volatile); web links **must** include a `web.archive.org` capture; forum/Discord/Reddit links include author + date + a one-line quote.
@@ -71,14 +91,24 @@ Scene header ("Book X - Chapter Y") is derived from the scene ID:
 - **Spikes** are throwaway. Each gets `docs/spikes/NN-slug/` with `HYPOTHESIS.md`, code, `FINDING.md`. Never promote spike code to production without a new approved phase.
 - **After each work session**, append a dated entry to the running log at the bottom of `research-plan.md`.
 
-## Doing research work
+## Doing implementation work
 
-- Pick the current phase from `research-plan.md`. Produce/extend that phase's deliverable doc(s).
-- Ground engine claims in `../magium-dev` source lines; verify behavior by running that project (see `reference/magium-dev-notes.md`) or the live web build at http://www.magium.org/menu.
-- Anything that depends on real on-device KOReader behavior (memory, e-ink refresh, widget limits, deploy loop) needs a spike on the actual Paperwhite, not just documentation.
-- Write for an outside contributor: docs should be shareable in isolation on Discord/Reddit/MobileRead.
+- Work from the spec (`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`)
+  and the roadmap (`docs/research/09-roadmap-effort.md`); the spec is the
+  authority when a plan step conflicts with it. Pick the current phase from the
+  `research-plan.md` running log.
+- `engine/` is **pure Lua, no KOReader deps** — develop and test it on the
+  desktop against the `magium-dev` differential oracle (`magium.koplugin/spec/`,
+  `reference/tools/oracle-diff.js`). `magium-dev` @ its recorded commit is the
+  behavioral reference for every engine question.
+- `ui/` needs the KOReader emulator (WSL2, see `reference/`) or the device. No
+  hot reload: copy to `koreader/plugins/`, restart, read `koreader/crash.log`.
+- Anything depending on real on-device behavior (e-ink refresh feel, ARM parse
+  time, MTP deploy) needs the actual Paperwhite, not the emulator.
+- Still-open items that need device time or code are tracked as roadmap work, not
+  `OQ-NNN` (see `docs/research/07-risks-open-questions.md` blocking-status note).
 
 ## Git
 
-- Branch `main`, no CI yet. Commit docs as they stabilize.
-- Commit messages: what changed + which phase/doc + why. Reference `OQ-NNN` / `ADR-NNN` when relevant.
+- Branch `main`, no CI yet. Feature work on a `feat/…` branch; never commit straight to `main` unasked.
+- Commit messages: what changed + which phase/task + why. Reference `ADR-NNN` when relevant.

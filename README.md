@@ -4,29 +4,32 @@ Can *Magium* — the text-based choose-your-own-adventure game by the late
 Cristian Mihailescu — be played on a **Kindle Paperwhite running
 [KOReader](https://github.com/koreader/koreader)**?
 
-This repository is the **research and design effort** to find out. It contains no
-game code yet. Magium's interaction model (scrolling prose, a few choice buttons,
-menus) lines up closely with what KOReader already does, which is what makes a
-port worth investigating.
+Yes — and this repository is the port. It began as a **research and design
+effort** (the dossier under `docs/`) and is now **implementing the game** as a
+KOReader plugin in [`magium.koplugin/`](magium.koplugin/). Magium's interaction
+model (scrolling prose, a few choice buttons, menus) lines up closely with what
+KOReader already does, which is what makes the port work.
 
 Reference device: **Kindle Paperwhite 12th gen (2024)**, firmware 5.19.5,
 KOReader v2026.07.1 (`kindlehf`), ~1 GB RAM.
 
 ## Status
 
-**Phase: RESEARCH — substantially complete.** Nothing is being implemented
-yet. The dossier concludes with a chosen approach
-([ADR-002](docs/decisions/ADR-002-porting-approach.md)) and a phased
-implementation roadmap ([`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md)),
-awaiting owner review before an implementation-design cycle opens. See
-[`research-plan.md`](research-plan.md) for the plan and progress, and
-[`SUMMARY.md`](SUMMARY.md) for current conclusions.
+**Phase: IMPLEMENTATION.** Research is complete — chosen approach
+([ADR-002](docs/decisions/ADR-002-porting-approach.md)), phased roadmap
+([`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md)). Phase I (MVP: the
+full engine, chapter 1 playable end-to-end on the real Kindle, autosave/resume)
+has landed; Phase II (full corpus + navigation) is next. See the running log in
+[`research-plan.md`](research-plan.md) for live status and
+[`docs/specs/`](docs/specs/) for the implementation spec.
 
 ## Where to look
 
 | You want... | Go to |
 |---|---|
-| The short version of what we've concluded so far | [`SUMMARY.md`](SUMMARY.md) |
+| The plugin itself | [`magium.koplugin/`](magium.koplugin/) |
+| The implementation spec | [`docs/specs/`](docs/specs/) |
+| The short version of what the research concluded | [`SUMMARY.md`](SUMMARY.md) |
 | The plan and its status | [`research-plan.md`](research-plan.md) |
 | Why this phase is structured the way it is | [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md) |
 | Individual research topics (shareable) | [`docs/research/`](docs/research/) |
