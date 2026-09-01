@@ -153,6 +153,54 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-01 (sessions 19–21) — Phase I implementation finished (SDD): Tasks 7–23, final review, fix wave
+
+Continued executing [the Milestone 0 + Phase I plan](docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md)
+on `feat/magium-plugin-phase-i` under subagent-driven development. Per-task detail (BASEs,
+review rounds, every ruling) is in the SDD ledger
+`.superpowers/sdd/2026-08-31-magium-plugin-milestone-0-phase-i/progress.md`; this is the summary.
+
+- **Engine + UI + save + wiring complete and oracle-clean.** Tasks 7–14 (conditions, store,
+  stats, locale, specials, the 12-step `scene.render`, oracle-diff harness, full ch1 branch
+  matrix), 16–20 (pagination, the bespoke fullscreen paginated reader widget, choices-as-final-
+  page + choice→scene wiring, debounced autosave/resume, `main.lua` real plugin class), 22–23
+  (the optional debug action-trace). Task 15 (lazy parse) stays deferred to Phase VIII; Task 21
+  (owner on-device playthrough + §11.2 exit checklist) is the only Phase I task left.
+- **Differential oracle: 102/102** ch1 render cases match `magium-dev` @ `51f5aa9`, zero DIFF.
+  Full busted suite 89/0/0/0. Headless `kodev` load clean.
+- **New mid-execution feature (owner-requested): debug action-trace** — `util/trace.lua`, OFF
+  by default, a `≡ → More tools → Magium → Record debug log` toggle. Per-session
+  `trace-<ts>.jsonl` (keep 5) under `koreader/magium/` + mirrored `[MGM]` lines to `crash.log`,
+  for catching bugs during real play. Recorded as **[ADR-005](docs/decisions/ADR-005-debug-trace-toggle.md)**
+  (runtime toggle chosen over build variants); spec **§9.2** added.
+- **SDD final whole-branch review (opus)** re-ran every gate independently + swept all 2159
+  scenes. Found **1 Critical**: on the owner's keyless Paperwhite 12 the reader could not be
+  closed — `ui/reader.lua` only bound a Close key `if Device:hasKeys()`, which is false on
+  `KindlePaperWhite6`, and the tap zones tiled the whole screen. Every emulator run had masked
+  it (SDL forces `hasKeys=yes`). Plus 6 Important + ~15 Minor.
+- **Fix wave 1 (opus implementer, one pass, 21 items)** + a scoped re-review (clean: 0
+  Critical / 0 Important / 7 trivial Minor):
+  - **C1** — reader now closes via a labelled tap target in the header bar **or** a multiswipe
+    (both flush the autosave); page-turn zones shrunk below the header. Spec **§8.1** updated.
+  - **I1** — `engine/stats.lua` left `success` nil for `<=`/`!=` operators (0 ch1 impact, 1
+    Book-11 scene); `scene.render` now coerces it so the render model is total.
+  - **I2** — the trace can no longer throw into gameplay (`pcall` + degrade-to-off).
+  - **I4** — Phase I ships a **fixed DPI-scaled prose font, no in-reader size control**;
+    re-pagination on font/rotation change is now an explicit Phase VIII item (spec §8.2, §12).
+  - **I5** — the Phase I→II carry-forward list (render_model→store write-back; `B3-Ch01a`
+    device-lock suppression; the `v_hearing<=4` check; achievement-text norm) moved out of the
+    soon-deleted SDD ledger into spec **§12.1**.
+  - Test coverage added for `pagination`'s `<br/>` block-split path and `save`'s
+    checkpoint-preserve / timer-cancel invariants; ~12 small hardening/doc fixes.
+- **Decisions:** ADR-005 (debug-trace runtime toggle). 14 controller rulings during execution
+  where a plan step was defective or conflicted with the spec (spec is authority) — all listed
+  in the SDD ledger, to be surfaced at branch-finish. No new OQs; no ADR superseded.
+- **Branch state:** ~27 commits, **local only — not pushed** (a push to the shared branch is a
+  stop-and-ask). Working tree clean.
+- **Next:** finish the development branch (surface the rulings + the ADR-005 scope addition),
+  then **Task 21 — owner runs the ch1 playthrough on the real Kindle** and signs off spec
+  §11.2, which produces the fuller Phase I write-up. Then Phase II (full corpus + nav).
+
 ### 2026-08-31 (session 18) — Phase I execution started (subagent-driven): Tasks 1–6
 
 Began executing [the Milestone 0 + Phase I plan](docs/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md)
