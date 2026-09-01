@@ -122,12 +122,20 @@ No hot reload. E-ink feel of the choice→page loop is still spike A / OQ-007.
 
 **Deploy — two ways:**
 
-- **SSH over WiFi (preferred, repeatable):** `tools/deploy-kindle-ssh.ps1 -Ip <addr>`.
-  One-time Kindle setup: KOReader → Tools → Network → **SSH server** → tick
-  "Login without password" (home WiFi only) or add a key to
-  `koreader/settings/SSH/authorized_keys`, Start (shows IP + port 2222), optionally
-  auto-start. The script `rm -rf`s the device plugin dir and `sftp put -r`s a
-  fresh copy — no MTP, no manual step.
+- **SSH over WiFi (preferred, repeatable):** a three-script family, state in
+  `tools/.kindle/` (gitignored — one `id_ed25519` deploy keypair +
+  `devices/<name>.json` per Kindle):
+  1. On the device once: KOReader → Tools → Network → **SSH server** → tick
+     **"Login with key only (SECURE)"**, optionally "Start SSH server with
+     KOReader", Start it once (creates `settings/SSH/`, shows IP + port 2222).
+  2. `tools/kindle-ssh-setup.ps1 -Name <name>` — USB-connected; generates the
+     keypair if needed and plants the pubkey at
+     `koreader/settings/SSH/authorized_keys` over MTP (delete-first + size-verify),
+     writes `devices/<name>.json`.
+  3. `tools/kindle-ssh-test.ps1 -Name <name> -Ip <addr>` — verifies key auth,
+     saves the IP + real koreader dir back to the config.
+  4. `tools/kindle-ssh-deploy.ps1 -Name <name>` — tests the connection, then
+     `rm -rf` + `sftp put -r` a fresh copy. `-Ip <addr>` alone still works ad hoc.
 - **USB / MTP:** `tools/deploy-kindle.ps1`. **MTP `CopyHere` silently does NOT
   overwrite existing files** (this shipped stale code to the device for weeks
   before it was caught — 2026-09-01). The script now deletes the device plugin

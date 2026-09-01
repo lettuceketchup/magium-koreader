@@ -9,6 +9,9 @@ Thumbs.db
 /scratch/
 *.local.md
 
+# Per-machine Kindle SSH deploy state: keypair + device connection configs
+/tools/.kindle/
+
 # Subagent-driven-development workspace (ledger, briefs, review packages — scratch)
 /.superpowers/
 

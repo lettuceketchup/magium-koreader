@@ -157,6 +157,28 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-02 (session 27) — SSH deploy: per-device key setup (owner: "all or nothing" passwordless is no good)
+
+KOReader's "Login without password" is global, so the WiFi deploy now uses
+**key-only auth** with a per-device setup, all state gitignored under
+`tools/.kindle/` (one `id_ed25519` keypair + `devices/<name>.json`).
+
+- `tools/kindle-ssh-common.ps1` — dot-sourced helpers: keypair gen (`-N '""'` is
+  the Windows-OpenSSH empty-passphrase form), device-config load/save,
+  `Test-KindleSsh` (probes `MAGIUM_SSH_OK` + the real koreader dir).
+- `tools/kindle-ssh-setup.ps1 -Name <n>` — USB; plants the pubkey at
+  `koreader/settings/SSH/authorized_keys` over MTP (delete-first + size-verify,
+  same MTP-won't-overwrite guard as `deploy-kindle.ps1`), creates `settings/SSH/`
+  if the SSH server was never started, writes the device config.
+- `tools/kindle-ssh-test.ps1 -Name <n> -Ip <addr>` — key-auth check; persists IP
+  + probed koreader dir back to the config.
+- `tools/deploy-kindle-ssh.ps1` → **renamed `tools/kindle-ssh-deploy.ps1`**; now
+  resolves the target from the device config, runs `Test-KindleSsh` before
+  touching the device, uses `-i <key> -o BatchMode=yes`. `-Ip` alone still works.
+- On device, one-time: SSH server → tick **"Login with key only (SECURE)"**.
+- Smoke: 4 scripts parse-clean; common-helper round-trip/update/error paths pass;
+  keypair generated. Device key placement pending owner USB-connect.
+
 ### 2026-09-01 (session 26) — Phase II: owner device test → deploy bug found, checkpoint blob, UI test harness
 
 Owner deployed Phase II to the Kindle and reported: menu doesn't work (any header
