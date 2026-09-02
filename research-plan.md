@@ -348,11 +348,16 @@ Built the achievement unlock toast and browsable menu, per
   - Smoke test extended: title `bold==true`, `m.linesize==0` at entries,
     `m.linesize~=0` at chapters and after `onReturn`. busted 122/0, all 5 UI
     smokes green. Redeployed.
-- **Next:** owner device pass (toast, drill-down — captions on their own
-  line, bold titles, no stray separator, checkbox, immersion toast,
-  reset-with-confirmation). Then **Phase V.5** (owner's own session, test
-  hardening — covers the dummy-`Screen` resolution gap found this round) —
-  Phase VI does not start until it lands.
+- **Owner confirmed the achievements-menu layout fix on device: "looks
+  good."** Branch pushed to `origin/feat/phase-v-achievements` (not merged to
+  `main` yet).
+- **Next:** owner confirmation still open on the rest of the Phase V exit
+  checklist (toast fires once + no repeat on resume, immersion toast from
+  the stats screen, reset icon asks for confirmation and actually clears
+  every achievement) — then merge `feat/phase-v-achievements` to `main`.
+  Then **Phase V.5** (owner's own session, test hardening — covers the
+  dummy-`Screen` resolution gap found this round) — Phase VI does not start
+  until it lands.
 
 ### 2026-09-03 (session 29b) — Phase IV: first device pass, tutorial reworked
 
