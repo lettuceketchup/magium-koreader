@@ -166,7 +166,7 @@ Newest entries at the top. One entry per work session: what was done, decisions,
 Owner: "Start phase 8 planning" → `/ponytail`. Spec
 [`docs/specs/2026-09-08-phase-viii-polish.md`](docs/specs/2026-09-08-phase-viii-polish.md)
 → stable. Branch `feat/phase-viii-polish`, merged to `main` via `--no-ff`
-(`<merge-sha>`; branch deleted, **not pushed**). Tag **`v1.0`** on the merge
+(`269b992`; branch deleted, **not pushed**). Tag **`v1.0`** on the merge
 commit. **No ADR** (no alternative closed). **This is the last phase — Magium on
 KOReader is feature-complete.**
 
