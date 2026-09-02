@@ -133,6 +133,27 @@ do  -- Stats — opened from the menu; on intro scene, no "Full immersion" unloc
   check("closing Stats reopens a live Reader", top_is_reader())
 end
 
+do  -- special:stats choice -> openStats -> close must NOT revert the scene.
+    -- Regression: openReader used to reload the store from disk on every reopen,
+    -- so a stats choice (which only debounces its autosave) dropped the player
+    -- back to the last flushed scene on return (research-plan 2026-09-07).
+  m.store:set("v_current_scene", "Ch1-Intro1")
+  m.save:flush_now("test-setup")               -- disk == Ch1-Intro1
+  local real_touch = m.save.touch
+  m.save.touch = function() end                -- simulate a still-pending debounce
+  m.reader.advance{ label = "Invest points now", target = "Ch1-Intro2",
+    set_vars = { v_current_scene = "Ch1-Intro2" }, special = "stats" }
+  check("special:stats opened the StatsPage", top() == m.stats)
+  check("the choice's scene move is in memory, not yet on disk",
+    m.store:get("v_current_scene") == "Ch1-Intro2")
+  m.stats.on_close()                            -- "Return to game" -> _reopenReader
+  check("returning from a stats choice keeps the post-choice scene",
+    m.store:get("v_current_scene") == "Ch1-Intro2")
+  check("returning from a stats choice lands on a live Reader", top_is_reader())
+  m.save.touch = real_touch
+  m.save:flush_now("test-cleanup")
+end
+
 do  -- Settings (Phase VI): cheat mode + text size, driven from the real menu
   open_from_menu("Settings")
   local sdialog = top()

@@ -176,8 +176,25 @@ Owner: "Start phase 6 planning" → approved plan (after a `/ponytail` pass that
 cut a standalone viewport smoke + `mgm.sh viewport` subcommand + a
 pre-committed ADR). Spec:
 [`docs/specs/2026-09-07-phase-vi-settings.md`](docs/specs/2026-09-07-phase-vi-settings.md).
-On `feat/phase-vi-settings`, **not merged, not pushed** — awaiting owner device
-sign-off.
+On `feat/phase-vi-settings`, **not merged, not pushed**. Owner device pass
+2026-09-07: settings + text size + cheat mode all confirmed. Choices-scroll:
+owner couldn't reach an overflowing scene → verified in the emulator. The pass
+also surfaced a **pre-existing reopen bug** (below), now fixed → owner confirm
+pass pending on the re-deploy.
+
+- **Reopen bug (§3.7) — found on the device pass, pre-existing since Phase IV.**
+  `Magium:openReader()` ran `save:load()` *unconditionally*, and
+  `SaveManager:load()` does `store:restore()` — so every reopen via
+  `_reopenReader()` (stats / saves / settings / newGame / checkpoint) re-read
+  disk over the live store. The `special:stats` choice path only *debounces* its
+  autosave, so returning from the first "Invest points now" in Book 1 Ch 2
+  (read faster than 1 choice / 8 s → autosave never fired) dropped the player
+  back to the last autosave. Phase VI's own new text-size `_reopenReader()` had
+  the same exposure. **Fix:** `openReader()` loads from disk only on a genuine
+  first open (`not self._loaded`); a reopen keeps the in-memory store, which the
+  debounced autosave still persists on its timer / suspend / close. Regression
+  in `main_e2e_smoke.lua` (drive a `special:stats` choice with `save.touch`
+  stubbed to a no-op, assert the post-choice scene survives the return).
 
 - **Scoping pass (the roadmap's "maybe none" for this phase):** of magium-dev's
   4 settings, only **cheat mode** and a **reader-local text size** are ported.
@@ -213,12 +230,14 @@ sign-off.
   live). Added to the `verify` skill as the gate for any
   `reader.lua`/`pagination.lua`/`choices.lua` change.
 - **Gates:** `test` **132/0** (unchanged — new asserts are in `spec/ui`
-  smokes, not busted). `test-ui` + `test-ui-real` all 6 smokes green.
+  smokes, not busted). `test-ui` + `test-ui-real` all 6 smokes green
+  (`main_e2e_smoke` +5 checks incl. the reopen-bug regression).
   `test-ui-matrix` green at all 4 profiles. `emu-smoke` clean (plugin loads,
   `crash.log` empty). `oracle-corpus` **not re-run** — no `engine/` or
   `scene.render` change; baseline stays 8887/8887.
-- **Next:** owner device pass (PW12) against the spec exit checklist, then
-  `--no-ff` merge + log. Phase VII (localization) is the next phase.
+- **Next:** owner confirm pass on the re-deploy (the reopen fix + choices
+  scroll), then `--no-ff` merge + log finalize. Phase VII (localization) is the
+  next phase.
 
 ### 2026-09-06 (session 33) — Phase V.5: test hardening (items 3, 5, 6 — the remainder)
 

@@ -3,7 +3,12 @@
 - **Status:** implemented on `feat/phase-vi-settings` — automated gates green
   (busted **132/0**, `test-ui` + `test-ui-real` + new `test-ui-matrix` all
   profiles green, `emu-smoke` clean; `oracle-corpus` not re-run — no `engine/`
-  change, baseline stays **8887/8887**). **Awaiting owner device sign-off.**
+  change, baseline stays **8887/8887**). Owner device pass: settings + text
+  size + cheat mode confirmed; choices-scroll verified in the emulator (owner
+  couldn't reach an overflowing scene on device). The device pass also
+  surfaced a **pre-existing reopen bug** (§3.8) — a `special:stats` choice
+  reverted to the last autosave on return — now fixed. **Re-deploy for a
+  confirm pass.**
 - **Last updated:** 2026-09-07
 - **Phase:** Implementation — design cycle 6 (roadmap [Phase VI](../research/09-roadmap-effort.md#phase-vi--settings--themes))
 - **Sources:**
@@ -189,7 +194,48 @@ prose_height = math.max(min_body, <the subtraction above>),
 Anything else the §5 matrix run surfaces is fixed here too, case by case —
 not pre-specified. **No `engine/` file is touched.**
 
-### 3.6 Not an ADR (yet)
+### 3.7 Reopen must not reload the store from disk (bug found on the device pass)
+
+`Magium:openReader()` ran `resume = self.save:load()` **unconditionally** — and
+`SaveManager:load()` calls `store:restore()`, overwriting the in-memory store
+with disk contents. Every reopen goes through `openReader()` via
+`_reopenReader()` (stats / saves / settings / newGame / checkpoint), so every
+reopen re-read disk.
+
+For most reopen callers this was harmless — they `flush_now()` before
+reopening (`loadCheckpoint`, `load_slot`, `newGame`, stats `on_confirm`). But
+the **`special:stats` choice** path does not: `advance()` moves
+`v_current_scene` to the "-spent" scene and only `save:touch()` (debounced 8 s),
+then `openStats()` → on close → `_reopenReader()` → `openReader()` →
+`save:load()` restored the *last flushed* scene. Read Book 1 Ch 2 faster than
+one choice per 8 s and the autosave never fired, so returning from the first
+"Invest points now" choice dropped the player back to the last autosave ("the
+auto checkpoint"). Phase VI's own new text-size `_reopenReader()` had the same
+exposure.
+
+**Fix:** `openReader()` only loads from disk on a genuine first open of the
+instance. `self._loaded` (set true after the first `save:load()`, cleared only
+in the Reader's tap-close `on_close`) is already true on any `_reopenReader()`
+path, so:
+
+```lua
+local resume
+if self._loaded then
+  resume = self.store:get("v_current_scene")   -- reopen: in-memory store is authoritative
+else
+  resume = self.save:load()
+  self._loaded = true
+  if not resume or not self.story:get_scene(resume) then reset_to_intro(self.store) end
+end
+```
+
+The debounced autosave from the choice still persists the scene on its timer /
+suspend / close, so nothing is lost. Regression:
+`spec/ui/main_e2e_smoke.lua` drives a `special:stats` choice with `save.touch`
+stubbed to a no-op (a still-pending debounce) and asserts the post-choice scene
+survives the return.
+
+### 3.8 Not an ADR (yet)
 
 The "don't port theme/font/language" call is already recorded in the roadmap
 (Phase VI row) and restated in §1.2 here. The only genuinely *new* decisions —
@@ -210,11 +256,11 @@ running log carries it.
   - Extend the existing "widest 15 labels" block (item 5) to also assert that
     on a **small** profile the choices page is either in-bounds or wrapped in a
     `ScrollableContainer` (check the returned widget type).
-- **`spec/flow` / busted** — a `main`-level test (or extend
-  `spec/ui/main_e2e_smoke.lua`) that drives `openSettings()` → cheat row →
-  confirm, and asserts `store:get("v_available_points") == "50"` and a flush
-  happened; and that `_openTextSizeDialog` selection writes `magium_prose_size`
-  and triggers a reader reopen.
+- **`spec/ui/main_e2e_smoke.lua`** (extended) — drives `openSettings()` → cheat
+  row → confirm (`v_available_points == "50"` + disk flush), and
+  `_openTextSizeDialog` → Large (`magium_prose_size == 25` + reader live). Plus
+  the §3.7 regression: a `special:stats` choice with `save.touch` stubbed to a
+  no-op, asserting the post-choice scene survives `openStats` → return.
 - **`tools/mgm.sh test-ui-matrix`** — re-runs `test-ui-real` with
   `EMULATE_READER_W/H/DPI` exported for each profile:
 
@@ -234,13 +280,19 @@ running log carries it.
 
 ## 5. Exit criteria
 
-- [ ] Automated gates green: `busted` (≥ 132/0 + new asserts), `test-ui`,
-      `test-ui-real`, **`test-ui-matrix`** (all 4 profiles), `emu-smoke` clean.
+- [x] Automated gates green: `busted` **132/0**, `test-ui`, `test-ui-real`,
+      **`test-ui-matrix`** (all 4 profiles), `emu-smoke` clean.
       `oracle-corpus` unchanged at 8887/8887 (not re-run — no engine change).
-- [ ] Owner on device (PW12): in-game menu → **Settings** opens; **Text size**
-      → Small/Medium/Large visibly changes the reading font and the choice is
-      kept across a reader close/reopen and a suspend/resume; **Cheat mode**
-      asks Yes/No then, on Yes, the Stats screen shows 50 points to spend; a
-      scene with many long choices scrolls rather than clipping.
-- [ ] Other-viewport correctness is covered by `test-ui-matrix` in the
-      emulator, not asked of the owner.
+- [x] Owner on device (PW12), first pass 2026-09-07: **Settings** opens;
+      **Text size** Small/Medium/Large changes the reading font and persists
+      across close/reopen + suspend/resume + restart; **Cheat mode** → 50
+      points on the Stats screen. All confirmed. Choices-scroll: owner
+      couldn't reach an overflowing scene — verified in the emulator instead
+      (§4, the 60-choice `reader_smoke` block + `test-ui-matrix`).
+- [x] The device pass surfaced the §3.7 reopen bug (`special:stats` choice
+      reverting to the last autosave). Fixed + regression-tested.
+- [ ] Owner confirm pass after re-deploy: the first "Invest points now" choice
+      in Book 1 Ch 2 — open the stats screen, return, and land back on the
+      scene *after* the choice, not the auto checkpoint.
+- [x] Other-viewport correctness covered by `test-ui-matrix`, not asked of the
+      owner.

@@ -321,13 +321,28 @@ function Magium:openReader()
     return
   end
 
-  -- resume, or start fresh (keeping achievements — reset_to_intro, not a wipe)
-  local resume = self.save:load()
-  trace.event("resume", { scene = resume or "fresh" })
-  self._loaded = true   -- this instance's store now mirrors disk; lifecycle flushes may run
-  if not resume or not self.story:get_scene(resume) then
-    reset_to_intro(self.store)
+  -- Resume position. On a genuine first open of this instance: load it from
+  -- disk (keeping achievements — reset_to_intro, not a wipe). On a *reopen*
+  -- (self._loaded already set — stats / saves / settings / newGame / checkpoint
+  -- all route back through here via _reopenReader), the in-memory store is
+  -- authoritative: re-reading disk would discard uncommitted play state. A
+  -- special:stats choice moves v_current_scene and only *debounces* the
+  -- autosave, so disk still holds an earlier scene when openStats ->
+  -- _reopenReader lands back here — reloading would drop the player back to the
+  -- last autosave ("the auto checkpoint"). Reopen callers that mutate the store
+  -- via a restore (loadCheckpoint / load_slot / newGame) flush_now() first, so
+  -- disk and memory already agree for them.
+  local resume
+  if self._loaded then
+    resume = self.store:get("v_current_scene")
+  else
+    resume = self.save:load()
+    self._loaded = true   -- this instance's store now mirrors disk; lifecycle flushes may run
+    if not resume or not self.story:get_scene(resume) then
+      reset_to_intro(self.store)
+    end
   end
+  trace.event("resume", { scene = resume or "fresh" })
 
   local function render_current()
     local id = self.store:get("v_current_scene")
