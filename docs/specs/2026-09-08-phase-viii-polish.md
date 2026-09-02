@@ -39,10 +39,13 @@
 2. **One device measurement pass** — deploy current `main`, action trace on,
    owner plays Book 1 → Book 3. Pull `trace-*.jsonl` + `crash.log`. No code
    change to measure (see §2).
-3. **E-ink tuning (OQ-007)** — edits confined to `magium.koplugin/ui/refresh.lua`
-   constants, plus wiring `refresh.on_modal()` into `ui/statspage.lua` /
-   `ui/savespage.lua` (they hardcode `"ui"`). Tuned to the owner's perceptual
-   sign-off over as many redeploy rounds as it takes.
+3. **E-ink tuning (OQ-007)** — primarily `magium.koplugin/ui/refresh.lua`
+   constants (the 4 `return` values + `DEGHOST_EVERY`). Tuned to the owner's
+   perceptual sign-off over as many redeploy rounds as it takes. If a modal
+   open/close transition (stats / saves / menu) reads wrong on device, the fix
+   lands at that call site too — but only if the device pass flags it (the
+   `on_modal()` helper exists unused; KOReader's default show/close refresh
+   currently governs those transitions).
 4. **Conditional mitigations** — OQ-011 atom-match memo and/or GC knob, *only
    if* the measurement pass shows a real stall / stutter (§3).
 5. **Full-corpus QA** — run `mgm.sh oracle-corpus`, confirm the baseline holds;
@@ -97,16 +100,21 @@ the parsed DNF for that scene id") is therefore already the architecture** — t
 preload that spike 06 already measured and the owner already accepted.
 
 The residual cost is walking the 2044-group DNF on each visit to
-`B3-Ch04a-Stats-spent`: up to 2044 `eval_atom` calls, each doing one
-`string.match`. The bench (§4) measures this on x86; ×5.6 estimates the device.
+`B3-Ch04a-Stats-spent`: up to ~4000 `eval_atom` calls, each doing one
+`string.match`. **Measured during spec-writing (dev x86 LuaJIT):
+2.6 ms/render** with a realistic player view (1.1 ms with an empty view) — a
+full `scene.render`, condition walk included. At spike 06's ×5.6, that projects
+to **~15 ms on the owner's Kindle** — imperceptible.
 
 | Bench result (x86, per render) | Device estimate | Action |
 |---|---|---|
-| < ~50 ms | < ~280 ms | **No code.** OQ-011 closes as "already mitigated by parse-time DNF caching; residual eval cost acceptable." |
+| < ~50 ms → **measured 2.6 ms** | < ~280 ms → **~15 ms** | **No code.** OQ-011 closes: "already mitigated by parse-time DNF caching; residual eval cost ~15 ms/render on device — acceptable." |
 | ~50–200 ms | ~0.3–1.1 s | Add a module-level `atom → {name,op,num}` memo in `engine/conditions.lua` (atoms are immutable strings; the `string.match` per atom is the hot cost). Re-bench. |
 | still slow after the memo | | Special-case `B3-Ch04a-Stats-spent` as a direct `v_*` comparison in `engine/specials.lua`. → **ADR** (closes the build-time-precompile alternative). Not expected. |
 
-The device `choice`→`render` delta from §2 confirms or overrides the estimate.
+The device `choice`→`render` delta from §2 is the final confirmation. On the
+2.6 ms measurement, **no mitigation code is expected** — the bench lands as a
+permanent tripwire and OQ-011 closes.
 
 GC: resident heap after preload is ~11.5 MB (spike 03). A stutter is not
 expected. If the owner reports one during the long session:
@@ -142,25 +150,26 @@ Current policy (`ui/refresh.lua`, 14 lines):
 
 | Moment | Type | Notes |
 |---|---|---|
-| `on_open` | `full` | first paint of the reader |
-| `on_page_turn` | `ui` | no flash |
-| `on_new_scene` | `ui`, `full` every 6th (`DEGHOST_EVERY`) | choice commit |
-| `on_modal` | `flashui` | **defined, not wired** |
+| `on_open` | `full` | first paint of the reader (`reader.lua:116`) |
+| `on_page_turn` | `ui` | no flash (`reader.lua:288`) |
+| `on_new_scene` | `ui`, `full` every 6th (`DEGHOST_EVERY`) | choice commit (`reader.lua:326`) |
+| `on_modal` | `flashui` | **defined, unused** — stats/saves/menu currently ride KOReader's default show/close refresh; their in-widget `_refresh()` uses a literal `"ui"` (correct — an in-place tap update, not a modal transition) |
 
-Changes, applied per the owner's report from §2:
+Changes, applied **per the owner's device report** (nothing here is done
+speculatively):
 
-- **Wire `on_modal`.** `ui/statspage.lua:115` and `ui/savespage.lua:46` pass a
-  literal `"ui"` to `UIManager:setDirty`. Replace with `refresh.on_modal()` so
-  the one file owns the policy. (Safe to do unconditionally — it is exactly
-  what the module was built for; 2 one-line edits.)
 - **`on_page_turn` / `on_new_scene` type**, `DEGHOST_EVERY` value — tuned to the
   owner's judgment of ghosting build-up vs. flash annoyance. Candidates:
   `"ui"` → `"fast"` or `"a2"` for page turns if `"ui"` ghosts or lags on the
-  PW12's MTK panel; raise/lower `DEGHOST_EVERY`. No structural change — only the
-  four `return` values and the one constant.
+  PW12's MTK panel; raise/lower `DEGHOST_EVERY`. Only the 4 `return` values and
+  the one constant — no structural change.
+- **Modal transitions** — only if the owner flags a stats/saves/menu
+  open or close as flashing wrong or ghosting: wire `refresh.on_modal()` (or a
+  new `on_modal_close`) at the `UIManager:show`/`close` call sites in `main.lua`.
+  Not expected; not pre-built.
 
-Every round: `test-ui` + `test-ui-real` + `test-ui-matrix` green, redeploy,
-owner re-judges.
+Every round that touches `ui/`: `test-ui` + `test-ui-real` + `test-ui-matrix`
+green, redeploy, owner re-judges.
 
 ## 6. Packaging
 
@@ -212,12 +221,11 @@ owner re-judges.
   file; confirm the baseline (8887/8887) holds. State the result (or "not
   re-run — no engine change") in the running log.
 - **`test-ui` / `test-ui-real` / `test-ui-matrix`** — re-run every round that
-  touches `ui/refresh.lua` / `ui/statspage.lua` / `ui/savespage.lua`. Green (6
-  smokes each; 4 profiles). No new smoke needed — the refresh *type* is not
-  asserted by the paint smokes and does not need to be (it is a device-feel
-  parameter, and `refresh.lua` has no logic beyond the counter, which
-  `on_new_scene`'s `DEGHOST_EVERY` modulo already exercises implicitly). If a
-  round adds real logic to `refresh.lua`, add `spec/ui/refresh_spec.lua` then.
+  touches a `ui/` file. Green (6 smokes each; 4 profiles). No new smoke needed —
+  the refresh *type* is a device-feel parameter, not asserted by the paint
+  smokes, and `refresh.lua` has no logic beyond the `DEGHOST_EVERY` counter
+  (already exercised implicitly by the `on_new_scene` modulo). If a round adds
+  real branching to `refresh.lua`, add `spec/ui/refresh_spec.lua` then.
 - **`emu-smoke`** — plugin loads clean, `crash.log` empty.
 - **`busted`** full suite green on the merged tree before anything leaves the
   machine.
@@ -228,8 +236,9 @@ owner re-judges.
       `choice`→`render` trace delta at `B3-Ch04a-Stats-spent` confirms it is
       not a perceptible stall — **or** a §3 mitigation is in place, tested, and
       re-benched.
-- [ ] `ui/refresh.lua` tuned to the owner's e-ink sign-off on the PW12;
-      `refresh.on_modal()` wired into the stats + saves screens.
+- [ ] `ui/refresh.lua` tuned to the owner's e-ink sign-off on the PW12 (page
+      turns, choice-commit de-ghost cadence, modal transitions all judged
+      acceptable — or fixed).
 - [ ] GC: owner confirms no visible stutter across a full Book 1 → 3 session —
       or a tuning knob is in and tested.
 - [ ] `mgm.sh oracle-corpus` green at the baseline (2159 scenes swept);
