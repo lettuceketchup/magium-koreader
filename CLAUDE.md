@@ -11,12 +11,17 @@ gen (2024) via KOReader** (owner's device: FW 5.19.5, KOReader v2026.07.1
 **The research phase is complete** — feasibility confirmed, approach chosen
 (standalone KOReader plugin, Lua reimplementation of the `magium-dev` engine —
 [ADR-002](docs/decisions/ADR-002-porting-approach.md)), and the design dossier it
-produced lives under `docs/`. **The work now is implementing the game code**: the
-KOReader plugin in `magium.koplugin/`.
+produced lives under `docs/`. The game code is the KOReader plugin in
+`magium.koplugin/`.
 
-Current phase: **IMPLEMENTATION** — Phase I (MVP: full engine + ch1 playable +
-autosave) has landed; next is Phase II (full corpus + navigation). See the
-running log in `research-plan.md` and the roadmap in
+Current phase: **FEATURE-COMPLETE** — Phase VIII (final) merged 2026-09-08,
+tag `v1.0`; Phases I–VI + V.5 all shipped with owner on-device sign-off; Phase
+VII (fr localization) built + shelved on upstream content (`phase-vii-shelved`).
+Every research OQ is closed or deferred. Work now is **maintenance** — bug
+fixes, and any polish the owner asks for. Non-blocking follow-ups: Phase VII
+(needs a real fr `.magium` set), Phase 7 licensing ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md),
+only if distribution is considered), a GC post-release watch. See the running
+log in `research-plan.md` and the roadmap in
 `docs/research/09-roadmap-effort.md`.
 
 ## Orientation — read these first, in order
