@@ -3,7 +3,15 @@
 - **Status:** implemented, automated gates green (busted **122/0**, `oracle-corpus`
   unchanged — `scene.render()` untouched, only `persist_effects` extended — `toast`
   + `achievementsmenu` + `savespage` + `statspage` + `reader` UI smokes green,
-  headless emu load clean). Not yet device-tested.
+  headless emu load clean). First device pass (2026-09-04) caught a real crash
+  the smoke test's structural asserts missed: `mandatory = e.caption` on an
+  entry row crashed on paint (`textwidget.lua:224: bad argument #2 to
+  'makeLine'` — `mandatory` is an unwrapped single-line `TextWidget`, wrong
+  field for a full sentence). Fixed (caption folded into `text`) and the smoke
+  test now paints every one of the 34 chapter entry-list screens for real
+  (`Screen.bb`), not just structural checks — see §4 and CLAUDE.md's
+  sharpened "Doing implementation work" rule. Re-tested green; awaiting a
+  second device pass.
 - **Last updated:** 2026-09-04
 - **Phase:** Implementation — design cycle 5 (roadmap [Phase V](../research/09-roadmap-effort.md#phase-v--achievements))
 - **Sources:**
@@ -150,7 +158,11 @@ glyph.
   `Notification` per achievement), no-op on an empty list. Auto-run by `test-ui`.
 - `spec/ui/achievementsmenu_smoke.lua` (new) — book list; chapter-order
   inlining (the D5 case, asserted by position); entry unlocked/dimmed for
-  `"1"`, `"2"`, and absent; `onReturn` pops correctly. Auto-run by `test-ui`.
+  `"1"`, `"2"`, and absent; `onReturn` pops correctly. **Also calls
+  `widget:paintTo(Screen.bb, 0, 0)` for real** — the book list, one chapter
+  list, and every one of the 34 chapter entry-list screens across all 3
+  books, inside a `pcall` — not just structural item_table asserts, which
+  had missed the `mandatory`-caption crash. Auto-run by `test-ui`.
 - `spec/flow/playthrough_spec.lua` — a real `achievement()` path
   (`Ch1-Cutthroat Dave` / `v_ac_ch1_coward`): shows on the unlocking render,
   latches to `"2"`, does not re-show on a further re-render of the same scene.

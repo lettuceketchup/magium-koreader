@@ -4,8 +4,18 @@
 --   wsl -d Ubuntu -- bash tools/mgm.sh koenv spec/ui/achievementsmenu_smoke.lua
 --
 -- Plain asserts, no busted. Exits non-zero on the first failure.
+--
+-- IMPORTANT: structural checks (item_table contents) do NOT catch paint-time
+-- crashes — KOReader's MenuItem lazily sizes its TextWidgets in paintTo, not
+-- at construction (see the `mandatory` bug this file now guards against: a
+-- long caption in `mandatory` — an unwrapped single-line field — only blew up
+-- once actually painted, so a pre-fix version of this file with structural
+-- checks alone still exited 0). Every level this menu can show is also
+-- painted for real via Screen.bb, matching koreader's own
+-- spec/unit/widget_progresswidget_spec.lua pattern.
 
 require("commonrequire")
+local Screen = require("device").screen
 local Locale = require("engine/locale")
 local AchievementsMenu = require("ui/achievementsmenu")
 
@@ -13,6 +23,13 @@ local fails = 0
 local function check(name, cond)
   print((cond and "  ok   " or "  FAIL ") .. name)
   if not cond then fails = fails + 1 end
+end
+
+-- real paint, not just construction — this is what caught the mandatory bug
+local function paint(m, name)
+  local ok, err = pcall(function() m:paintTo(Screen.bb, 0, 0) end)
+  check("paints without crashing: " .. name, ok)
+  if not ok then print("    " .. tostring(err)) end
 end
 
 -- koenv's cwd is $EMU/koreader, not the plugin dir — but mgm.sh puts
@@ -24,10 +41,17 @@ local function make(view)
   return AchievementsMenu:new{ locale = locale, view = view or {}, on_close = function() end }
 end
 
+local function find_by_prefix(item_table, prefix)
+  for _, it in ipairs(item_table) do
+    if it.text:sub(1, #prefix) == prefix then return it end
+  end
+end
+
 do  -- book list
   local m = make()
   check("3 book rows", #m.item_table == 3)
   check("book 2 label", m.item_table[2].text == "Book 2")
+  paint(m, "book list")
 end
 
 do  -- drilling into book 2: split chapters inline between 3 and 5 (D5)
@@ -43,24 +67,21 @@ do  -- drilling into book 2: split chapters inline between 3 and 5 (D5)
   check("42 right after 41", idx("Chapter 42") == idx("Chapter 41") + 1)
   check("5 right after 42", idx("Chapter 5") == idx("Chapter 42") + 1)
   check("return arrow armed (1 level deep)", #m.paths == 1)
+  paint(m, "book 2 chapter list")
 end
 
-do  -- drilling into an entry list: locked/unlocked
+do  -- drilling into an entry list: locked/unlocked, and this is exactly the
+    -- screen that crashed on-device (long captions in mandatory) — paint it.
   local m = make({ v_ac_ch1_coward = "1" })
   m:onMenuSelect(m.item_table[1])   -- Book 1
-  local ch1
-  for _, it in ipairs(m.item_table) do
-    if it.text == "Chapter 1" then ch1 = it end
-  end
-  check("found Chapter 1 row", ch1 ~= nil)
+  local ch1 = find_by_prefix(m.item_table, "Chapter 1")
+  check("found Chapter 1 row", ch1 ~= nil and ch1.text == "Chapter 1")
   m:onMenuSelect(ch1)
-  local coward
-  for _, it in ipairs(m.item_table) do
-    if it.text == "Who are you calling a coward?" then coward = it end
-  end
+  local coward = find_by_prefix(m.item_table, "Who are you calling a coward?")
   check("found the coward entry", coward ~= nil)
   check("unlocked entry (flag=1) is not dimmed", coward and coward.dim == false)
-  check("entry carries its caption as mandatory", coward and coward.mandatory ~= nil)
+  check("caption is folded into text, not the unwrapped mandatory field",
+    coward and coward.mandatory == nil and coward.text:find("A true warrior", 1, true) ~= nil)
 
   local other
   for _, it in ipairs(m.item_table) do
@@ -68,6 +89,7 @@ do  -- drilling into an entry list: locked/unlocked
   end
   check("a not-yet-earned entry is dimmed", other and other.dim == true)
   check("2 levels deep", #m.paths == 2)
+  paint(m, "book 1 chapter 1 entries")
 end
 
 do  -- onReturn pops back to the previous level
@@ -83,16 +105,25 @@ end
 do  -- unlocked test treats "2" (seen) the same as "1" (unseen)
   local m = make({ v_ac_ch1_coward = "2" })
   m:onMenuSelect(m.item_table[1])
-  local ch1
-  for _, it in ipairs(m.item_table) do
-    if it.text == "Chapter 1" then ch1 = it end
-  end
+  local ch1 = find_by_prefix(m.item_table, "Chapter 1")
   m:onMenuSelect(ch1)
-  local coward
-  for _, it in ipairs(m.item_table) do
-    if it.text == "Who are you calling a coward?" then coward = it end
-  end
+  local coward = find_by_prefix(m.item_table, "Who are you calling a coward?")
   check("'2' (seen) still counts as unlocked", coward and coward.dim == false)
+end
+
+do  -- paint EVERY chapter's entry list, across all 3 books — the mandatory
+    -- crash was caption-length-dependent, so a single sampled screen isn't
+    -- enough to trust the whole 136-entry corpus.
+  local painted = 0
+  for book = 1, locale:achievement_book_count() do
+    for _, key in ipairs(locale:achievement_chapters(book)) do
+      local m = make()
+      m:switchItemTable(m.title, m:_entry_items(book, key))
+      paint(m, "entries " .. key)
+      painted = painted + 1
+    end
+  end
+  print("  (painted " .. painted .. " chapter entry-list screens)")
 end
 
 print(string.format("\n%s  (%d checks failed)", fails == 0 and "PASS" or "FAIL", fails))

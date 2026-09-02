@@ -62,7 +62,11 @@ function AchievementsMenu:_entry_items(book_n, key)
   for _, e in ipairs(self.locale:achievement_entries(book_n, key)) do
     local v = self.view[e.variable]
     local unlocked = v ~= nil and v ~= "0"
-    items[#items + 1] = { text = e.title, mandatory = e.caption, dim = not unlocked, level = "entry" }
+    -- `mandatory` is a single-line, unwrapped, untruncated TextWidget (file
+    -- size, page number, ...) — a full caption sentence in it crashes paint
+    -- (menu.lua:200-202: available_width can go negative). Fold it into
+    -- `text` instead, which Menu wraps/shrinks/ellipsizes safely by default.
+    items[#items + 1] = { text = e.title .. " — " .. e.caption, dim = not unlocked, level = "entry" }
   end
   return items
 end

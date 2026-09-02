@@ -111,7 +111,20 @@ Scene header ("Book X - Chapter Y") is derived from the scene ID:
   A new screen or a changed interaction adds/extends one of these so the
   regression is caught without the device; `mgm.sh emu-smoke` confirms the
   plugin still loads. The owner's device pass is the *final* confirmation of
-  e-ink feel and real input — never the first check that the code works.
+  e-ink feel and real input — never the first check that the code works, and
+  never the first time a screen is actually asked to render.
+  - **Structural checks (item_table contents, callback dispatch) are not
+    enough — a smoke test must also actually paint the screen.** KOReader
+    widgets often size/lay out lazily at paint time, not construction (e.g.
+    `MenuItem`'s `mandatory` field is an unwrapped `TextWidget` whose width is
+    only computed in `paintTo` — a too-long `mandatory` string passed the
+    achievements-menu smoke test's structural asserts cleanly and still
+    crashed on the real device, 2026-09-04). For every screen/state reachable
+    through real data (not just one sampled case — the bug was data-length-
+    dependent), call `widget:paintTo(Screen.bb, 0, 0)` inside a `pcall` and
+    assert it doesn't error, per `koreader/spec/unit/widget_progresswidget_spec.lua`'s
+    own pattern. Do this for any state combination realistic user data can
+    reach, not just the first one that comes to mind.
 - Still-open items that need device time or code are tracked as roadmap work, not
   `OQ-NNN` (see `docs/research/07-risks-open-questions.md` blocking-status note).
 

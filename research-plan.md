@@ -213,9 +213,33 @@ Built the achievement unlock toast and browsable menu, per
   (79/79 files verified). **SSH deploy is now the standing default — always
   use it when the device is reachable; USB/MTP (`deploy-kindle.ps1`) is
   fallback-only** (owner directive; updated `reference/koreader-notes.md`).
+- **First device pass (same session):** toast confirmed working; opening
+  Achievements → Book 1 worked, but **selecting any chapter crashed**
+  (`textwidget.lua:224: bad argument #2 to 'makeLine' (width must be
+  strictly positive)`, pulled via SSH `crash.log`). Root cause: entry rows
+  used `mandatory = e.caption` — `mandatory` is an unwrapped single-line
+  `TextWidget` (file size, page number, ...), and a full caption sentence
+  overflows it, driving `available_width` negative at paint. The smoke test
+  had only asserted `item_table` structure, never actually painted the
+  widget, so it missed this entirely.
+  - **Fix:** fold the caption into `text` instead (`title .. " — " ..
+    caption`), which Menu wraps/shrinks/ellipsizes safely by default.
+  - **Test gap closed:** `spec/ui/achievementsmenu_smoke.lua` now calls
+    `widget:paintTo(Screen.bb, 0, 0)` for real (inside `pcall`) — the book
+    list, one chapter list, and all 34 chapter entry-list screens across the
+    3 books — not just structural asserts. Verified this would have caught
+    the original bug (reintroduced the buggy line locally, confirmed 35
+    checks failed; restored the fix, confirmed 0 failed).
+  - **Rule sharpened:** CLAUDE.md's emulator-first rule (and the
+    `emulator-first-for-ui-changes` memory) now explicitly requires a real
+    `paintTo` per reachable screen/state, not just structural checks —
+    owner directive, 2026-09-04.
+  - Re-deployed via SSH; busted 122/0, all 5 UI smokes green (36 paint
+    checks in the achievements menu alone). Awaiting a second device pass.
 - **Next:** owner device pass (unlock a real achievement, confirm one toast +
-  no repeat on resume; open Achievements, drill in and back; confirm the
-  immersion toast from the stats screen). Then Phase VI (settings).
+  no repeat on resume; open Achievements, drill in and back — chapters now
+  render without crashing; confirm the immersion toast from the stats
+  screen). Then Phase VI (settings).
 
 ### 2026-09-03 (session 29b) — Phase IV: first device pass, tutorial reworked
 
