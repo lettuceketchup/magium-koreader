@@ -120,29 +120,33 @@ Restart KOReader after any copy, then read `koreader/crash.log` — all `logger`
 output + tracebacks, last 500 KB (`../koreader/platform/kindle/koreader.sh:323-334`).
 No hot reload. E-ink feel of the choice→page loop is still spike A / OQ-007.
 
-**Deploy — two ways:**
+**Deploy — SSH over WiFi is the standard method (2026-09-04 onward).** Always
+use it when the device is reachable; USB/MTP is a fallback only. State lives in
+`tools/.kindle/` (gitignored — one `id_ed25519` deploy keypair +
+`devices/<name>.json` per Kindle; the owner's device is saved as `paperwhite`,
+so `-Name paperwhite` covers it once set up).
 
-- **SSH over WiFi (preferred, repeatable):** a three-script family, state in
-  `tools/.kindle/` (gitignored — one `id_ed25519` deploy keypair +
-  `devices/<name>.json` per Kindle):
-  1. On the device once: KOReader → Tools → Network → **SSH server** → tick
-     **"Login with key only (SECURE)"**, optionally "Start SSH server with
-     KOReader", Start it once (creates `settings/SSH/`, shows IP + port 2222).
-  2. `tools/kindle-ssh-setup.ps1 -Name <name>` — USB-connected; generates the
-     keypair if needed and plants the pubkey at
-     `koreader/settings/SSH/authorized_keys` over MTP (delete-first + size-verify),
-     writes `devices/<name>.json`.
-  3. `tools/kindle-ssh-test.ps1 -Name <name> -Ip <addr>` — verifies key auth,
-     saves the IP + real koreader dir back to the config.
-  4. `tools/kindle-ssh-deploy.ps1 -Name <name>` — tests the connection, then
-     `rm -rf` + `sftp put -r` a fresh copy. `-Ip <addr>` alone still works ad hoc.
-- **USB / MTP:** `tools/deploy-kindle.ps1`. **MTP `CopyHere` silently does NOT
-  overwrite existing files** (this shipped stale code to the device for weeks
-  before it was caught — 2026-09-01). The script now deletes the device plugin
-  folder first and **verifies every file by size**, failing loudly on a
-  mismatch. If MTP refuses the delete, it tells you to remove
-  `This PC → Kindle → Internal Storage → koreader → plugins → magium.koplugin`
-  in File Explorer once, then rerun.
+1. On the device once: KOReader → Tools → Network → **SSH server** → tick
+   **"Login with key only (SECURE)"**, optionally "Start SSH server with
+   KOReader", Start it once (creates `settings/SSH/`, shows IP + port 2222).
+2. `tools/kindle-ssh-setup.ps1 -Name <name>` — USB-connected; generates the
+   keypair if needed and plants the pubkey at
+   `koreader/settings/SSH/authorized_keys` over MTP (delete-first + size-verify),
+   writes `devices/<name>.json`.
+3. `tools/kindle-ssh-test.ps1 -Name <name> -Ip <addr>` — verifies key auth,
+   saves the IP + real koreader dir back to the config.
+4. **Every deploy:** `tools/kindle-ssh-deploy.ps1 -Name <name>` — tests the
+   connection, then `rm -rf` + `sftp put -r` a fresh copy, verifies by file
+   count. `-Ip <addr>` alone still works ad hoc without a saved config.
+
+**Fallback — USB / MTP:** `tools/deploy-kindle.ps1`, only when SSH isn't
+reachable (device off WiFi, SSH server not started, etc). **MTP `CopyHere`
+silently does NOT overwrite existing files** (this shipped stale code to the
+device for weeks before it was caught — 2026-09-01). The script deletes the
+device plugin folder first and **verifies every file by size**, failing loudly
+on a mismatch. If MTP refuses the delete, it tells you to remove
+`This PC → Kindle → Internal Storage → koreader → plugins → magium.koplugin`
+in File Explorer once, then rerun.
 
 For fast iteration, prefer the **emulator** (`bash tools/mgm.sh emu-deploy`
 symlinks the plugin — always current — then `emu-run`); reserve device deploys

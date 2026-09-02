@@ -209,6 +209,10 @@ Built the achievement unlock toast and browsable menu, per
 - All green: busted **122/0** (was 116), `oracle-corpus` **8887/8887**
   (unchanged), all 5 `spec/ui/*_smoke.lua` incl. the 2 new ones, `emu-smoke`
   clean load. Not pushed; not yet on-device.
+- Deployed to the device via `tools/kindle-ssh-deploy.ps1 -Name paperwhite`
+  (79/79 files verified). **SSH deploy is now the standing default — always
+  use it when the device is reachable; USB/MTP (`deploy-kindle.ps1`) is
+  fallback-only** (owner directive; updated `reference/koreader-notes.md`).
 - **Next:** owner device pass (unlock a real achievement, confirm one toast +
   no repeat on resume; open Achievements, drill in and back; confirm the
   immersion toast from the stats screen). Then Phase VI (settings).
