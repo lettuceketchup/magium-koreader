@@ -173,7 +173,7 @@ Newest entries at the top. One entry per work session: what was done, decisions,
 ### 2026-09-06 (session 33) — Phase V.5: test hardening (items 3, 5, 6 — the remainder)
 
 Owner: "Do the rest of the phase 5.5 as well." Items 3/5/6 implemented on
-`feat/phase-v5-remainder`, merged to `main` via `--no-ff` (`<MERGE>`; branch
+`feat/phase-v5-remainder`, merged to `main` via `--no-ff` (`09e3d54`; branch
 deleted, NOT pushed). All test-only, no device-facing change → no device
 sign-off (same as items 1/2/4/7). Phase V.5 now complete.
 
