@@ -35,8 +35,16 @@
      (`menu.lua:211`), independent of `multilines_show_more_text`. Fixed with
      two real Menu rows per achievement (title+checkbox, then a dim
      non-tappable caption row) instead of one joined string.
+  4. **Owner review of *that* fix:** the caption now had its own line, but a
+     separator rule fell between title and caption too (the same weight as
+     the one between different achievements), and title/caption looked
+     near-identical besides the checkbox + a slightly lighter grey. Presented
+     options (soften all lines uniformly; drop lines + bold title; a full
+     custom row widget) before building — picked drop lines at the entries
+     level + `bold = true` on titles, both native `Menu`/`MenuItem` fields, no
+     custom widget.
   See §3.6 and §6. Re-tested green (busted **122/0**, all 5 UI smokes
-  including reset + two-row assertions). Awaiting a follow-up device pass.
+  including reset, two-row, bold, and per-level-line assertions).
 - **Last updated:** 2026-09-04
 - **Phase:** Implementation — design cycle 5 (roadmap [Phase V](../research/09-roadmap-effort.md#phase-v--achievements))
 - **Sources:**
@@ -169,7 +177,7 @@ flat single-level list.
   since Phase I) and opens `Magium:openAchievements()`, mirroring
   `openSaves()`/`openStats()`.
 
-### 3.6 Entry-row layout: title/caption as two real lines + a checkbox (2026-09-04, 2nd + 3rd pass)
+### 3.6 Entry-row layout: title/caption as two real lines + a checkbox (2026-09-04, 2nd–4th pass)
 
 Findings from a screen the emulator's dummy-`Screen` paint checks had
 already "passed" (§0/Status — see the diagnosis note there):
@@ -201,10 +209,31 @@ already "passed" (§0/Status — see the diagnosis note there):
   `mandatory` = the checkbox) followed immediately by a caption row
   (`text=caption`, `dim=true`, `select_enabled=false`, no `mandatory`). Each
   row is a genuine line by construction; no custom widget needed, still 100%
-  native `Menu`/`MenuItem`. Trade-off accepted: the per-row separator line
-  now also appears between title and caption (Menu draws one under every
-  row, no per-item override exists) — visually minor, and the checkbox only
-  ever appearing on the title row keeps the pairing clear regardless.
+  native `Menu`/`MenuItem`.
+- **Owner review of the two-row fix: the separator line between title and
+  caption made them look like two unrelated rows, and title/caption looked
+  near-identical otherwise (only the checkbox + a lighter grey distinguished
+  them) (4th pass).** `self.linesize`/`self.line_color` are Menu-*instance*-wide
+  (read fresh in `updateItems()`, `menu.lua:1119,1127`) — no item_table field
+  suppresses the line per-row. But `bold` **is** a real per-item field
+  (`menu.lua:1110`, confirmed by reading the `MenuItem:new{...}` call), missed
+  in the first pass at this. Fix, options presented to the owner first (a
+  custom bypass-`MenuItem` row widget was considered and rejected — `Menu:updateItems()`
+  hardcodes `MenuItem:new{...}` with no override hook, so a custom row would
+  mean reimplementing scrolling/paging/tap-hitboxes or monkey-patching
+  koreader's own vendored file; not justified when the native option below
+  gets most of the same result):
+  - `bold = true` on the title row → real title/subtitle weight, not just
+    checkbox + dim.
+  - `AchievementsMenu:_set_level(level)` toggles `self.linesize` to `0` right
+    before `switchItemTable` into the entries level, and restores it (`nil`
+    → the `Menu` class default) on `onMenuSelect` into chapters or `onReturn`
+    back out of entries — pushed/popped alongside `self.paths` so each level
+    remembers its own line state. Books and chapters keep their normal
+    lines; entries have none — the bold title alone marks where each
+    achievement starts, which reads more like the reference's padded
+    "boxes" than a rule of the same weight falling both between title/caption
+    *and* between different achievements did.
 
 Verified with a one-off, non-`commonrequire` script
 (`Device.screen:init()` without `einkfb.dummy = true`, real SDL headless via

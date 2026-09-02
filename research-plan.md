@@ -324,11 +324,35 @@ Built the achievement unlock toast and browsable menu, per
     the caption is a distinct `level="caption"` row right after its title,
     not text baked into the title row). busted 122/0, all 5 UI smokes
     green. Redeployed.
-- **Next:** owner device pass (toast, drill-down — captions now their own
-  line — checkbox, immersion toast, reset-with-confirmation). Then
-  **Phase V.5** (owner's own session, test hardening — covers the
-  dummy-`Screen` resolution gap found this round) — Phase VI does not start
-  until it lands.
+- **Owner review of that fix, same session:** caption had its own line now,
+  but a separator rule fell between title and caption too (same weight as
+  between different achievements), and title/caption looked near-identical
+  besides the checkbox + slightly lighter grey.
+  - Asked first (per owner request): presented 4 options — bold title only;
+    bold title + drop the separator line at the entries level, relying on
+    the bold to mark new groups; soften all lines uniformly (rejected as a
+    wash — softens the wanted separation between achievements too); a full
+    custom row widget bypassing `Menu`'s per-row renderer (rejected —
+    `Menu:updateItems()` hardcodes `MenuItem:new{...}` with no override
+    hook, so custom would mean reimplementing scroll/paging/tap-hitboxes or
+    monkey-patching koreader's own vendored file; not justified here).
+  - Owner picked bold + drop-the-line. `bold` turns out to be a real
+    per-item field (`menu.lua:1110`, missed in the earlier passes);
+    `self.linesize`/`line_color` are Menu-instance-wide only (no per-item
+    override exists), so toggled `self.linesize = 0` right before switching
+    into the entries level and restored it (pushed/popped alongside
+    `self.paths`) on the way back out. Books/chapters keep their lines.
+  - Verified with a fresh screenshot before deploying (owner asked to see it
+    first): clean result — bold black title + checkbox, dim caption right
+    below, no line anywhere in the entry list, chapters/books unaffected.
+  - Smoke test extended: title `bold==true`, `m.linesize==0` at entries,
+    `m.linesize~=0` at chapters and after `onReturn`. busted 122/0, all 5 UI
+    smokes green. Redeployed.
+- **Next:** owner device pass (toast, drill-down — captions on their own
+  line, bold titles, no stray separator, checkbox, immersion toast,
+  reset-with-confirmation). Then **Phase V.5** (owner's own session, test
+  hardening — covers the dummy-`Screen` resolution gap found this round) —
+  Phase VI does not start until it lands.
 
 ### 2026-09-03 (session 29b) — Phase IV: first device pass, tutorial reworked
 

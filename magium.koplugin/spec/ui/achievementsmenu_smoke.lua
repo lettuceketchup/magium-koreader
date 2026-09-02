@@ -79,6 +79,7 @@ do  -- drilling into book 2: split chapters inline between 3 and 5 (D5)
   check("42 right after 41", idx("Chapter 42") == idx("Chapter 41") + 1)
   check("5 right after 42", idx("Chapter 5") == idx("Chapter 42") + 1)
   check("return arrow armed (1 level deep)", #m.paths == 1)
+  check("chapter level keeps its separator lines", m.linesize ~= 0)
   paint(m, "book 2 chapter list")
 end
 
@@ -102,6 +103,10 @@ do  -- drilling into an entry list: locked/unlocked, title/caption as two
   check("unlocked entry shows the checked glyph", coward and coward.mandatory == CHECKED)
   check("mandatory is a short glyph, not the long caption (the crash class)",
     coward and #coward.mandatory <= 4)
+  check("title row is bold (real title/caption hierarchy, not just dim+checkbox)",
+    coward and coward.bold == true)
+  check("entries level has no separator lines (self.linesize toggled off)",
+    m.linesize == 0)
 
   local caption = coward_idx and m.item_table[coward_idx + 1]
   check("caption is its own row right after the title (a real 2nd line)",
@@ -119,6 +124,9 @@ do  -- drilling into an entry list: locked/unlocked, title/caption as two
     other_title and other_title.mandatory == UNCHECKED)
   check("2 levels deep", #m.paths == 2)
   paint(m, "book 1 chapter 1 entries")
+
+  m:onReturn()
+  check("returning from entries restores the chapter level's lines", m.linesize ~= 0)
 end
 
 do  -- onReturn pops back to the previous level

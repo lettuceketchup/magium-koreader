@@ -114,6 +114,7 @@ function AchievementsMenu:_entry_items(book_n, key)
     items[#items + 1] = {
       text = e.title,
       mandatory = unlocked and CHECKED or UNCHECKED,
+      bold = true,   -- real title/subtitle hierarchy, not just the checkbox+dim
       level = "entry",
     }
     items[#items + 1] = {
@@ -126,21 +127,37 @@ function AchievementsMenu:_entry_items(book_n, key)
   return items
 end
 
+-- The per-row separator (self.linesize/self.line_color) is Menu-wide, not
+-- per-item (menu.lua:1119,1127 read them fresh on every switchItemTable) —
+-- there's no item_table field to suppress it on just the title/caption pair.
+-- Turning it off entirely for the entry level and relying on the bold title
+-- + checkbox to mark where each achievement starts reads better than a rule
+-- of the same weight falling both between title/caption AND between
+-- different achievements. Books/chapters keep their normal lines.
+function AchievementsMenu:_set_level(level)
+  self.linesize = (level == "entries") and 0 or nil   -- nil restores the Menu class default
+end
+
 function AchievementsMenu:onMenuSelect(item)
   if item.level == "book" then
-    table.insert(self.paths, { table = self.item_table, title = self.title })
+    table.insert(self.paths, { table = self.item_table, title = self.title, linesize = self.linesize })
+    self:_set_level("chapters")
     self:switchItemTable(self.title, self:_chapter_items(item.book_n))
   elseif item.level == "chapter" then
-    table.insert(self.paths, { table = self.item_table, title = self.title })
+    table.insert(self.paths, { table = self.item_table, title = self.title, linesize = self.linesize })
+    self:_set_level("entries")
     self:switchItemTable(self.title, self:_entry_items(item.book_n, item.key))
   end
-  -- entry rows are terminal: tapping one does nothing further
+  -- entry/caption rows are terminal: tapping one does nothing further
   return true
 end
 
 function AchievementsMenu:onReturn()
   local prev = table.remove(self.paths)
-  if prev then self:switchItemTable(prev.title, prev.table) end
+  if prev then
+    self.linesize = prev.linesize
+    self:switchItemTable(prev.title, prev.table)
+  end
   return true
 end
 
