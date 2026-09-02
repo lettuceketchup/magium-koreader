@@ -22,12 +22,19 @@
 #   test-engine         run `busted spec/engine` (pure layer, fastest) — takes NO
 #                       path args; use `test <path>` for a single file
 #   test-ui             run spec/ui/*_smoke.lua under the emulator's KOReader env
-#                       (real widgets, headless) — the reader tap-zone regression
+#                       (real widgets, headless, DUMMY 600x800 Screen) — proves
+#                       "doesn't crash". Fast, no X server.
+#   test-ui-real        same smokes under xvfb + a REAL 1272x1696 @300dpi SDL
+#                       framebuffer (spec/support/real_screen.lua) — proves
+#                       layout at the owner's PW12 resolution. The gate before a
+#                       device pass / merge (Phase V.5, item 7).
 #   lua <file> [args]   run luajit from magium.koplugin/
 #   koenv <script> [a]  run one Lua <script> (path relative to magium.koplugin/)
 #                       inside the built emulator's KOReader env: real frontend
-#                       widgets on the path, Screen sized via EMULATE_READER_W/H,
-#                       no X server. For reader/UI smoke tests.
+#                       widgets on the path, DUMMY 600x800 Screen, no X server.
+#   real-screen <s> [a] like koenv but xvfb + a real 1272x1696 @300dpi Screen
+#                       (sets MAGIUM_REAL_SCREEN=1; a *_smoke.lua then boots
+#                       spec/support/real_screen.lua instead of commonrequire).
 #   gen-cases [data-dir] [out.json] [pattern]
 #                       luajit spec/gen_cases.lua — derive an oracle case matrix
 #                       from parsed scene conditions (no oracle needed). Defaults:
@@ -116,15 +123,22 @@ case "$cmd" in
     fi
     cd "$PLUGIN" && exec busted spec/engine "$@"   # "$@" here is only flags, if any
     ;;
-  test-ui)
-    # Headless UI regression checks — run the real KOReader widget stack via
-    # `koenv` (below). Every spec/ui/*_smoke.lua must exit 0.
+  test-ui|test-ui-real)
+    # Headless UI regression checks — run the real KOReader widget stack.
+    # `test-ui`      : fast path, commonrequire's DUMMY 600x800 Screen (no X
+    #                  server). Proves "doesn't crash". Good for the inner loop.
+    # `test-ui-real` : xvfb + a REAL SDL framebuffer at the owner's PW12 profile
+    #                  (1272x1696 @ 300dpi) via spec/support/real_screen.lua —
+    #                  proves "lays out right at the real width". This is the
+    #                  gate before a device pass / merge (Phase V.5, item 7).
+    # Every spec/ui/*_smoke.lua must exit 0 under both.
     [ -x "$EMU/koreader/luajit" ] || die "emulator not built ($EMU)"
+    sub=koenv; [ "$cmd" = test-ui-real ] && sub=real-screen
     rc=0
     for s in "$PLUGIN"/spec/ui/*_smoke.lua; do
       [ -f "$s" ] || continue
       echo "── ${s##*/}"
-      out=$(bash "$0" koenv "spec/ui/${s##*/}" 2>&1) || rc=1
+      out=$(bash "$0" "$sub" "spec/ui/${s##*/}" 2>&1) || rc=1
       echo "$out" | grep -E "^\s+(ok|FAIL)|^(PASS|FAIL)" || echo "$out" | tail -5
     done
     exit $rc
@@ -133,31 +147,35 @@ case "$cmd" in
     [ -n "${1:-}" ] || die "usage: mgm.sh lua <file> [args]"
     cd "$PLUGIN" && exec luajit "$@"
     ;;
-  koenv)
-    # Run a Lua script inside the built EMULATOR's KOReader environment (real
-    # frontend widgets available) with the plugin dir on LUA_PATH. EMULATE_READER_W/H
-    # ARE real (base/ffi/SDL3.lua:118, set by kodev's own --simulate/-W/-H flags)
-    # — BUT every spec/ui/*_smoke.lua requires "commonrequire" first, which sets
-    # `einkfb.dummy = true` (spec/unit/commonrequire.lua:22) to skip opening a
-    # real SDL window. Dummy mode ALWAYS hardcodes a 600x800 buffer
-    # (base/ffi/framebuffer_SDL3.lua:17) — it never reads these env vars at all,
-    # window or no window. So every koenv-based smoke test's paint checks run at
-    # 600x800, not the real PW12 1272x1696, regardless of these exports (found
-    # 2026-09-04 chasing a real-device-only layout bug the emulator "passed").
-    # Fixing this for real (a non-dummy, Xvfb-backed bootstrap for accurate
-    # paint verification) is Phase V.5 scope — until then, treat every
-    # spec/ui/*_smoke.lua paintTo check as "doesn't crash", not "looks right at
-    # 1272x1696"; verify actual layout on-device or via a one-off non-dummy
-    # script. Usage:
-    #   mgm.sh koenv spec/ui/reader_smoke.lua      (path is relative to the plugin dir)
-    [ -n "${1:-}" ] || die "usage: mgm.sh koenv <script.lua> [args]"
+  koenv|real-screen)
+    # Run a Lua <script> inside the built EMULATOR's KOReader environment (real
+    # frontend widgets on the path), plugin dir on LUA_PATH.
+    #
+    #   koenv       — fast. The script's own `require("commonrequire")` builds a
+    #                 DUMMY Screen, ALWAYS 600x800 (base/ffi/framebuffer_SDL3.lua:17)
+    #                 regardless of EMULATE_READER_W/H. Good enough to prove a
+    #                 widget doesn't crash; NOT its layout at the real width.
+    #   real-screen — xvfb + a REAL SDL framebuffer at the owner's PW12 profile
+    #                 (1272x1696 @ 300dpi). Sets MAGIUM_REAL_SCREEN=1 so a smoke
+    #                 file boots spec/support/real_screen.lua instead of
+    #                 commonrequire (the one-line switch at the top of each
+    #                 spec/ui/*_smoke.lua). This is what actually catches
+    #                 real-width layout bugs (Phase V.5, item 7; the class of bug
+    #                 that reached the device in Phase V, research-plan 2026-09-04).
+    # Usage:  mgm.sh koenv spec/ui/reader_smoke.lua   (path is relative to the plugin dir)
+    [ -n "${1:-}" ] || die "usage: mgm.sh $cmd <script.lua> [args]"
     [ -x "$EMU/koreader/luajit" ] || die "emulator not built ($EMU)"
     script="$PLUGIN/$1"; shift
     [ -f "$script" ] || die "no such script: $script"
     export EMULATE_READER_W="${EMULATE_READER_W:-1272}"
     export EMULATE_READER_H="${EMULATE_READER_H:-1696}"
-    cd "$EMU/koreader" && exec ./luajit -e \
-      "dofile('setupkoenv.lua'); package.path='$PLUGIN/?.lua;$KO/spec/unit/?.lua;'..package.path; arg={...}; dofile('$script')" "$@"
+    run=(./luajit -e "dofile('setupkoenv.lua'); package.path='$PLUGIN/?.lua;$KO/spec/unit/?.lua;'..package.path; arg={...}; dofile('$script')" "$@")
+    if [ "$cmd" = real-screen ]; then
+      export EMULATE_READER_DPI="${EMULATE_READER_DPI:-300}"
+      export MAGIUM_REAL_SCREEN=1
+      cd "$EMU/koreader" && exec xvfb-run -a "${run[@]}"
+    fi
+    cd "$EMU/koreader" && exec "${run[@]}"
     ;;
   gen-cases)
     [ -d "$PLUGIN" ] || die "no magium.koplugin/ yet"

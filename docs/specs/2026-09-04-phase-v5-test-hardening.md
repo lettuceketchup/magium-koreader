@@ -1,8 +1,10 @@
 # Spec: Phase V.5 — Test hardening
 
-- **Status:** planned, not started. Owner is executing this phase in its own
-  session, before Phase VI.
-- **Last updated:** 2026-09-04
+- **Status:** stable — items 1, 2, 4, 7 landed (`feat/phase-v5-test-hardening`,
+  2026-09-05); items 3, 5, 6 deferred to roadmap follow-up (owner call: ship the
+  high-value four now, they unblock Phase VI). Merge commit noted in the
+  running log.
+- **Last updated:** 2026-09-05
 - **Phase:** Implementation — design cycle 5.5 (roadmap [Phase V.5](../research/09-roadmap-effort.md#phase-v5--test-hardening))
 - **Sources:**
   - Owner-requested audit, 2026-09-04, prompted by two device-only bugs each
@@ -242,13 +244,17 @@ the concrete file names/commands from §3 exist to point to.
 
 ## 5. Exit criteria
 
-- [ ] All six items in §1.2 have a corresponding test (or an explicit,
-      documented reason one was cut/deferred).
-- [ ] `mgm.sh test`, `mgm.sh test-ui`, and `mgm.sh oracle-corpus` all stay
-      green with the new suites added.
-- [ ] CLAUDE.md's "Doing implementation work" section updated with the
-      concrete commands/paths for the new regression suites, and the
-      standing "every phase must run + update them" rule made explicit
-      (§4).
-- [ ] `docs/research/09-roadmap-effort.md` Phase V.5 row marked done, same
-      pattern as Phases II/IV/V.
+- [x] Items 1, 2, 4, 7 shipped with a corresponding test. Items 3, 5, 6
+      **deferred** to roadmap follow-up (owner call 2026-09-05: the four
+      shipped items close the "each piece works ≠ the game works" gap and the
+      misleading-resolution gap — the two things that blocked Phase VI; 3/5/6
+      are incremental coverage, not blockers).
+- [x] `mgm.sh test` (**130/0**), `mgm.sh test-ui` + `mgm.sh test-ui-real`
+      (6 smokes green each), `mgm.sh oracle-corpus` (**8887/8887**, unchanged)
+      all green with the new suites added.
+- [x] CLAUDE.md "Doing implementation work" updated: the test commands
+      (incl. `test-ui-real`), the concrete new suite paths, and the standing
+      "every phase runs + updates them" rule (§4). `verify` skill updated to
+      match.
+- [x] `docs/research/09-roadmap-effort.md` Phase V.5 section + effort table row
+      marked (items 1/2/4/7 done, 3/5/6 deferred).

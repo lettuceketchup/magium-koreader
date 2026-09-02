@@ -170,6 +170,60 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-05 (session 32) — Phase V.5: test hardening (items 1, 2, 4, 7)
+
+Owner: "Start phase 5.5" → "High-value 4" (items 1/2/4/7; 3/5/6 deferred),
+real-`Persist`-temp-dir for the E2E harness. Merged to `main` via `--no-ff`
+(`<MERGE>`), owner device sign-off **not** required — V.5 ships no
+device-facing behavior (test-only). Per
+[Phase V.5 spec](docs/specs/2026-09-04-phase-v5-test-hardening.md).
+
+- **Item 7 — real-resolution smoke bootstrap.** The gap that let the Phase V
+  title-wrap bug through: `commonrequire`'s `einkfb.dummy=true` hardcodes
+  `Screen` to 600×800, ignoring `EMULATE_READER_W/H`, so every
+  `spec/ui/*_smoke.lua` `paintTo` check only ever proved "doesn't crash".
+  - **`spec/support/real_screen.lua`** — a `commonrequire` clone that skips the
+    dummy flag; a non-dummy SDL3 framebuffer under xvfb honours
+    `EMULATE_READER_W/H` (`base/ffi/SDL3.lua:118`) + `EMULATE_READER_DPI`
+    (`framebuffer.lua:128`) → a real **1272×1696 @ 300 dpi** Screen. Asserts the
+    size took (fail-loud if no X server).
+  - **`mgm.sh`**: `real-screen` (= `koenv` + xvfb + `MAGIUM_REAL_SCREEN=1`) and
+    `test-ui-real` (the 5 smokes under it). `test-ui` stays the fast dummy path.
+  - All 5 existing `spec/ui/*_smoke.lua` switched to a one-line bootstrap:
+    `MAGIUM_REAL_SCREEN` → `real_screen`, else `commonrequire`. Green both ways.
+- **Item 1 — app-level E2E harness.** `spec/ui/main_e2e_smoke.lua` +
+  `spec/support/koenv_boot.lua` (points `KO_HOME` at a throwaway dir via
+  `ffi.C.setenv` **before** any DataStorage resolve → real `Persist` blobs,
+  isolated per run). Builds the real `Magium` object (`main.lua`) with a fake
+  `ui` table, drives it headless with a captured widget stack + inline
+  schedulers: `openReader` (real parse + fresh start), `openMenu` (checkpoint /
+  Settings button disabled-state), each sub-screen opened **from its real menu
+  callback** + returning to a live `Reader`, real slot-save to disk, `newGame`
+  confirm→reset keeps achievements, `onSuspend` flushes to disk,
+  `onClose`/`onCloseWidget` clean, trace-file reopen doesn't error. 30 checks.
+- **Item 2 — achievements content integrity.** New `describe` block in
+  `spec/engine/navigation_spec.lua`: cross-refs all 136 `achievements{1,2,3}.json`
+  variables against every corpus `achievement()` call + the 2 known
+  no-call unlocks (`v_ac_ch6_immersion`, `v_ac_b3_ch9_prize`). Both directions
+  (orphaned menu entry / stray toast). Currently 136 JSON, 134 with a call, 0
+  orphans, 0 strays.
+- **Item 4 — save-schema regression.** `spec/save/fixtures/save_v1.lua` (frozen
+  Phase-V blob shape) + `spec/save/schema_compat_spec.lua` — loads it through the
+  real `SaveManager` and asserts `load` / `load_checkpoint` / `slots_meta` /
+  `load_slot` all land their fields. Tripwire for a silent old-save-won't-load
+  regression; add `save_v2.lua` when the format changes.
+- **Docs:** the standing "every phase runs + updates the regression suites" rule
+  now names the concrete files (CLAUDE.md "Doing implementation work" + `verify`
+  skill); `mgm.sh` header, roadmap Phase V.5 row + effort table, `docs/specs/README.md`
+  (backfilled III/IV/V/V.5 rows). No ADR — item 7 + the fake-vs-real-Persist call
+  are test-infra choices the spec §2.1 already records.
+- **Gates:** `test` **130/0** (was 122; +3 integrity, +5 schema_compat), `test-ui`
+  + `test-ui-real` both green (6 smokes incl. the new E2E), `oracle-corpus`
+  **8887/8887** (no `engine/` byte changed — parity cannot have moved; run anyway).
+  `emu-smoke` not run: no `main.lua`/`ui/` code touched, only `spec/` + tooling.
+- **Next:** Phase VI (settings) — now unblocked. Deferred V.5 items 3/5/6 are
+  roadmap follow-ups, not blockers.
+
 ### 2026-09-04 (session 31) — project workflow skills (`phase` / `verify` / `device`)
 
 Tooling/docs only — no `magium.koplugin/` code touched, so no gates apply.
