@@ -47,6 +47,9 @@ function HeadlessGame:render()
   local st = assert(self.story:get_scene(id), "no such scene: " .. tostring(id))
   self.rm = scene.render(st, self.store:view(), self.locale)
   scene.persist_effects(self.store, self.rm)
+  if #self.rm.achievements > 0 then
+    self.save:on_achievement_unlocked()   -- flush the now-"2" (seen) blob; no UI here
+  end
   return self.rm
 end
 

@@ -170,6 +170,49 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-04 (session 30) — Phase V implemented: achievements
+
+Built the achievement unlock toast and browsable menu, per
+[Phase V spec](docs/specs/2026-09-04-phase-v-achievements.md).
+
+- **`engine/scene.lua:persist_effects`** extended (not a new function) to flip
+  each shown achievement's flag `"1"` → `"2"` (seen), mirroring the JS
+  oracle's `storeVariable(variable,"2")` in the same per-render loop that
+  shows the modal. `scene.render()` itself untouched — `oracle-corpus` stays
+  **8887/8887**.
+- **`engine/locale.lua`** loads `achievements{1,2,3}.json` (136 entries),
+  indexed by group key (menu) and by variable (`achievement_title`, for the
+  one special case with no in-story `achievement()` call). Owner asked for
+  exact on-disk chapter ordering (`b2ch41`/`b2ch42` inline between
+  `b2ch3`/`b2ch5`, not sorted after the book's last chapter) — `json.decode`
+  doesn't preserve key order, so recovered it with one `gmatch` pass over each
+  book's raw JSON text at load time.
+- **`ui/toast.lua`** (new) — one `Notification` per unlock, single combined
+  line (`"ACHIEVEMENT UNLOCKED: <title>"`); KOReader's `Notification` wraps a
+  single-line `TextWidget` (confirmed from source, no wrap), collapsing the
+  reference's two-row layout — flagged as an easy later swap if the owner
+  wants two stacked toasts instead.
+- **`ui/achievementsmenu.lua`** (new) — `Menu:extend`, 3-level book → chapter
+  → entry drill-down via the standard `self.paths` + `switchItemTable` +
+  `onReturn` idiom (`koreader/plugins/opds.koplugin`), not `savespage.lua`'s
+  flat list. Locked/unlocked via native `dim`, not a hand-rolled glyph.
+- **`main.lua`**: toast wired into `render_current()` (every render that shows
+  achievements) and into `openStats()`'s `v_ac_ch6_immersion` special case
+  (its own modal in the reference, no in-story `achievement()` call — found
+  while wiring, not in the original plan); "Achievements" menu row enabled
+  (was disabled since Phase I); `openAchievements()` added.
+- Tests: `scene_spec` (latch + freeze), `locale_spec` (136 entries, exact
+  chapter order), `toast_smoke.lua` (new), `achievementsmenu_smoke.lua` (new,
+  asserts chapter-order-by-position + locked/unlocked), a real-achievement
+  flow case in `playthrough_spec.lua` (Ch1 "coward" — shows once, latches,
+  no re-toast).
+- All green: busted **122/0** (was 116), `oracle-corpus` **8887/8887**
+  (unchanged), all 5 `spec/ui/*_smoke.lua` incl. the 2 new ones, `emu-smoke`
+  clean load. Not pushed; not yet on-device.
+- **Next:** owner device pass (unlock a real achievement, confirm one toast +
+  no repeat on resume; open Achievements, drill in and back; confirm the
+  immersion toast from the stats screen). Then Phase VI (settings).
+
 ### 2026-09-03 (session 29b) — Phase IV: first device pass, tutorial reworked
 
 Owner ran Phase IV on the PW12. **2–6 (spend / Confirm / Cancel / persist /
