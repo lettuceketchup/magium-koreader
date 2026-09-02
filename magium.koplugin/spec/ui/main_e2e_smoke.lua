@@ -93,8 +93,8 @@ do
   local cp = by_text["Load from last checkpoint"]
   check("'Load from last checkpoint' is DISABLED with no checkpoint",
     cp ~= nil and cp.enabled == false)
-  check("'Settings' is disabled (its phase hasn't landed)",
-    by_text["Settings"] ~= nil and by_text["Settings"].enabled == false)
+  check("'Settings' is enabled (Phase VI)",
+    by_text["Settings"] ~= nil and by_text["Settings"].enabled ~= false)
   -- close the menu, back to the reader
   UIManager:close(dialog)
   check("closing the menu leaves the Reader on top", top() == reader)
@@ -131,6 +131,66 @@ do  -- Stats — opened from the menu; on intro scene, no "Full immersion" unloc
     (m.store:get("v_ac_ch6_immersion") or "0") == "0")
   m.stats.on_close()            -- "Return to game"
   check("closing Stats reopens a live Reader", top_is_reader())
+end
+
+do  -- special:stats choice -> openStats -> close must NOT revert the scene.
+    -- Regression: openReader used to reload the store from disk on every reopen,
+    -- so a stats choice (which only debounces its autosave) dropped the player
+    -- back to the last flushed scene on return (research-plan 2026-09-07).
+  m.store:set("v_current_scene", "Ch1-Intro1")
+  m.save:flush_now("test-setup")               -- disk == Ch1-Intro1
+  local real_touch = m.save.touch
+  m.save.touch = function() end                -- simulate a still-pending debounce
+  m.reader.advance{ label = "Invest points now", target = "Ch1-Intro2",
+    set_vars = { v_current_scene = "Ch1-Intro2" }, special = "stats" }
+  check("special:stats opened the StatsPage", top() == m.stats)
+  check("the choice's scene move is in memory, not yet on disk",
+    m.store:get("v_current_scene") == "Ch1-Intro2")
+  m.stats.on_close()                            -- "Return to game" -> _reopenReader
+  check("returning from a stats choice keeps the post-choice scene",
+    m.store:get("v_current_scene") == "Ch1-Intro2")
+  check("returning from a stats choice lands on a live Reader", top_is_reader())
+  m.save.touch = real_touch
+  m.save:flush_now("test-cleanup")
+end
+
+do  -- Settings (Phase VI): cheat mode + text size, driven from the real menu
+  open_from_menu("Settings")
+  local sdialog = top()
+  check("Settings opens a ButtonDialog", sdialog ~= nil and sdialog.buttons ~= nil)
+  local srow = {}
+  for _, row in ipairs(sdialog.buttons or {}) do
+    for _, b in ipairs(row) do srow[b.text] = b end
+  end
+  -- cheat mode: row -> ConfirmBox -> ok_callback sets v_available_points = 50
+  local cheat_label = m.locale:str("settingsCheatModeText") or "Cheat mode"
+  check("Settings has a cheat-mode row", srow[cheat_label] ~= nil)
+  srow[cheat_label].callback()
+  local confirm = top()
+  check("cheat mode shows a ConfirmBox", confirm ~= nil and confirm.ok_callback ~= nil)
+  confirm.ok_callback()
+  check("cheat mode set v_available_points to 50", m.store:get("v_available_points") == "50")
+  local disk = Persist:new{ path = boot.home .. "/magium/state", codec = "luajit" }:load()
+  check("cheat mode flushed to disk",
+    disk ~= nil and disk.currentState and disk.currentState.v_available_points == "50")
+  UIManager:close(top())   -- the InfoMessage
+  -- text size: open the sub-dialog, pick a preset, assert the setting persisted
+  m:openSettings()
+  local sd2 = top()
+  for _, row in ipairs(sd2.buttons or {}) do
+    for _, b in ipairs(row) do if b.text == "Text size" then b.callback() end end
+  end
+  local tsize = top()
+  check("Text size opens a sub-dialog", tsize ~= nil and tsize.buttons ~= nil)
+  for _, row in ipairs(tsize.buttons or {}) do
+    for _, b in ipairs(row) do
+      if b.text:find("Large") then b.callback() end
+    end
+  end
+  check("picking Large persisted magium_prose_size = 25",
+    G_reader_settings:readSetting("magium_prose_size") == 25)
+  G_reader_settings:delSetting("magium_prose_size")
+  check("reader is live again after a text-size change", top_is_reader())
 end
 
 do  -- Achievements

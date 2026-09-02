@@ -47,7 +47,12 @@ function Reader:init()
   self.dimen = Geom:new{ x = 0, y = 0, w = Screen:getWidth(), h = Screen:getHeight() }
   self.pad = Size.padding.large
   self.text_width = self.dimen.w - 2 * self.pad
-  self.face = Font:getFace(PROSE_FACE, PROSE_SIZE)
+  -- Prose point size: the reader-local "Text size" setting (Phase VI, spec §3.3).
+  -- The custom widget does NOT inherit KOReader's document font, so this is our
+  -- own G_reader_settings key (same convention as `magium_trace`). Absent ->
+  -- PROSE_SIZE. `and` guard is for a bare unit require with no globals set up.
+  self.prose_pt = (G_reader_settings and G_reader_settings:readSetting("magium_prose_size")) or PROSE_SIZE
+  self.face = Font:getFace(PROSE_FACE, self.prose_pt)
 
   -- Header metrics first: both self.geometry AND the gesture bands below are
   -- derived from them, so they have to exist before _zone() is called.
@@ -90,12 +95,19 @@ function Reader:init()
   }
 
   local indicator_h = self:_indicator_height()
+  -- Floor the page body at one prose line. On a very small viewport (Phase VI
+  -- spec §3.5) the subtraction below can approach/cross zero — a checkpoint
+  -- banner + stat-check head offset on a 600x800 screen — and
+  -- pagination.fit_words would then emit one word per page. It always makes
+  -- progress (no infinite loop) but the output is unreadable; clamp instead.
+  local min_body = self:_line_height(PROSE_FACE, self.prose_pt) + Size.padding.default
   self.geometry = {
     width = self.text_width,
     -- dimen.h minus: frame top+bottom padding (2*self.pad), the header row,
     -- the indicator row, and the two Size.padding.large VerticalSpans that
     -- _render() places above and below the page body.
-    prose_height = self.dimen.h - self.header_h - indicator_h - 2 * self.pad - 2 * Size.padding.large,
+    prose_height = math.max(min_body,
+      self.dimen.h - self.header_h - indicator_h - 2 * self.pad - 2 * Size.padding.large),
     first_page_offset = self:_head_offset(),
   }
   self.pages = pagination.paginate(self.render_model, self.geometry, self:_measure_fn())
@@ -201,13 +213,20 @@ end
 function Reader:_build_page()
   local page = self.pages[self.page_idx]
   if page.kind == "choices" then
-    return Choices.build{
+    -- stashed so _render() can release a ScrollableContainer's crop buffer on
+    -- the next re-render (it has onCloseWidget, not free — see _render).
+    self._page_widget = Choices.build{
       buttons = page.buttons,
       width = self.text_width,
+      -- page-body box: a tall choice list (many choices, or long labels
+      -- wrapping on a narrow screen) scrolls instead of clipping (spec §3.4).
+      height = self.geometry.prose_height,
       show_parent = self,
       on_select = function(button) self:_commit_choice(button) end,
     }
+    return self._page_widget
   end
+  self._page_widget = nil
   local vg = VerticalGroup:new{ align = "left" }
   for _, blk in ipairs(page.blocks) do
     if blk.type == "banner" then
@@ -238,6 +257,10 @@ function Reader:_render()
   -- Reclaim the previous frame's blitbuffers before dropping the tree. Task 17
   -- deferred this; Task 18 re-renders on every choice commit (a whole new tree
   -- each hop through the story), so the leak now compounds — guard it here.
+  -- A scrolling choices page (Phase VI) holds a screen-sized crop buffer that
+  -- WidgetContainer:free() does not reach (ScrollableContainer frees it in
+  -- onCloseWidget, not free); release it explicitly.
+  if self._page_widget and self._page_widget.onCloseWidget then self._page_widget:onCloseWidget() end
   if self[1] and self[1].free then self[1]:free() end
   self[1] = FrameContainer:new{
     background = Blitbuffer.COLOR_WHITE,

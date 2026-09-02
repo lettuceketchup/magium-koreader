@@ -16,6 +16,12 @@ local Reader = require("ui/reader")
 local Screen = require("device").screen
 local W, H = Screen:getWidth(), Screen:getHeight()
 assert(W > 0 and H > 0, "no screen size (need EMULATE_READER_W/H)")
+print(string.format("  (screen %dx%d)", W, H))
+
+-- Phase VI: text-size presets live in main.lua; mirror them here so the smoke
+-- doesn't depend on the plugin's top-level module. Keep in sync with
+-- main.lua's PROSE_PRESETS.
+local PROSE_PRESETS = { 17, 20, 25 }
 
 -- minimal fake locale: reader calls :str() and :header()
 local locale = {
@@ -155,6 +161,68 @@ do
   check("widest " .. #choices .. " corpus choice labels paint without crashing (longest = "
     .. #longest[1] .. " chars)", ok)
   if not ok then print("    " .. tostring(err)) end
+
+  -- Phase VI §3.4: the choices page must never be taller than the page body —
+  -- either it fit, or Choices.build cropped it into a ScrollableContainer sized
+  -- to the budget. On a small viewport the 15 widest labels DO overflow, which
+  -- is exactly the case that used to clip lower buttons off-screen.
+  check("choices page body <= budget (fit or scrolled)",
+    r._page_widget:getSize().h <= r.geometry.prose_height)
+  if r._page_widget:getSize().h > r.geometry.prose_height then
+    print(string.format("    body %d > budget %d", r._page_widget:getSize().h, r.geometry.prose_height))
+  end
+
+  -- and prove the scroll path itself works: a scene with 60 choices overflows
+  -- any viewport -> Choices.build must return a ScrollableContainer clamped to
+  -- the budget, and it must still paint.
+  local many = {}
+  for i = 1, 60 do many[i] = { text = "Choice number " .. i, target = "X", set_variables = {}, special = nil } end
+  local rm2 = {
+    scene_id = "many", header = "Book 1 - Chapter 1", checkpoint = false,
+    stat_checks = {}, set_variables = {}, paragraphs = { "x" }, choices = many, achievements = {},
+  }
+  local r2 = make_reader(rm2, {})
+  r2.page_idx = #r2.pages
+  r2:_render()
+  local w = r2._page_widget
+  check("60-choice page is wrapped in a ScrollableContainer",
+    type(w.initState) == "function" and w:getSize().h <= r2.geometry.prose_height)
+  local ok2, err2 = pcall(function() r2[1]:paintTo(Screen.bb, 0, 0) end)
+  check("scrolling 60-choice page paints without crashing", ok2)
+  if not ok2 then print("    " .. tostring(err2)) end
+end
+
+-- 7. Phase VI §3.3: build + paint the reader at each text-size preset. The
+-- custom widget does not inherit KOReader's document font, so this is the only
+-- thing exercising a non-default prose size.
+do
+  local saved = G_reader_settings:readSetting("magium_prose_size")
+  for _, pt in ipairs(PROSE_PRESETS) do
+    G_reader_settings:saveSetting("magium_prose_size", pt)
+    local r = make_reader(RM_PROSE, {})
+    local ok, err = pcall(function() r:_render(); r[1]:paintTo(Screen.bb, 0, 0) end)
+    check("reader paints at prose size " .. pt, ok and r.prose_pt == pt)
+    if not ok then print("    " .. tostring(err)) end
+    check("prose page fits the frame at size " .. pt, r[1][1]:getSize().h <= r.dimen.h)
+  end
+  if saved then G_reader_settings:saveSetting("magium_prose_size", saved)
+  else G_reader_settings:delSetting("magium_prose_size") end
+end
+
+-- 8. Phase VI §3.5: a checkpoint-banner scene must still paginate sanely (the
+-- prose_height floor). Assert pagination didn't degrade to ~1 word per page.
+do
+  local rm = {
+    scene_id = "cp", header = "Book 1 - Chapter 1", checkpoint = true,
+    stat_checks = { { text = "[ perception check ]", success = true } },
+    set_variables = {}, paragraphs = { ("word "):rep(400) },
+    choices = { { text = "Go on", target = "X", set_variables = {}, special = nil } },
+    achievements = {},
+  }
+  local r = make_reader(rm, {})
+  -- 400 words at any sane body size is a handful of pages, never dozens.
+  check("checkpoint scene paginates sanely (" .. #r.pages .. " pages, prose_height "
+    .. r.geometry.prose_height .. ")", #r.pages <= 12 and r.geometry.prose_height > 0)
 end
 
 print(string.format("\n%s  (%d checks failed)", fails == 0 and "PASS" or "FAIL", fails))
