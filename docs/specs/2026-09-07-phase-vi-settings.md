@@ -11,12 +11,12 @@
   regression-tested, confirmed on the second pass. Choices-scroll verified in
   the emulator (no overflowing scene reachable on a PW12).
 - **Last updated:** 2026-09-07
-- **Phase:** Implementation — design cycle 6 (roadmap [Phase VI](../research/09-roadmap-effort.md#phase-vi--settings--themes))
+- **Phase:** Implementation — design cycle 6 (roadmap [Phase VI](../archive/research/09-roadmap-effort.md#phase-vi--settings--themes))
 - **Sources:**
   - [`2026-08-31-plugin-architecture-and-phase-i.md`](2026-08-31-plugin-architecture-and-phase-i.md) §8.2 (fixed prose size, rotation deferred), §12 row VI
-  - [`../research/01-magium-analysis.md`](../research/01-magium-analysis.md) §8.2 (settings)
+  - [`../research/01-magium-analysis.md`](../archive/research/01-magium-analysis.md) §8.2 (settings)
   - `../../../magium-dev` @ `51f5aa9` — `templates/settings.ejs`, `templates/language.ejs`, `public/scripts/{theme,utils}.js`, `data/en/ui.json`
-- **Related:** [`../../research-plan.md`](../../research-plan.md), [Phase VII](../research/09-roadmap-effort.md#phase-vii--localization-en--fr) (language, split out)
+- **Related:** [`../../research-plan.md`](../archive/research-plan.md), [Phase VII](../archive/research/09-roadmap-effort.md#phase-vii--localization-en--fr) (language, split out)
 
 > **Scoping pass result:** of `magium-dev`'s four settings — language, theme,
 > font size, cheat mode — only **cheat mode** and a **reader-local text size**
@@ -46,7 +46,7 @@
 
 - **Theme / night mode.** KOReader has its own (`Screen:toggleNightMode`, the
   reader's own theming). `magium-dev`'s 4 CSS presets (`theme.js`) are not
-  ported. [`01` §8.2](../research/01-magium-analysis.md#82-settings).
+  ported. [`01` §8.2](../archive/research/01-magium-analysis.md#82-settings).
 - **Language switch.** Phase VII (`language.ejs` + the fr `.magium` bundle +
   plugin-chrome `.po`). Not a Phase VI concern.
 - **Font *slider* / arbitrary point sizes.** 3 presets is enough for e-ink;

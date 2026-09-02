@@ -4,19 +4,19 @@
 - **Date:** 2026-08-31
 - **Deciders:** rishishwarmanu@gmail.com
 - **Phase:** 6
-- **Related:** [`../research/06-approach-comparison.md`](../research/06-approach-comparison.md),
-  [`../research/04-constraints-budget.md`](../research/04-constraints-budget.md),
-  [`../research/05-prior-art.md`](../research/05-prior-art.md),
-  [`../spikes/02-engine-in-lua/`](../spikes/02-engine-in-lua/),
-  [`../spikes/03-full-corpus-memory-parse/`](../spikes/03-full-corpus-memory-parse/),
-  [`../spikes/04-ui-plugin-skeleton/`](../spikes/04-ui-plugin-skeleton/),
-  [`../spikes/05-magium-to-ink/`](../spikes/05-magium-to-ink/),
-  [`../research/07-risks-open-questions.md`](../research/07-risks-open-questions.md)
+- **Related:** [`../research/06-approach-comparison.md`](../archive/research/06-approach-comparison.md),
+  [`../research/04-constraints-budget.md`](../archive/research/04-constraints-budget.md),
+  [`../research/05-prior-art.md`](../archive/research/05-prior-art.md),
+  [`../spikes/02-engine-in-lua/`](../archive/spikes/02-engine-in-lua/),
+  [`../spikes/03-full-corpus-memory-parse/`](../archive/spikes/03-full-corpus-memory-parse/),
+  [`../spikes/04-ui-plugin-skeleton/`](../archive/spikes/04-ui-plugin-skeleton/),
+  [`../spikes/05-magium-to-ink/`](../archive/spikes/05-magium-to-ink/),
+  [`../research/07-risks-open-questions.md`](../archive/research/07-risks-open-questions.md)
   OQ-001, OQ-003, OQ-004, OQ-006, OQ-013
 
 ## Context
 
-The research design ([design doc §2](../superpowers/specs/2026-08-31-magium-koreader-research-design.md))
+The research design ([design doc §2](../archive/superpowers/specs/2026-08-31-magium-koreader-research-design.md))
 required Phase 6 to pick an end-form for a Magium-on-KOReader port, or
 conclude more spiking was needed first, from four candidates fixed at the
 start of the project: (A) a standalone KOReader plugin reimplementing the
@@ -29,12 +29,12 @@ lean custom format plus a small Lua runtime.
 By Phase 6, three prior phases had already produced hard evidence bearing
 directly on this choice:
 
-- **Phase 3** ([`04`](../research/04-constraints-budget.md)) found no device
+- **Phase 3** ([`04`](../archive/research/04-constraints-budget.md)) found no device
   resource (RAM, storage, CPU, save size) is a hard ceiling for full-parity
   Magium on the owner's Paperwhite 12th gen under KOReader — the open
   questions are all responsiveness/hygiene items with named mitigations, not
   capacity blockers (F-22).
-- **Phase 4** ([`05`](../research/05-prior-art.md)) found **no existing
+- **Phase 4** ([`05`](../archive/research/05-prior-art.md)) found **no existing
   KOReader plugin plays CYOA/gamebook/narrative-choice content** (OQ-003
   closed "no", F-30) and **no e-ink or KOReader player exists for Twine, Ink,
   or ChoiceScript** anywhere (F-27) — KOReader's HTML rendering path is
@@ -54,7 +54,7 @@ directly on this choice:
   deployability problem.
 
 Full option descriptions and a scored decision matrix are in
-[`06-approach-comparison.md`](../research/06-approach-comparison.md) §1–2;
+[`06-approach-comparison.md`](../archive/research/06-approach-comparison.md) §1–2;
 this ADR records the decision itself.
 
 ## Options considered
@@ -116,7 +116,7 @@ directly in Lua, parsing at runtime.
 Within Option A, one implementation detail is deliberately left open rather
 than pre-decided: whether to parse all 54 files at launch and hold them
 resident, or parse lazily per chapter with a disk cache
-([`04` §4](../research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34)).
+([`04` §4](../archive/research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34)).
 Memory does not force this choice either way (spike 03). It should be settled
 early in the implementation phase against a real on-device ARM timing
 measurement, not here.
@@ -127,7 +127,7 @@ Options B and C each fail on a structural fact established by Phase 4, not a
 close tradeoff: B has no existing plugin whose *content model* fits Magium to
 extend, and C has no existing *player* on this platform for whatever format
 `.magium` is converted into. Scoring them generously on every other axis in
-the [decision matrix](../research/06-approach-comparison.md#2-decision-matrix-62)
+the [decision matrix](../archive/research/06-approach-comparison.md#2-decision-matrix-62)
 still leaves them well behind A and D. Option D is a legitimate second-place
 option — same parity ceiling as A — but the specific problem it trades away
 (a slow runtime parse) turned out not to exist at the magnitude assumed when
@@ -138,9 +138,9 @@ re-build-on-every-upstream-update tax) are real and ongoing, and Option A
 avoids all of them by construction — it just reads the same files
 `magium-dev` already ships.
 
-No open question in the register ([`07`](../research/07-risks-open-questions.md))
+No open question in the register ([`07`](../archive/research/07-risks-open-questions.md))
 is strong enough to overturn this — see
-[`06` §3](../research/06-approach-comparison.md#3-blocking-open-questions-63)
+[`06` §3](../archive/research/06-approach-comparison.md#3-blocking-open-questions-63)
 for the full accounting of what each open item actually gates (implementation
 detail within A, or project-wide distribution permission, in every case — none
 of them re-open the A vs. B vs. C vs. D choice itself).

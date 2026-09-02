@@ -4,7 +4,7 @@
   `feat/phase-v5-test-hardening` (2026-09-05, merge `88d119c`); items 3, 5, 6 on
   `feat/phase-v5-remainder` (2026-09-06). Merge commits in the running log.
 - **Last updated:** 2026-09-06
-- **Phase:** Implementation — design cycle 5.5 (roadmap [Phase V.5](../research/09-roadmap-effort.md#phase-v5--test-hardening))
+- **Phase:** Implementation — design cycle 5.5 (roadmap [Phase V.5](../archive/research/09-roadmap-effort.md#phase-v5--test-hardening))
 - **Sources:**
   - Owner-requested audit, 2026-09-04, prompted by two device-only bugs each
     slipping past a per-piece test suite: Phase IV's lingering tutorial
@@ -17,7 +17,7 @@
   - `koreader/spec/unit/widget_progresswidget_spec.lua` — the real-`paintTo`
     pattern already adopted for `spec/ui/achievementsmenu_smoke.lua`, generalized
     here.
-- **Related:** [`../../research-plan.md`](../../research-plan.md), CLAUDE.md
+- **Related:** [`../../research-plan.md`](../archive/research-plan.md), CLAUDE.md
   "Doing implementation work" (the emulator-first rule this phase sharpens
   further; also where the new standing regression rule this phase establishes
   is codified once it lands)

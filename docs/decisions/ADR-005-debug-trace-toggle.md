@@ -6,7 +6,7 @@
 - **Phase:** Implementation — Phase I (added mid-execution, after Task 20)
 - **Related:** [`../specs/2026-08-31-plugin-architecture-and-phase-i.md`](../specs/2026-08-31-plugin-architecture-and-phase-i.md)
   §9.2 (the deliverable this records), [ADR-004](ADR-004-plugin-internal-architecture.md)
-  (the plugin structure this extends), [`../research/03-koreader-platform.md`](../research/03-koreader-platform.md)
+  (the plugin structure this extends), [`../research/03-koreader-platform.md`](../archive/research/03-koreader-platform.md)
   §7 F-18 (`crash.log` is the on-device log sink), OQ-007 (e-ink refresh — the trace helps tune it).
 
 ## Context

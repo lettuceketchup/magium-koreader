@@ -6,10 +6,10 @@
 - **Phase:** Implementation — design cycle 1
 - **Related:** [`../specs/2026-08-31-plugin-architecture-and-phase-i.md`](../specs/2026-08-31-plugin-architecture-and-phase-i.md)
   (the spec this records decisions from), [ADR-002](ADR-002-porting-approach.md)
-  (the approach this refines), [`../research/03-koreader-platform.md`](../research/03-koreader-platform.md),
-  [`../research/09-roadmap-effort.md`](../research/09-roadmap-effort.md),
-  [`../research/07-risks-open-questions.md`](../research/07-risks-open-questions.md) OQ-013,
-  [`../spikes/02-engine-in-lua/`](../spikes/02-engine-in-lua/), [`../spikes/04-ui-plugin-skeleton/`](../spikes/04-ui-plugin-skeleton/)
+  (the approach this refines), [`../research/03-koreader-platform.md`](../archive/research/03-koreader-platform.md),
+  [`../research/09-roadmap-effort.md`](../archive/research/09-roadmap-effort.md),
+  [`../research/07-risks-open-questions.md`](../archive/research/07-risks-open-questions.md) OQ-013,
+  [`../spikes/02-engine-in-lua/`](../archive/spikes/02-engine-in-lua/), [`../spikes/04-ui-plugin-skeleton/`](../archive/spikes/04-ui-plugin-skeleton/)
 
 ## Context
 
@@ -21,17 +21,17 @@ an implementation plan could be written:
 
 1. **How the code is layered.** The parity-verification strategy depends on
    running the engine against the live `magium-dev` differential oracle
-   ([design doc §9](../superpowers/specs/2026-08-31-magium-koreader-research-design.md#9-how-research-findings-are-validated),
-   [`03` §8.3](../research/03-koreader-platform.md#83-differential-testing)),
+   ([design doc §9](../archive/superpowers/specs/2026-08-31-magium-koreader-research-design.md#9-how-research-findings-are-validated),
+   [`03` §8.3](../archive/research/03-koreader-platform.md#83-differential-testing)),
    which only works if the engine has no KOReader dependency. The roadmap also
    identified phases III/IV/V/VII as independent extensions that should be
    parallelizable / contributor-handoffable
-   ([`09` §3](../research/09-roadmap-effort.md#3-critical-path--parallelism-83), F-37) —
+   ([`09` §3](../archive/research/09-roadmap-effort.md#3-critical-path--parallelism-83), F-37) —
    which needs real module boundaries.
-2. **The reading widget.** [Spike 04](../spikes/04-ui-plugin-skeleton/) proved the
+2. **The reading widget.** [Spike 04](../archive/spikes/04-ui-plugin-skeleton/) proved the
    data/API fit but its screenshots established that `TextViewer` is the wrong
    final widget — padded dialog, continuous scroll, no page concept (OQ-013,
-   [`03` §3 spike-A verdict](../research/03-koreader-platform.md#3-ui-toolkit-inventory-23)).
+   [`03` §3 spike-A verdict](../archive/research/03-koreader-platform.md#3-ui-toolkit-inventory-23)).
 3. **Where choices sit** relative to paginated prose — a play-feel decision on
    e-ink.
 
@@ -65,7 +65,7 @@ Layer 1 identical to Option A, but Phase I ships `ScrollTextWidget` in a
 fullscreen container and the real paginated widget waits until Phase VIII.
 - Pros: playable sooner; the risky new widget work is pushed past the MVP.
 - Cons: reintroduces exactly the rework the roadmap deliberately avoided
-  ([`09` Phase I](../research/09-roadmap-effort.md#phase-i--mvp-engine-core--the-real-reading-widget):
+  ([`09` Phase I](../archive/research/09-roadmap-effort.md#phase-i--mvp-engine-core--the-real-reading-widget):
   "resolves OQ-013 up front rather than shipping `TextViewer` first and
   rebuilding"); continuous scroll carries the e-ink ghosting / no-position-sense
   problems OQ-013 raised; the "temporary" widget still costs real integration
@@ -104,7 +104,7 @@ that away for a familiarity that spike 02 shows is already available anyway (its
 Lua port matched the oracle 6/6 without mirroring the JS file split). Option C
 optimizes for a sooner demo at the cost of known, roadmap-acknowledged rework;
 the widget is the single most KOReader-idiom-heavy item in the project
-([`09` §2](../research/09-roadmap-effort.md#2-effort-summary-table-82)) and doing
+([`09` §2](../archive/research/09-roadmap-effort.md#2-effort-summary-table-82)) and doing
 it once, early, against real requirements is cheaper than doing it twice.
 
 Choices-as-final-page is the best fit for e-ink: page turns are whole-screen
@@ -126,7 +126,7 @@ extra tap.
   `require("apps/…")` that creeps into `engine/`.
 - **New work:** the custom paginated widget is Phase I scope (15–30 h band) and
   the best-identified spot for community help
-  ([`09` §3](../research/09-roadmap-effort.md#3-critical-path--parallelism-83)).
+  ([`09` §3](../archive/research/09-roadmap-effort.md#3-critical-path--parallelism-83)).
 - **Revisit if:** Milestone 0's on-device parse timing forces `story` into a
   shape the seam (§7 of the spec) can't absorb; or on-device testing shows
   whole-page e-ink swaps are *slower* to the reader than a scroll delta (OQ-007) —
@@ -142,5 +142,5 @@ first `Magium:openReader()`** — the ~2.2 s lands once per KOReader session beh
 a progress bar, page turns and choices never parse. Phase I ships `eager` only;
 the `lazy` index + per-chapter disk cache stays a stubbed second implementation
 behind the same interface, deferred to a later phase (spec §7.2, §12 Phase VIII).
-Recorded in [spike 06](../spikes/06-ondevice-parse-timing/FINDING.md) and
+Recorded in [spike 06](../archive/spikes/06-ondevice-parse-timing/FINDING.md) and
 [the spec](../specs/2026-08-31-plugin-architecture-and-phase-i.md) §7.

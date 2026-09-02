@@ -2,12 +2,12 @@
 
 - **Status:** stable — automated gates green (busted **116/0**, `oracle-corpus` **8887/8887** unchanged, `statspage` + `savespage` + `reader` UI smokes green, headless emu load clean) + owner on-device sign-off 2026-09-03 ("Good, it works"). First device pass caught the auto-popup tutorial lingering un-closeable → reworked into a `?` button; re-test passed. Built on `feat/phase-iv-stats`.
 - **Last updated:** 2026-09-03
-- **Phase:** Implementation — design cycle 4 (roadmap [Phase IV](../research/09-roadmap-effort.md#phase-iv--stats--stat-checks))
+- **Phase:** Implementation — design cycle 4 (roadmap [Phase IV](../archive/research/09-roadmap-effort.md#phase-iv--stats--stat-checks))
 - **Sources:**
   - [`2026-08-31-plugin-architecture-and-phase-i.md`](2026-08-31-plugin-architecture-and-phase-i.md) §12 row IV — the architecture this fills in
-  - [`../research/01-magium-analysis.md`](../research/01-magium-analysis.md) §5 (stats system), §10 (special cases #5, #9, #10, #11)
+  - [`../research/01-magium-analysis.md`](../archive/research/01-magium-analysis.md) §5 (stats system), §10 (special cases #5, #9, #10, #11)
   - `../../../magium-dev` @ `51f5aa9` — `templates/stats.ejs`, `public/scripts/stats.js`, `src/renderers.js:renderStats`, `data/en/ui.json` (port target)
-- **Related:** [`../../research-plan.md`](../../research-plan.md)
+- **Related:** [`../../research-plan.md`](../archive/research-plan.md)
 
 > The stat-**check display** half of "stats" (the `[ … check successful … ]`
 > lines) shipped in Phase I/II and is oracle-clean. This phase adds the

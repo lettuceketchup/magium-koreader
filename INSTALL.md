@@ -1,10 +1,10 @@
-# Installing Magium on the Kindle
+# Installing Magium on a KOReader device
 
 Copy `magium.koplugin/` into KOReader's `plugins/` folder and restart. The story
 is bundled — no extra downloads.
 
-**Target:** Kindle Paperwhite 12 (2024), KOReader `v2026.07.1` `kindlehf`.
-Other KOReader builds are untested but should work — see
+**Reference device:** Kindle Paperwhite 12 (2024), KOReader `v2026.07.1`
+`kindlehf`. Other devices and KOReader builds are untested but should work — see
 [`CONTRIBUTING.md`](CONTRIBUTING.md) if yours doesn't.
 
 Licence: AGPL-3.0-or-later (code) + CC BY 4.0 (Magium story text, © Cristian
@@ -13,7 +13,30 @@ Mihailescu). See [`README.md`](README.md#licence) and
 
 ---
 
-## Deploy over WiFi (standard)
+## The simple way (any device)
+
+1. Download `magium-koreader-v1.0.zip` from the
+   [latest release](https://github.com/lettuceketchup/magium-koreader/releases/latest)
+   and unzip it.
+2. Connect the device by USB and copy the `magium.koplugin/` folder so it lands at:
+
+   ```
+   koreader/plugins/magium.koplugin/
+   ```
+
+   On a Kindle the KOReader folder is `koreader/` at the top of the USB drive; on
+   Kobo it is `.adds/koreader/`. If you already have a `magium.koplugin` there,
+   delete it first (some file transfers won't overwrite).
+3. Eject, and **fully restart KOReader** — exit it completely and reopen. There
+   is no hot reload.
+4. Open it: **File browser → ≡ menu → Magium**.
+
+Updating later = replace the folder and restart again. Your saves live outside
+the plugin folder (see below) and survive updates.
+
+---
+
+## Deploy over WiFi (for repeated updates)
 
 One-time setup, then one command per update.
 

@@ -11,32 +11,29 @@ gen (2024) via KOReader** (owner's device: FW 5.19.5, KOReader v2026.07.1
 **The research phase is complete** — feasibility confirmed, approach chosen
 (standalone KOReader plugin, Lua reimplementation of the `magium-dev` engine —
 [ADR-002](docs/decisions/ADR-002-porting-approach.md)), and the design dossier it
-produced lives under `docs/`. The game code is the KOReader plugin in
-`magium.koplugin/`.
+produced is archived under `docs/archive/`. The game code is the KOReader plugin
+in `magium.koplugin/`.
 
-Current phase: **FEATURE-COMPLETE + CLEARED FOR RELEASE** — Phase VIII (final)
-merged 2026-09-08, tag `v1.0`; Phases I–VI + V.5 all shipped with owner
-on-device sign-off; Phase VII (fr localization) built + shelved on upstream
-content (`phase-vii-shelved`). **Phase 7 (licensing) done 2026-09-08**
-([ADR-008](docs/decisions/ADR-008-license-and-distribution.md)): port code is
-**AGPL-3.0-or-later** (`LICENSE`), the bundled Magium story text stays **CC BY
-4.0** (© Cristian Mihailescu — the family's release licence, no permission
-request needed); `THIRD-PARTY-NOTICES.md` + `CONTRIBUTING.md` added. **Scope:
-freely distributable, non-commercial.** Every research OQ is closed. Work now is
-**maintenance** — bug fixes, and any polish the owner asks for. Non-blocking
-follow-ups: Phase VII (needs a real fr `.magium` set), a GitHub Release +
-optional KOReader plugin-index listing, a GC post-release watch. See the
-running log in `research-plan.md` and the roadmap in
-`docs/research/09-roadmap-effort.md`.
+Current phase: **RELEASED — `v1.0`, public, maintenance only.** Phases I–VIII
+(+ V.5) all shipped with owner on-device sign-off; Phase VII (fr localization)
+built + shelved on upstream content (`phase-vii-shelved`). Licensing settled
+([ADR-008](docs/decisions/ADR-008-license-and-distribution.md)): port code
+**AGPL-3.0-or-later** (`LICENSE`), bundled Magium story text stays **CC BY 4.0**
+(© Cristian Mihailescu — the family's release licence, no permission request
+needed). **Scope: freely distributable, non-commercial**, public on GitHub,
+contributions welcome. Every research OQ is closed. Work now is **maintenance** —
+bug fixes and owner-requested polish. This port was built largely with AI
+(Claude Code) and continues to be — see `CONTRIBUTING.md`. Running log:
+`docs/archive/research-plan.md`; roadmap: `docs/archive/research/09-roadmap-effort.md`.
 
 ## Orientation — read these first, in order
 
 1. `docs/specs/2026-08-31-plugin-architecture-and-phase-i.md` — **the implementation spec**: module map, data-shape contracts, the 12-step `scene.render` pipeline, phase roadmap. This is the authority when a plan step conflicts with it.
 2. `magium.koplugin/` — the plugin itself: `engine/` (pure Lua, no KOReader deps, oracle-tested), `ui/` (KOReader widgets), `save/`, `main.lua` glue, `spec/` (busted tests).
-3. `research-plan.md` — dated running log at the bottom (newest first) — the live status of the build.
+3. `docs/archive/research-plan.md` — dated running log at the bottom (newest first) — the live status of the build.
 4. `docs/decisions/` — ADRs: every decision that closed off an alternative, with reasoning.
-5. `SUMMARY.md` — the research conclusions + confidence tags (background; research is done).
-6. `docs/research/09-roadmap-effort.md` — the phased implementation roadmap.
+5. `docs/archive/SUMMARY.md` — the research conclusions + confidence tags (background; research is done).
+6. `docs/archive/research/09-roadmap-effort.md` — the phased implementation roadmap.
 
 ## Workflow skills — invoke these, don't re-derive
 
@@ -75,7 +72,7 @@ reference them by relative path + commit hash.
   `reference/koreader-notes.md`. License: AGPL-3.0.
 
 Licensing is settled ([ADR-008](docs/decisions/ADR-008-license-and-distribution.md),
-`docs/research/08-licensing.md`): this port's code is **AGPL-3.0-or-later**
+`docs/archive/research/08-licensing.md`): this port's code is **AGPL-3.0-or-later**
 (`LICENSE`), the bundled Magium story text (`magium.koplugin/data/**`) is **CC BY
 4.0** © Cristian Mihailescu and must keep its attribution
 (`THIRD-PARTY-NOTICES.md`). Don't add code or text under incompatible terms;
@@ -116,17 +113,17 @@ Scene header ("Book X - Chapter Y") is derived from the scene ID:
 - **Every non-obvious claim** carries an inline citation: code as `path:line` (add `@commit` if volatile); web links **must** include a `web.archive.org` capture; forum/Discord/Reddit links include author + date + a one-line quote.
 - **Findings** carry `confidence: high | medium | low` + a one-line reason. `SUMMARY.md` never overstates its sources.
 - **Decisions** that close an alternative → a new ADR in `docs/decisions/` (`ADR-NNN-slug.md`). Superseding = new ADR linking back; old one's status → `superseded`.
-- **Open questions** live only in `07-risks-open-questions.md` as `OQ-NNN` rows; reference them by ID elsewhere, never restate.
+- **Open questions** lived in `docs/archive/research/07-risks-open-questions.md` as `OQ-NNN` rows (all closed); reference them by ID, never restate.
 - **Cross-links** are relative. Link to the specific section that establishes a fact instead of duplicating it.
-- **Spikes** are throwaway. Each gets `docs/spikes/NN-slug/` with `HYPOTHESIS.md`, code, `FINDING.md`. Never promote spike code to production without a new approved phase.
-- **After each work session**, append a dated entry to the running log at the bottom of `research-plan.md`.
+- **Spikes** are throwaway. The archived ones are under `docs/archive/spikes/NN-slug/` (`HYPOTHESIS.md`, code, `FINDING.md`). Never promote spike code to production without a new approved phase.
+- **After each work session**, append a dated entry to the running log at the bottom of `docs/archive/research-plan.md`.
 
 ## Doing implementation work
 
 - Work from the spec (`docs/specs/2026-08-31-plugin-architecture-and-phase-i.md`)
-  and the roadmap (`docs/research/09-roadmap-effort.md`); the spec is the
+  and the roadmap (`docs/archive/research/09-roadmap-effort.md`); the spec is the
   authority when a plan step conflicts with it. Pick the current phase from the
-  `research-plan.md` running log.
+  `docs/archive/research-plan.md` running log.
 - `engine/` is **pure Lua, no KOReader deps** — develop and test it on the
   desktop against the `magium-dev` differential oracle (`magium.koplugin/spec/`,
   `reference/tools/oracle-diff.js`). `magium-dev` @ its recorded commit is the
@@ -155,7 +152,7 @@ Scene header ("Book X - Chapter Y") is derived from the scene ID:
   A behavior change that doesn't update the test asserting the old behavior is
   incomplete. → **`verify`** skill.
 - Still-open items that need device time or code are tracked as roadmap work, not
-  `OQ-NNN` (see `docs/research/07-risks-open-questions.md` blocking-status note).
+  `OQ-NNN` (see `docs/archive/research/07-risks-open-questions.md` blocking-status note).
 
 ## Git
 

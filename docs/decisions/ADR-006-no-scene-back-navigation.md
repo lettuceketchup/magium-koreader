@@ -4,7 +4,7 @@
 - **Date:** 2026-09-01
 - **Deciders:** owner (Q&A 2026-09-01), Claude
 - **Phase:** Implementation — Phase II ([spec](../specs/2026-09-01-phase-ii-full-corpus-and-navigation.md))
-- **Related:** [`../research/09-roadmap-effort.md` Phase II](../research/09-roadmap-effort.md#phase-ii--full-story--navigation) (the deliverable this closes), [ADR-004](ADR-004-plugin-internal-architecture.md) (reader widget), [`../research/01-magium-analysis.md` §4](../research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14)
+- **Related:** [`../research/09-roadmap-effort.md` Phase II](../archive/research/09-roadmap-effort.md#phase-ii--full-story--navigation) (the deliverable this closes), [ADR-004](ADR-004-plugin-internal-architecture.md) (reader widget), [`../research/01-magium-analysis.md` §4](../archive/research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14)
 
 ## Context
 
@@ -19,8 +19,8 @@ Two facts force a decision now that Phase II is being specced:
   no `history`, `back`, `goBack`, `previous`, or `window.history` use in `src/`,
   `templates/`, or `public/scripts/`. Navigation is purely forward — every choice
   writes `v_current_scene` and the next render reads it
-  ([`01` §4](../research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14),
-  [`01` F-13](../research/01-magium-analysis.md#findings)). The only "back"
+  ([`01` §4](../archive/research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14),
+  [`01` F-13](../archive/research/01-magium-analysis.md#findings)). The only "back"
   buttons in the reference return from sub-screens (menu → game, settings → menu).
 - **Choices have side effects.** A choice applies `set_vars` to the store, and
   the entered scene's own surviving `set()` effects are persisted too

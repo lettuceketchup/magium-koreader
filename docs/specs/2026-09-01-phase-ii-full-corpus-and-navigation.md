@@ -2,14 +2,14 @@
 
 - **Status:** stable — automated gates green (engine 72/0, busted 104/0, `oracle-corpus` **8887/8887**, headless load clean) + owner on-device sign-off 2026-09-02 ("All seems good"). Built on `feat/phase-ii-full-corpus-nav`.
 - **Last updated:** 2026-09-02
-- **Phase:** Implementation — design cycle 2 (roadmap [Phase II](../research/09-roadmap-effort.md#phase-ii--full-story--navigation))
+- **Phase:** Implementation — design cycle 2 (roadmap [Phase II](../archive/research/09-roadmap-effort.md#phase-ii--full-story--navigation))
 - **Sources:**
   - [`2026-08-31-plugin-architecture-and-phase-i.md`](2026-08-31-plugin-architecture-and-phase-i.md) — the permanent architecture; §12 row II + §12.1 carry-forward
-  - [`../research/09-roadmap-effort.md`](../research/09-roadmap-effort.md) Phase II — the roadmap this spec opens
-  - [`../research/01-magium-analysis.md`](../research/01-magium-analysis.md) §4, §7, §10 — render pipeline, `special:` hooks, the 13 special cases
+  - [`../research/09-roadmap-effort.md`](../archive/research/09-roadmap-effort.md) Phase II — the roadmap this spec opens
+  - [`../research/01-magium-analysis.md`](../archive/research/01-magium-analysis.md) §4, §7, §10 — render pipeline, `special:` hooks, the 13 special cases
   - [`../decisions/ADR-006-no-scene-back-navigation.md`](../decisions/ADR-006-no-scene-back-navigation.md) — D1
   - `../../../magium-dev` @ `51f5aa9` — `src/renderers.js`, `templates/main.ejs`, `templates/menu.ejs`, `data/en/ui.json` (port target + oracle)
-- **Related:** [`../../research-plan.md`](../../research-plan.md), [`../../SUMMARY.md`](../../SUMMARY.md), [`README.md`](README.md)
+- **Related:** [`../../research-plan.md`](../archive/research-plan.md), [`../../SUMMARY.md`](../archive/SUMMARY.md), [`README.md`](README.md)
 
 > Phase I shipped the engine, the paginated reader, autosave/resume, and ch1
 > playable (102/102 oracle, on-device sign-off 2026-09-01). The full-corpus
@@ -104,7 +104,7 @@ passed-in store object.
 `magium-dev` emits `<script>storeVariable(name, value)</script>` for each
 surviving `setVariable` on **every** render (`templates/main.ejs:1-3`); the
 client persists them, resolving `+N` / `-N` in `storeVariable`
-([`01` §4](../research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14)).
+([`01` §4](../archive/research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14)).
 
 **As built (ponytail — no `engine/commit.lua`).** A 2-line pure helper on
 `engine/scene.lua`:
@@ -209,7 +209,7 @@ literal `"Menu"` `TextWidget` is appended to `_build_header` as the affordance
 ## 7. `special:` hook behaviour (Phase II)
 
 Dispatched in `main.lua` `advance`, after the `button.set_vars` loop
-([`01` §7](../research/01-magium-analysis.md#7-special-hooks-task-17)):
+([`01` §7](../archive/research/01-magium-analysis.md#7-special-hooks-task-17)):
 
 | `special:` | Corpus count | Phase II behaviour (as built) |
 |---|---|---|
@@ -225,7 +225,7 @@ adds `trace.event("menu", …)`, `loadCheckpoint` a `checkpoint_load` choice eve
 
 **Edge case.** No corpus scene offers *only* a `special:` choice with no plain
 Continue alongside (spot-checked; the parser counts in
-[`01` §11](../research/01-magium-analysis.md#11-parsed-story-size--memory-footprint-task-112)
+[`01` §11](../archive/research/01-magium-analysis.md#11-parsed-story-size--memory-footprint-task-112)
 show `special:` choices always co-occur). If Step 5's sweep or the owner
 playthrough finds a `checkpoint_load`-only dead end, revisit D4 for that scene.
 
@@ -291,6 +291,6 @@ sweep over all 54 files vs `magium-dev` @ `51f5aa9`.
 
 **Stable.** Implemented on `feat/phase-ii-full-corpus-nav`; automated gates green
 (§9) + owner on-device sign-off 2026-09-02. Plan:
-[`../superpowers/plans/2026-09-01-phase-ii-full-corpus-and-navigation.md`](../superpowers/plans/2026-09-01-phase-ii-full-corpus-and-navigation.md).
+[`../superpowers/plans/2026-09-01-phase-ii-full-corpus-and-navigation.md`](../archive/superpowers/plans/2026-09-01-phase-ii-full-corpus-and-navigation.md).
 
 Then Phase III (saves) opens its own spec cycle.

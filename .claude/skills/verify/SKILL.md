@@ -41,7 +41,7 @@ were skipped.
 
 - **busted** — `N successes / 0 failures / 0 errors`. The success count only
   goes up; a change that adds behavior adds cases.
-- **oracle-corpus** — matches the baseline in the newest `research-plan.md`
+- **oracle-corpus** — matches the baseline in the newest `docs/archive/research-plan.md`
   running-log entry (currently `8887/8887`, 0 DIFF vs magium-dev @ its recorded
   commit). A new DIFF is a stop — triage below.
 - **test-ui / test-ui-real / test-ui-matrix** — every `spec/ui/*_smoke.lua`
@@ -95,7 +95,7 @@ Use `superpowers:systematic-debugging` — root cause before any fix.
 1. **A real engine regression** — the render path changed behavior. Fix the
    engine, not the test.
 2. **A known deferred special case** — check the Phase II special-case audit
-   list in `docs/research/09-roadmap-effort.md` and the `oracle-corpus` notes
+   list in `docs/archive/research/09-roadmap-effort.md` and the `oracle-corpus` notes
    before assuming a bug.
 3. **A blind spot in `reference/tools/oracle-diff.js`'s HTML normalizer** —
    rare (two were found and fixed on the first full sweep). Only conclude this

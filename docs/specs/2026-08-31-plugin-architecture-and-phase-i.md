@@ -2,21 +2,21 @@
 
 - **Status:** stable — **Phase I complete** (all 21 tasks + Milestone 0; on-device sign-off 2026-09-01, §11.2 checklist below). Milestone 0 result folded into §7 / §10. §8.1 close model, §8.2 fixed-font scope and §12.1 Phase I→II carry-forward updated by fix wave 1 (2026-09-01). Phases II–VIII get their own spec cycles (§12).
 - **Last updated:** 2026-09-01
-- **Phase:** Implementation — design cycle 1 (roadmap [Milestone 0](../research/09-roadmap-effort.md#milestone-0--pre-flight-on-device-parse-timing-gate) + [Phase I](../research/09-roadmap-effort.md#phase-i--mvp-engine-core--the-real-reading-widget))
+- **Phase:** Implementation — design cycle 1 (roadmap [Milestone 0](../archive/research/09-roadmap-effort.md#milestone-0--pre-flight-on-device-parse-timing-gate) + [Phase I](../archive/research/09-roadmap-effort.md#phase-i--mvp-engine-core--the-real-reading-widget))
 - **Sources:**
-  - [`../research/09-roadmap-effort.md`](../research/09-roadmap-effort.md) — the roadmap this spec opens
+  - [`../research/09-roadmap-effort.md`](../archive/research/09-roadmap-effort.md) — the roadmap this spec opens
   - [`../decisions/ADR-002-porting-approach.md`](../decisions/ADR-002-porting-approach.md) — approach (candidate A)
   - [`../decisions/ADR-004-plugin-internal-architecture.md`](../decisions/ADR-004-plugin-internal-architecture.md) — the layering/widget decisions recorded from this spec's brainstorm
-  - [`../research/01-magium-analysis.md`](../research/01-magium-analysis.md) — engine semantics being ported
-  - [`../research/02-magium-format-spec.md`](../research/02-magium-format-spec.md) — `.magium` grammar + parser risk list (R1–R10)
-  - [`../research/03-koreader-platform.md`](../research/03-koreader-platform.md) — widget / persistence / lifecycle / e-ink APIs
-  - [`../research/04-constraints-budget.md`](../research/04-constraints-budget.md) §4 — the parse-strategy fork
-  - [`../spikes/02-engine-in-lua/`](../spikes/02-engine-in-lua/) — validated engine-port reference (6/6 oracle match)
-  - [`../spikes/03-full-corpus-memory-parse/`](../spikes/03-full-corpus-memory-parse/) — ~11.5 MB resident, 112–205 ms desktop parse
-  - [`../spikes/04-ui-plugin-skeleton/`](../spikes/04-ui-plugin-skeleton/) — validated plugin/registration shape; `TextViewer` ruled out (OQ-013)
+  - [`../research/01-magium-analysis.md`](../archive/research/01-magium-analysis.md) — engine semantics being ported
+  - [`../research/02-magium-format-spec.md`](../archive/research/02-magium-format-spec.md) — `.magium` grammar + parser risk list (R1–R10)
+  - [`../research/03-koreader-platform.md`](../archive/research/03-koreader-platform.md) — widget / persistence / lifecycle / e-ink APIs
+  - [`../research/04-constraints-budget.md`](../archive/research/04-constraints-budget.md) §4 — the parse-strategy fork
+  - [`../spikes/02-engine-in-lua/`](../archive/spikes/02-engine-in-lua/) — validated engine-port reference (6/6 oracle match)
+  - [`../spikes/03-full-corpus-memory-parse/`](../archive/spikes/03-full-corpus-memory-parse/) — ~11.5 MB resident, 112–205 ms desktop parse
+  - [`../spikes/04-ui-plugin-skeleton/`](../archive/spikes/04-ui-plugin-skeleton/) — validated plugin/registration shape; `TextViewer` ruled out (OQ-013)
   - `../../../magium-dev` @ `51f5aa9` — `src/parser.js`, `src/utils.js`, `src/renderers.js` (the port target + differential oracle)
   - `../../../koreader` @ `v2026.07.1` (`9192014`) — the platform source
-- **Related:** [`../research/07-risks-open-questions.md`](../research/07-risks-open-questions.md) (OQ-001, OQ-007, OQ-011, OQ-013), [`../../SUMMARY.md`](../../SUMMARY.md), [`../../research-plan.md`](../../research-plan.md), [`README.md`](README.md)
+- **Related:** [`../research/07-risks-open-questions.md`](../archive/research/07-risks-open-questions.md) (OQ-001, OQ-007, OQ-011, OQ-013), [`../../SUMMARY.md`](../archive/SUMMARY.md), [`../../research-plan.md`](../archive/research-plan.md), [`README.md`](README.md)
 
 > This is the first implementation-design spec. It defines the whole plugin's
 > internal architecture (so every later phase has a fixed skeleton to extend) and
@@ -24,7 +24,7 @@
 > II–VIII get an architectural note here and their own spec cycle when reached.
 >
 > Governing conventions: the research dossier's
-> [design doc §8](../superpowers/specs/2026-08-31-magium-koreader-research-design.md#8-documentation--traceability-conventions)
+> [design doc §8](../archive/superpowers/specs/2026-08-31-magium-koreader-research-design.md#8-documentation--traceability-conventions)
 > (standard header, inline citations, confidence tags, ADRs close alternatives).
 
 ---
@@ -56,13 +56,13 @@
 
 | # | Constraint | Source |
 |---|---|---|
-| C1 | **Full parity** is the target: narrative + conditions + stats/stat-checks + achievements + multi-slot saves + settings + i18n (en/fr). Any gap → an `OQ-NNN`, not a silent drop. | [design doc §3](../superpowers/specs/2026-08-31-magium-koreader-research-design.md#3-target-definition-full-parity) |
+| C1 | **Full parity** is the target: narrative + conditions + stats/stat-checks + achievements + multi-slot saves + settings + i18n (en/fr). Any gap → an `OQ-NNN`, not a silent drop. | [design doc §3](../archive/superpowers/specs/2026-08-31-magium-koreader-research-design.md#3-target-definition-full-parity) |
 | C2 | Standalone `.koplugin`, Lua reimplementation of the `magium-dev` engine, `.magium` bundled verbatim and parsed at runtime. | [ADR-002](../decisions/ADR-002-porting-approach.md) |
-| C3 | Single Lua state, cooperative scheduling, no threads. Any work >~1 frame is sliced via `UIManager:scheduleIn`/`nextTick` or run under `Trapper`. | [`03` §2](../research/03-koreader-platform.md#2-lua-environment-22) |
-| C4 | LuaJIT 2.1 / Lua 5.1 + FFI. No `utf8` stdlib, Lua string patterns (not regex), all numbers are doubles. | [`03` §2](../research/03-koreader-platform.md#2-lua-environment-22) |
-| C5 | Parity is verified by **differential test against the running `magium-dev` oracle** — so the engine must run under plain desktop `luajit`, with no KOReader dependency. | [design doc §9](../superpowers/specs/2026-08-31-magium-koreader-research-design.md#9-how-research-findings-are-validated), [`03` §8.3](../research/03-koreader-platform.md#83-differential-testing) |
-| C6 | Navigation is authoritative on the `v_current_scene` variable, never `choice.target`. | [`02` R8 / F-05](../research/02-magium-format-spec.md#4-parser-risk-list) |
-| C7 | Spike code ([spikes 02–05](../spikes/)) is a **design reference, not a starting point** — production code is written fresh, hardened, and covers the full 54-file / 13-special-case surface. | CLAUDE.md, [`09` §0](../research/09-roadmap-effort.md#0-scope--assumptions-82-calibration) |
+| C3 | Single Lua state, cooperative scheduling, no threads. Any work >~1 frame is sliced via `UIManager:scheduleIn`/`nextTick` or run under `Trapper`. | [`03` §2](../archive/research/03-koreader-platform.md#2-lua-environment-22) |
+| C4 | LuaJIT 2.1 / Lua 5.1 + FFI. No `utf8` stdlib, Lua string patterns (not regex), all numbers are doubles. | [`03` §2](../archive/research/03-koreader-platform.md#2-lua-environment-22) |
+| C5 | Parity is verified by **differential test against the running `magium-dev` oracle** — so the engine must run under plain desktop `luajit`, with no KOReader dependency. | [design doc §9](../archive/superpowers/specs/2026-08-31-magium-koreader-research-design.md#9-how-research-findings-are-validated), [`03` §8.3](../archive/research/03-koreader-platform.md#83-differential-testing) |
+| C6 | Navigation is authoritative on the `v_current_scene` variable, never `choice.target`. | [`02` R8 / F-05](../archive/research/02-magium-format-spec.md#4-parser-risk-list) |
+| C7 | Spike code ([spikes 02–05](../archive/spikes/)) is a **design reference, not a starting point** — production code is written fresh, hardened, and covers the full 54-file / 13-special-case surface. | CLAUDE.md, [`09` §0](../archive/research/09-roadmap-effort.md#0-scope--assumptions-82-calibration) |
 
 ---
 
@@ -110,14 +110,14 @@ apples-to-apples.
 
 | Module | Responsibility | Ports / references |
 |---|---|---|
-| `parser.lua` | One `.magium` file → `{ [scene_id] = scene_table }`. Line-oriented scan; anchored construct matching (R1/R2); the documented quirks reproduced deliberately (leading `{}` scene, `currentParagraph` not reset on `ID:`, `<br/>` join, blank-line→`<br/>`, doubled-quote choice labels). | `parser.js` (whole file); [spike 02 `magium_parser.lua`](../spikes/02-engine-in-lua/magium_parser.lua); [`02` §1–2](../research/02-magium-format-spec.md) |
-| `conditions.lua` | DNF evaluation. `eval_atom(atom, store_view)` + `eval(dnf, store_view)`. `nil`/absent → true; `"True"` → true; unknown atom → false (loud in dev, silent in release — R6); numeric coercion `tonumber(v or 0)`. | `utils.js` `apply_condition` / `apply_conditions`; [spike 02 `magium_utils.lua`](../spikes/02-engine-in-lua/magium_utils.lua); [`01` §3](../research/01-magium-analysis.md#3-condition-evaluation-task-13) |
-| `stats.lua` | `var_to_stat`, `parse_stat_check` (4 branches, 100 % corpus coverage), `stat_checks_to_display` (fed by set ∪ paragraphs ∪ choices; de-dup; the `v_b3_ch1_unlock` lock filter). | `utils.js` `varToStat` / `parseStatCheck` / `statChecksToDisplay`; [`01` §5](../research/01-magium-analysis.md#5-stats-system-task-15) |
-| `store.lua` | The flat `v_*` variable map. `get(k) → string`, `set(k, v)` with **`+N`/`−N` resolve-on-write** and the **`v_ac_*` "seen" latch** (never lower `"2"`→`"1"`); `snapshot()` / `restore(t)`; a cheap read-only `view()` for render. The `v_ac_b3_ch9_consolation == 5 → v_ac_b3_ch9_prize = 1` rule lives here (special case #12). | `utils.js:13–24,29–31`; [`01` §2](../research/01-magium-analysis.md#2-variable-store-task-12) |
-| `scene.lua` | `render(scene_table, store_view, locale) → render_model`. The fixed 12-step pipeline (§6). Pure. | `renderers.js:renderScene`; [`01` §4](../research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14); [spike 02 `render_scene.lua`](../spikes/02-engine-in-lua/render_scene.lua) |
-| `specials.lua` | The 13 hardcoded special cases ([`01` §10](../research/01-magium-analysis.md#10-hardcoded-scene-id--variable-special-cases-task-110)) as a data table + small apply-hooks called at fixed points in `scene.render` and (later) in the stats screen. Phase I implements the render-time ones (#1–#4, #6–#8, #12; #13's unset→0 is in `conditions`/`store`); stats-screen ones (#5, #9–#11) are declared but inert until Phase IV. | `renderers.js` / `utils.js` / templates, per the §10 table |
-| `locale.lua` | Loads `data/<lang>/ui.json` via `engine/vendor/json.lua` (pure Lua, same under `luajit` and KOReader); `str(key)`; `header(scene_id)` = `getHeaderFromId` + the `<%= book %>/<%= chapter %>` micro-interpolator; the `mainStat{Success,Failed}Template` interpolation. | `utils.js` `getHeaderFromId` / `getLocaleData`; [`01` §9](../research/01-magium-analysis.md#9-localization-task-19) |
-| `story.lua` | **The parse-strategy seam.** `Story.new{ data_dir, locale, strategy } → story`; `story:preload(on_progress)`; `story:get_scene(id) → scene_table`; `story:scene_ids()`. Phase I: `eager` only (§7); the `lazy` seam is stubbed, deferred (Milestone 0). | new; [`04` §4](../research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34) |
+| `parser.lua` | One `.magium` file → `{ [scene_id] = scene_table }`. Line-oriented scan; anchored construct matching (R1/R2); the documented quirks reproduced deliberately (leading `{}` scene, `currentParagraph` not reset on `ID:`, `<br/>` join, blank-line→`<br/>`, doubled-quote choice labels). | `parser.js` (whole file); [spike 02 `magium_parser.lua`](../archive/spikes/02-engine-in-lua/magium_parser.lua); [`02` §1–2](../archive/research/02-magium-format-spec.md) |
+| `conditions.lua` | DNF evaluation. `eval_atom(atom, store_view)` + `eval(dnf, store_view)`. `nil`/absent → true; `"True"` → true; unknown atom → false (loud in dev, silent in release — R6); numeric coercion `tonumber(v or 0)`. | `utils.js` `apply_condition` / `apply_conditions`; [spike 02 `magium_utils.lua`](../archive/spikes/02-engine-in-lua/magium_utils.lua); [`01` §3](../archive/research/01-magium-analysis.md#3-condition-evaluation-task-13) |
+| `stats.lua` | `var_to_stat`, `parse_stat_check` (4 branches, 100 % corpus coverage), `stat_checks_to_display` (fed by set ∪ paragraphs ∪ choices; de-dup; the `v_b3_ch1_unlock` lock filter). | `utils.js` `varToStat` / `parseStatCheck` / `statChecksToDisplay`; [`01` §5](../archive/research/01-magium-analysis.md#5-stats-system-task-15) |
+| `store.lua` | The flat `v_*` variable map. `get(k) → string`, `set(k, v)` with **`+N`/`−N` resolve-on-write** and the **`v_ac_*` "seen" latch** (never lower `"2"`→`"1"`); `snapshot()` / `restore(t)`; a cheap read-only `view()` for render. The `v_ac_b3_ch9_consolation == 5 → v_ac_b3_ch9_prize = 1` rule lives here (special case #12). | `utils.js:13–24,29–31`; [`01` §2](../archive/research/01-magium-analysis.md#2-variable-store-task-12) |
+| `scene.lua` | `render(scene_table, store_view, locale) → render_model`. The fixed 12-step pipeline (§6). Pure. | `renderers.js:renderScene`; [`01` §4](../archive/research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14); [spike 02 `render_scene.lua`](../archive/spikes/02-engine-in-lua/render_scene.lua) |
+| `specials.lua` | The 13 hardcoded special cases ([`01` §10](../archive/research/01-magium-analysis.md#10-hardcoded-scene-id--variable-special-cases-task-110)) as a data table + small apply-hooks called at fixed points in `scene.render` and (later) in the stats screen. Phase I implements the render-time ones (#1–#4, #6–#8, #12; #13's unset→0 is in `conditions`/`store`); stats-screen ones (#5, #9–#11) are declared but inert until Phase IV. | `renderers.js` / `utils.js` / templates, per the §10 table |
+| `locale.lua` | Loads `data/<lang>/ui.json` via `engine/vendor/json.lua` (pure Lua, same under `luajit` and KOReader); `str(key)`; `header(scene_id)` = `getHeaderFromId` + the `<%= book %>/<%= chapter %>` micro-interpolator; the `mainStat{Success,Failed}Template` interpolation. | `utils.js` `getHeaderFromId` / `getLocaleData`; [`01` §9](../archive/research/01-magium-analysis.md#9-localization-task-19) |
+| `story.lua` | **The parse-strategy seam.** `Story.new{ data_dir, locale, strategy } → story`; `story:preload(on_progress)`; `story:get_scene(id) → scene_table`; `story:scene_ids()`. Phase I: `eager` only (§7); the `lazy` seam is stubbed, deferred (Milestone 0). | new; [`04` §4](../archive/research/04-constraints-budget.md#4-runtime-parsing-vs-build-time-preprocessing-34) |
 
 `engine/` has **no** `init.lua` facade object — the modules are mostly pure
 functions plus two stateful holders (`store`, `story`), matching `magium-dev`'s
@@ -181,11 +181,11 @@ magium.koplugin/
 ```
 
 `package.path` is extended per-plugin, so `require("engine.parser")` resolves
-against `main.lua`'s directory ([`03` §1.1](../research/03-koreader-platform.md#1-plugin-anatomy-21)).
+against `main.lua`'s directory ([`03` §1.1](../archive/research/03-koreader-platform.md#1-plugin-anatomy-21)).
 
 Story data lives **next to `main.lua`** (read-only bundle). Saves live under the
 KOReader **data dir** (`DataStorage:getDataDir() .. "/magium/"`) —
-[`03` §4.1](../research/03-koreader-platform.md#4-persistence-24).
+[`03` §4.1](../archive/research/03-koreader-platform.md#4-persistence-24).
 
 ---
 
@@ -232,7 +232,7 @@ the raw string `"v_perception > 2"`. `nil` = unconditional.
 The canonical JSON form for the oracle diff is defined by
 [`reference/tools/oracle-diff.js`](../../reference/tools/oracle-diff.js)'s normalizer;
 `spec/oracle_diff.lua` emits the same shape (this is exactly what
-[spike 02 `render_scene.lua`](../spikes/02-engine-in-lua/render_scene.lua) already does — reuse that mapping).
+[spike 02 `render_scene.lua`](../archive/spikes/02-engine-in-lua/render_scene.lua) already does — reuse that mapping).
 
 ### 5.3 `page` (pagination output)
 
@@ -249,7 +249,7 @@ The canonical JSON form for the oracle diff is defined by
 ## 6. The 12-step render pipeline (`engine/scene.lua`)
 
 A faithful port of `renderers.js:renderScene` lines 52–92
-([`01` §4](../research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14)).
+([`01` §4](../archive/research/01-magium-analysis.md#4-scene-effect-ordering-in-renderscene-task-14)).
 Order is parity-critical:
 
 1. Resolve `scene_id` (`store:get("v_current_scene")` or `"Ch1-Intro1"` — special case #1).
@@ -274,7 +274,7 @@ Then `ui/` renders: banner → stat-check lines → prose → (final page) choic
 The `achievements` list is computed here but **not displayed in Phase I** — the
 unlock toast is Phase V (§11.1, phase table). `scene.render` still returns it so
 the oracle diff stays whole and `save` can flush `v_ac_*` on unlock
-([`01` §6.1](../research/01-magium-analysis.md#6-achievements-task-16)).
+([`01` §6.1](../archive/research/01-magium-analysis.md#6-achievements-task-16)).
 
 ---
 
@@ -293,7 +293,7 @@ deferred second implementation behind the same seam.
 > "first time you open Magium this session". Task 20 sets `PARSE_STRATEGY =
 > "eager"`; **Task 15 (lazy) is deferred out of Phase I** — the `strategy` /
 > `cache_store` params and the erroring `_build_index` / `_lazy_get` stubs stay
-> on `Story.new` for a later phase. See [spike 06](../spikes/06-ondevice-parse-timing/FINDING.md).
+> on `Story.new` for a later phase. See [spike 06](../archive/spikes/06-ondevice-parse-timing/FINDING.md).
 
 ```lua
 Story.new{
@@ -317,7 +317,7 @@ injected-seam pattern as `pagination.measure_fn` and `save/manager`'s writer.
 
 `preload` parses all 54 files, under a `Trapper` coroutine with a progress bar so
 the UI stays responsive (C3). Holds every `scene_table` resident (~11.5 MB
-measured, [spike 03](../spikes/03-full-corpus-memory-parse/) — a non-issue
+measured, [spike 03](../archive/spikes/03-full-corpus-memory-parse/) — a non-issue
 against ~497 MB free). `get_scene` is a table lookup.
 
 **Phase I trigger:** `preload` is *not* called in `main.lua`'s `init()` (that
@@ -338,7 +338,7 @@ rebuild only when that changes.
 its scenes in memory, and `cache_store:set("chapter-<file>", parsed)`. Every later
 launch reads it back via `cache_store:get` instead of re-parsing. Bounded working
 set also eases GC
-([`04` §3 row 7](../research/04-constraints-budget.md#3-budget-table-33)).
+([`04` §3 row 7](../archive/research/04-constraints-budget.md#3-budget-table-33)).
 
 ### 7.3 Shared
 
@@ -354,12 +354,12 @@ set also eases GC
 
 ## 8. The reading widget (`ui/reader.lua` + `ui/pagination.lua`) — resolves OQ-013
 
-`TextViewer` is rejected ([spike 04](../spikes/04-ui-plugin-skeleton/), OQ-013:
+`TextViewer` is rejected ([spike 04](../archive/spikes/04-ui-plugin-skeleton/), OQ-013:
 padded dialog, continuous scroll, no page concept). `reader.lua` is a bespoke
 fullscreen widget — an `InputContainer`/`FrameContainer` composition that covers
 the screen (`covers_fullscreen = true`), modeled structurally on
 `frotz.koplugin`'s `GameView` but **paginated, not scrolled**
-([`03` §3 spike-A verdict](../research/03-koreader-platform.md#3-ui-toolkit-inventory-23)).
+([`03` §3 spike-A verdict](../archive/research/03-koreader-platform.md#3-ui-toolkit-inventory-23)).
 
 ### 8.1 Layout
 
@@ -371,7 +371,7 @@ the screen (`covers_fullscreen = true`), modeled structurally on
 │ [ Observation check successful - level 3 ] │  stat-check lines — first page only
 │                                            │
 │ Prose, wrapped to the full text width,     │  TextBoxWidget, <br/> → \n
-│ justified per KOReader defaults, filling    │  ([`03` §5](../research/03-koreader-platform.md#5-text-rendering-25), F-19)
+│ justified per KOReader defaults, filling    │  ([`03` §5](../archive/research/03-koreader-platform.md#5-text-rendering-25), F-19)
 │ the page …                                 │
 │                                            │
 │                                            │
@@ -393,7 +393,7 @@ The **final page** (`kind = "choices"`) replaces the prose area with the choice
 1. apply `choice.set_vars` to the **store** (`store:set` — relative writes resolve here);
 2. `store:set("v_current_scene", choice.target)` (C6);
 3. if `choice.special` → dispatch (`restart` / `saves` / `stats` /
-   `checkpoint_save` / `checkpoint_load` — [`01` §7](../research/01-magium-analysis.md#7-special-hooks-task-17));
+   `checkpoint_save` / `checkpoint_load` — [`01` §7](../archive/research/01-magium-analysis.md#7-special-hooks-task-17));
    in Phase I only `restart` is fully wired, the rest are navigation stubs;
 4. re-`render` the new scene, re-`paginate`, show page 1.
 
@@ -413,7 +413,7 @@ Pure function `paginate(render_model, geometry, measure_fn) → { pages }`:
   exceeds the budget is split at word boundaries, its tail riding the next page.
 - `measure_fn(text, width) → height` is injected. Real caller: a thin wrapper
   over `TextBoxWidget:new{…}:getSize()` (or its line-count API,
-  [`03` §3](../research/03-koreader-platform.md#3-ui-toolkit-inventory-23)). Specs
+  [`03` §3](../archive/research/03-koreader-platform.md#3-ui-toolkit-inventory-23)). Specs
   pass a deterministic fake (`#lines * fixed_height`).
 - Append exactly one `kind = "choices"` page.
 - **Phase I ships a fixed prose size** — `PROSE_SIZE` in `ui/reader.lua`,
@@ -430,7 +430,7 @@ Conservative, tuned later (OQ-007, Phase VIII):
 |---|---|
 | open the reader | `full` |
 | page turn (same scene) | `ui` |
-| new scene (choice committed) | `ui`, with a `full` every 6th scene to de-ghost ([`03` §6](../research/03-koreader-platform.md#6-e-ink-specifics-26)) |
+| new scene (choice committed) | `ui`, with a `full` every 6th scene to de-ghost ([`03` §6](../archive/research/03-koreader-platform.md#6-e-ink-specifics-26)) |
 | open/close a modal (later phases) | `flashui` |
 | close the reader | parent handles it |
 
@@ -439,7 +439,7 @@ Conservative, tuned later (OQ-007, Phase VIII):
 ## 9. Save model (`save/manager.lua`)
 
 Maps `magium-dev`'s four `localStorage` blobs
-([`01` §8](../research/01-magium-analysis.md#8-saves--settings-task-18)):
+([`01` §8](../archive/research/01-magium-analysis.md#8-saves--settings-task-18)):
 
 | magium-dev blob | Here | Phase |
 |---|---|---|
@@ -453,11 +453,11 @@ Maps `magium-dev`'s four `localStorage` blobs
 > entry). Import/export and rename cut, delete added.
 > [ADR-007](../decisions/ADR-007-saves-scope.md) · [Phase III spec](2026-09-02-phase-iii-saves.md).
 
-`state.lua` is small (single-digit KB, [`04` F-23](../research/04-constraints-budget.md#findings))
+`state.lua` is small (single-digit KB, [`04` F-23](../archive/research/04-constraints-budget.md#findings))
 and loads every launch; slot blobs load only when the saves screen opens or a
 slot is loaded — so 50 slots never inflate launch cost.
 
-**Autosave debounce** (F-20, [`03` §4.3](../research/03-koreader-platform.md#4-persistence-24)):
+**Autosave debounce** (F-20, [`03` §4.3](../archive/research/03-koreader-platform.md#4-persistence-24)):
 `currentState` flushes on a short idle timer (order of seconds via
 `UIManager:scheduleIn`, reset on each store mutation), on
 `checkpoint_save`/`checkpoint_load`, on `reader:onClose`, and on the broadcast
@@ -465,7 +465,7 @@ slot is loaded — so 50 slots never inflate launch cost.
 an implementation-plan tuning knob. `v_ac_*` flushes
 immediately on unlock (rare; a lost unlock is worse than a few seconds of lost
 position). Both `LuaSettings:flush()` and `Persist:save()` fsync
-([`03` §4.2](../research/03-koreader-platform.md#4-persistence-24)).
+([`03` §4.2](../archive/research/03-koreader-platform.md#4-persistence-24)).
 
 The serialization + debounce logic takes an injected writer so it is
 unit-testable without touching the filesystem; the KOReader `Persist`/`LuaSettings`
@@ -494,7 +494,7 @@ The owner pulls the `.jsonl` files over USB alongside `crash.log` for bug report
 
 **Purpose:** produce the number that sets `story`'s default `strategy` (§7), before
 Phase I builds around one shape. Per
-[`09` Milestone 0](../research/09-roadmap-effort.md#milestone-0--pre-flight-on-device-parse-timing-gate)
+[`09` Milestone 0](../archive/research/09-roadmap-effort.md#milestone-0--pre-flight-on-device-parse-timing-gate)
 and [ADR-002](../decisions/ADR-002-porting-approach.md)'s deliberately-open detail.
 
 **Method:**
@@ -507,7 +507,7 @@ and [ADR-002](../decisions/ADR-002-porting-approach.md)'s deliberately-open deta
    deltas (cold: first run after KOReader restart; warm: subsequent).
 3. Run on the owner's **real Kindle Paperwhite 12th gen** (primary) and the WSL2
    `kodev` build (first pass — same ARM-vs-x86 caveat
-   [spike 03](../spikes/03-full-corpus-memory-parse/) flagged).
+   [spike 03](../archive/spikes/03-full-corpus-memory-parse/) flagged).
 4. Record: cold-parse wall-clock (ms), warm-parse, peak RSS delta.
 
 **Decision rule (and 2026-08-31 outcome):**
@@ -517,10 +517,10 @@ and [ADR-002](../decisions/ADR-002-porting-approach.md)'s deliberately-open deta
 | ≤ ~1 s | `eager` at launch | — |
 | > ~1 s | `lazy` per-chapter, **or** `eager` deferred to first open | **2.2 s → `eager`, deferred to first `openReader()`.** Owner chose the simpler route over building the lazy path; Task 15 deferred. |
 
-Threshold rationale: [`04` §3 row 3](../research/04-constraints-budget.md#3-budget-table-33).
+Threshold rationale: [`04` §3 row 3](../archive/research/04-constraints-budget.md#3-budget-table-33).
 `eager` is what ships in Phase I; the `lazy` design (§7.2) waits behind the same
 seam for a later phase. **Effort: 2–4 h** (measurement itself;
-[`09` §2](../research/09-roadmap-effort.md#2-effort-summary-table-82)).
+[`09` §2](../archive/research/09-roadmap-effort.md#2-effort-summary-table-82)).
 
 **Deliverable:** a short `docs/spikes/06-ondevice-parse-timing/FINDING.md` (spike
 folder — it is a measurement, and its harness is subsumed by Phase I) + this
@@ -537,7 +537,7 @@ spec's §7 default updated with the result.
 - `parser.lua` — parses all 54 English files with **zero anomalies**; structural
   counts match the known corpus exactly: **2159 scenes, 4880 paragraphs, 3734
   choices, 594 `set()`, 145 `achievement()`, 2480 `#if`**
-  ([`01` §11](../research/01-magium-analysis.md#11-parsed-story-size--memory-footprint-task-112)).
+  ([`01` §11](../archive/research/01-magium-analysis.md#11-parsed-story-size--memory-footprint-task-112)).
   Anchored constructs (R1/R2), 1-char `set()` value asserted not truncated (R3),
   single-paren-condition assertion (R4), `\r` stripped (R10), id uniqueness
   asserted (R9).
@@ -635,10 +635,10 @@ deferred by design (§12) and its roadmap position is unchanged.
 
 ### 11.3 Effort
 
-**35–55 h** ([`09` §2](../research/09-roadmap-effort.md#2-effort-summary-table-82)):
+**35–55 h** ([`09` §2](../archive/research/09-roadmap-effort.md#2-effort-summary-table-82)):
 engine core 15–25 h (mechanical, oracle-checked); pagination widget 15–30 h (the
 new build, the KOReader-idiom ramp, the best target for community help —
-[`09` §3](../research/09-roadmap-effort.md#3-critical-path--parallelism-83)).
+[`09` §3](../archive/research/09-roadmap-effort.md#3-critical-path--parallelism-83)).
 Milestone 0 adds 2–4 h up front.
 
 ---
@@ -654,13 +654,13 @@ code is written to accommodate it without rework:
 | **III — saves** | 50 manual slots (`save/manager` slot API + one `Persist` blob each, no index); slot screen; wire menu row + `special:saves`. `checkpoint` shipped in II. See [Phase III spec](2026-09-02-phase-iii-saves.md) / [ADR-007](../decisions/ADR-007-saves-scope.md). | `save/manager`, `main` (special dispatch) | `ui/savespage.lua` |
 | **IV — stats** | **→ done, see [Phase IV spec](2026-09-03-phase-iv-stats.md).** `KeyValuePage` stats screen with faithful Confirm/Cancel; the `v_available_points`/`v_max_stat` spend flow; stats-screen special cases #5/#9/#10 (`specials` gates) + #11 (`main.lua` unlock). `special:stats` + a menu row wired; `on_close` re-renders via the existing `_reopenReader()`. No `engine/scene` change. | `specials` (#5/#9/#10), `main` (dispatch, menu, #11) | `ui/statspage.lua` |
 | **V — achievements** | **→ implemented, see [Phase V spec](2026-09-04-phase-v-achievements.md).** Unlock toast; the 136-entry `achievements{1,2,3}.json` menu (exact on-disk chapter order, incl. `b2ch41`/`b2ch42` group quirk); always-on `v_ac_b3_ch9_prize` (already ported, Phase I/II). No `engine/scene:render` change. | `scene` (`persist_effects` "1"→"2" latch), `locale` (achievements JSON), `main` (dispatch, menu, `openStats` toast) | `ui/toast.lua`, `ui/achievementsmenu.lua` |
-| **VI — settings** | a scoping pass first — most of `settings.ejs` (font/theme) is KOReader's job ([`01` §8](../research/01-magium-analysis.md#8-saves--settings-task-18)); port only genuinely game-specific settings | `main` (menu) | maybe none |
+| **VI — settings** | a scoping pass first — most of `settings.ejs` (font/theme) is KOReader's job ([`01` §8](../archive/research/01-magium-analysis.md#8-saves--settings-task-18)); port only genuinely game-specific settings | `main` (menu) | maybe none |
 | **VII — i18n** | `data/fr/` bundle + `fr/ui.json`; `l10n/<lang>/*.po` for plugin chrome; a locale switch | `locale` (already parameterised), `story` (`locale` arg exists) | `l10n/` |
 | **VIII — polish** | OQ-007 e-ink tuning in `refresh.lua`; OQ-011 490 KB-condition mitigation in `conditions`/`story`; **the deferred `lazy` parse strategy (§7.2) — index + per-chapter `Persist` cache — if the first-open ~2.2 s wait grates**; **in-reader font-size control + re-paginate on font/rotation change (deferred from Phase I, §8.2)**; LuaJIT GC tuning; full-corpus `oracle_diff` over all 2159 scenes; `crash.log` bug bash; bare `koreader/plugins/` packaging | `refresh`, `conditions`, `story`, `reader`, `spec/oracle_diff` | (`spec/support/mem_cache.lua`, `story_lazy_spec.lua`) |
 
 The engine/ui split means III–V and VII only **add** modules — they do not reopen
 `engine/` core or `ui/reader.lua`
-([`09` §3](../research/09-roadmap-effort.md#3-critical-path--parallelism-83), F-37).
+([`09` §3](../archive/research/09-roadmap-effort.md#3-critical-path--parallelism-83), F-37).
 
 ### 12.1 Carried from Phase I
 
@@ -699,10 +699,10 @@ this is now their home.
 
 | ID | State entering implementation | Where it resolves |
 |---|---|---|
-| [OQ-001](../research/07-risks-open-questions.md) (parse-time tail) | **resolved by Milestone 0 (2026-08-31): 2.2 s device cold parse → `eager`, deferred to first reader-open (§7). Lazy path deferred.** | Milestone 0 (§10) — done |
-| [OQ-007](../research/07-risks-open-questions.md) (e-ink refresh feel) | unanswerable off real e-ink | Phase VIII, `ui/refresh.lua` — owner on device |
-| [OQ-011](../research/07-risks-open-questions.md) (490 KB condition cost) | parses fine; per-render cost on ARM unmeasured | Phase VIII (or earlier if Milestone 0 flags the parse itself); §7.3 |
-| [OQ-013](../research/07-risks-open-questions.md) (pagination widget) | **resolved by this spec** — §8, custom fullscreen paginated widget, choices-as-final-page | built in Phase I |
+| [OQ-001](../archive/research/07-risks-open-questions.md) (parse-time tail) | **resolved by Milestone 0 (2026-08-31): 2.2 s device cold parse → `eager`, deferred to first reader-open (§7). Lazy path deferred.** | Milestone 0 (§10) — done |
+| [OQ-007](../archive/research/07-risks-open-questions.md) (e-ink refresh feel) | unanswerable off real e-ink | Phase VIII, `ui/refresh.lua` — owner on device |
+| [OQ-011](../archive/research/07-risks-open-questions.md) (490 KB condition cost) | parses fine; per-render cost on ARM unmeasured | Phase VIII (or earlier if Milestone 0 flags the parse itself); §7.3 |
+| [OQ-013](../archive/research/07-risks-open-questions.md) (pagination widget) | **resolved by this spec** — §8, custom fullscreen paginated widget, choices-as-final-page | built in Phase I |
 
 No open question blocks writing the implementation plan; OQ-001 blocks *starting
 Phase I code* only in the sense that Milestone 0 (2–4 h) runs first.

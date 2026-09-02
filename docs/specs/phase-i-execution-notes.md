@@ -11,7 +11,7 @@
   (esp. §12.1 carry-forward), [ADR-005](../decisions/ADR-005-debug-trace-toggle.md)
 
 > Phase I was executed under subagent-driven development against
-> [the Milestone 0 + Phase I plan](../superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md).
+> [the Milestone 0 + Phase I plan](../archive/superpowers/plans/2026-08-31-magium-plugin-milestone-0-phase-i.md).
 > Where a plan/brief step was defective or conflicted with the spec, the
 > controller made a **ruling** (spec is the authority). Those rulings — and the
 > reasoning that could matter to a later phase — lived only in the SDD ledger,

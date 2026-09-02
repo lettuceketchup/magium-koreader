@@ -2,7 +2,7 @@
 
 Design specs for the actual port (one per subsystem or per plan), produced by a
 new brainstorming/spec cycle after
-[`../research/09-roadmap-effort.md`](../research/09-roadmap-effort.md) handed off.
+[`../research/09-roadmap-effort.md`](../archive/research/09-roadmap-effort.md) handed off.
 
 Running a phase (spec → implement → verify → device sign-off → merge → log) is
 the **`phase`** skill.
@@ -24,4 +24,4 @@ Decisions recorded from these specs are ADRs in
 [ADR-004](../decisions/ADR-004-plugin-internal-architecture.md).
 
 The research-phase design doc lives at
-[`../superpowers/specs/2026-08-31-magium-koreader-research-design.md`](../superpowers/specs/2026-08-31-magium-koreader-research-design.md).
+[`../superpowers/specs/2026-08-31-magium-koreader-research-design.md`](../archive/superpowers/specs/2026-08-31-magium-koreader-research-design.md).
