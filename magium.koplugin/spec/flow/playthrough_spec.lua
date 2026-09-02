@@ -78,6 +78,51 @@ local function is_dead_end(scenes, id)
   return #sc.choices > 0   -- 0 choices = a legit ending, not a dead end
 end
 
+local STAT_VARS = {
+  "v_strength","v_toughness","v_agility","v_reflexes","v_hearing","v_perception",
+  "v_ancient_languages","v_combat_technique","v_premonition","v_bluff",
+  "v_magical_sense","v_aura_hardening","v_magical_power","v_magical_knowledge",
+}
+
+-- The greedy forward walker from the first test, extracted so item 3 can run it
+-- under several stat profiles. `apply(store)` runs after start() (start() wipes
+-- the store) to set the profile. Returns { visits = {id -> count}, deepest, steps }.
+-- `scenes` is the static corpus (for the dead-end heuristic only).
+local function greedy_walk(g, scenes, start, apply)
+  g:start(start)
+  if apply then apply(g.store); g:render() end
+  local visits, deepest, steps = {}, 0, 0
+  for _ = 1, 6000 do
+    local id = g:scene_id()
+    visits[id] = (visits[id] or 0) + 1
+    deepest = math.max(deepest, depth_of(id))
+    local list = g:choices()
+    if #list == 0 then break end
+    local best, best_score
+    for i, c in ipairs(list) do
+      local s = c.special
+      local opener = s == "restart" or s == "saves" or s == "stats" or s == "checkpoint_load"
+      local d = dst_of(c)
+      if not opener and d then
+        local score = depth_of(d) * 1000
+          - (visits[d] or 0) * 100000
+          - (is_dead_end(scenes, d) and 10000000 or 0)
+        if not best or score > best_score then best, best_score = i, score end
+      end
+    end
+    if not best then break end
+    g:choose(best)
+    steps = steps + 1
+  end
+  return { visits = visits, deepest = deepest, steps = steps }
+end
+
+local function distinct(visits)
+  local n = 0
+  for _ in pairs(visits) do n = n + 1 end
+  return n
+end
+
 describe("playthrough (headless, whole engine)", function()
   local scenes
   setup(function() scenes = corpus() end)
@@ -129,6 +174,44 @@ describe("playthrough (headless, whole engine)", function()
     local distinct = 0
     for _ in pairs(visits) do distinct = distinct + 1 end
     assert.is_true(distinct > 40, "only " .. distinct .. " distinct scenes walked")
+  end)
+
+  -- Phase V.5, item 3: the single maxed-stats walk above proves the happy path
+  -- renders; it never exercises the branches a WEAK character is forced down
+  -- (failed stat checks, "you're not strong enough" scenes). Run the same
+  -- walker under contrasting stat profiles and union the reachable sets — a
+  -- reachability check the per-scene oracle-corpus sweep can't make.
+  it("varied stat profiles reach scenes the maxed walk never does", function()
+    local profiles = {
+      maxed  = function(s) for _, v in ipairs(STAT_VARS) do s:set(v, "5") end end,
+      zero   = function() end,   -- Store defaults everything to absent/0
+      phys   = function(s) for _, v in ipairs({ "v_strength","v_toughness","v_agility","v_reflexes" }) do s:set(v, "5") end end,
+      mage   = function(s) for _, v in ipairs({ "v_magical_sense","v_magical_power","v_magical_knowledge","v_aura_hardening" }) do s:set(v, "5") end end,
+    }
+
+    local per_profile, union = {}, {}
+    for name, apply in pairs(profiles) do
+      local g = HeadlessGame.new(DATA_ROOT)
+      local r = greedy_walk(g, scenes, "Ch1-Intro1", apply)
+      per_profile[name] = r.visits
+      for id in pairs(r.visits) do union[id] = true end
+      assert.is_true(distinct(r.visits) > 20,
+        name .. " profile only reached " .. distinct(r.visits) .. " scenes (walker stuck?)")
+    end
+
+    -- every non-maxed profile forces the walk through at least one scene the
+    -- all-powerful character's greedy path skips — that's the whole point.
+    for _, name in ipairs({ "zero", "phys", "mage" }) do
+      local only_here = 0
+      for id in pairs(per_profile[name]) do
+        if not per_profile.maxed[id] then only_here = only_here + 1 end
+      end
+      assert.is_true(only_here > 0,
+        name .. " profile reached nothing new vs the maxed walk (stat gating not exercised?)")
+    end
+
+    assert.is_true(distinct(union) > distinct(per_profile.maxed),
+      "union of all profiles (" .. distinct(union) .. ") no bigger than the maxed walk alone")
   end)
 
   it("checkpoint_save then load_checkpoint round-trips to the saved scene", function()

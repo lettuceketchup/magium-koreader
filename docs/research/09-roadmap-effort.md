@@ -236,17 +236,16 @@ Design doc §3 "Achievements (per book/chapter)."
 
 ### Phase V.5 — Test hardening
 
-> **High-value four done, unblocks Phase VI** —
+> **Complete** —
 > [`docs/specs/2026-09-04-phase-v5-test-hardening.md`](../specs/2026-09-04-phase-v5-test-hardening.md).
 > Owner-requested, scoped 2026-09-04 after two device-only bugs (Phase IV's
 > lingering tutorial popup, Phase V's `mandatory`-field paint crash) each
-> slipped past a test suite that only checked pieces in isolation. Merged
-> 2026-09-05: **items 1, 2, 4, 7** shipped (app-level E2E harness, achievements
-> content-integrity check, save-schema fixture, real-1272×1696 smoke
-> bootstrap). **Items 3, 5, 6 deferred** as roadmap follow-up (varied-profile
-> graph walk, choice-label/slot-name stress paint, parse-time budget) — the
-> high-value four close the "each piece works" ≠ "the game works" gap and the
-> misleading-resolution gap, which is what blocked Phase VI.
+> slipped past a test suite that only checked pieces in isolation.
+> **Items 1, 2, 4, 7** merged 2026-09-05 (`88d119c`): app-level E2E harness,
+> achievements content-integrity check, save-schema fixture, real-1272×1696
+> smoke bootstrap. **Items 3, 5, 6** merged 2026-09-06: varied stat-profile
+> graph walk, choice-label + slot-name stress paint, parse-time tripwire
+> budget. All test-only. Phase VI unblocked.
 
 Not in the original design doc — added after Phase V's device pass exposed
 that no test drives the real top-level `Magium` object, and no test checks
@@ -300,7 +299,12 @@ the achievements *data* for orphaned/unreachable content.
   `spec/save/fixtures/save_v1.lua`), **7** (`spec/support/real_screen.lua` +
   `mgm.sh real-screen` / `test-ui-real`; all 5 existing `*_smoke.lua` switched
   to the `MAGIUM_REAL_SCREEN` bootstrap).
-- **Deferred** (roadmap follow-up, not blocking): items **3**, **5**, **6**.
+- **Shipped 2026-09-06:** items **3** (`spec/flow/playthrough_spec.lua` — greedy
+  walker extracted, run under 4 contrasting stat profiles, union vs the maxed
+  walk asserted), **5** (`spec/ui/reader_smoke.lua` paints the 15 widest corpus
+  `choice()` labels; `spec/ui/savespage_smoke.lua` audits + paints the widest
+  `locale:header()` slot name), **6** (`spec/engine/story_eager_spec.lua` — full
+  parse under a 3s tripwire; dev actual ≈ 0.24s).
 - **Depends on:** Phase V (uses its screens/data as fixtures; the app-level
   harness naturally exercises the achievements menu too).
 - **Effort band: 13–21 hrs** (≈4–6 / 1–2 / 3–5 / 2–3 / 1–2 / 1 / 1–2 hrs per
@@ -385,7 +389,7 @@ Phases I–VII).
 | III | Saves (4 blobs, debounced autosave, slots) | II | 10–15 hrs |
 | IV | Stats & stat-checks | II (∥ III) | 8–12 hrs |
 | V | Achievements | II (∥ III, IV) | 6–10 hrs |
-| V.5 | Test hardening — **items 1/2/4/7 done** (app-level E2E, achievements content-integrity, save-schema regression, real-resolution smoke bootstrap); items 3/5/6 (exhaustive walk, content stress-paint, perf budget) deferred | V | 13–21 hrs |
+| V.5 | Test hardening — **done** (app-level E2E, achievements content-integrity, save-schema regression, real-resolution smoke bootstrap, varied-profile walk, content stress-paint, parse-time budget) | V | 13–21 hrs |
 | VI | Settings/themes (scoped down — much is KOReader's job) | II, V.5 | 4–8 hrs |
 | VII | Localization en+fr | II (∥ III–VI) | 4–8 hrs |
 | VIII | Polish: e-ink tuning (OQ-007), condition mitigation (OQ-011), GC tuning, full-corpus QA, packaging | all | 15–25 hrs |
