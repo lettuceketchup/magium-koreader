@@ -1,10 +1,15 @@
 # Installing Magium on the Kindle
 
-A personal-use install: copy `magium.koplugin/` into KOReader's `plugins/`
-folder and restart. The story is bundled — no extra downloads.
+Copy `magium.koplugin/` into KOReader's `plugins/` folder and restart. The story
+is bundled — no extra downloads.
 
 **Target:** Kindle Paperwhite 12 (2024), KOReader `v2026.07.1` `kindlehf`.
-Other KOReader builds are untested.
+Other KOReader builds are untested but should work — see
+[`CONTRIBUTING.md`](CONTRIBUTING.md) if yours doesn't.
+
+Licence: AGPL-3.0-or-later (code) + CC BY 4.0 (Magium story text, © Cristian
+Mihailescu). See [`README.md`](README.md#licence) and
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
 
 ---
 

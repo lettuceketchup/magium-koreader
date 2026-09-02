@@ -19,7 +19,9 @@ Record here, so the reasoning survives after the decision looks obvious.
 |---|---|---|
 | [001](ADR-001-research-dossier-layout.md) | Research organized as a modular dossier | Accepted |
 | [002](ADR-002-porting-approach.md) | Port Magium as a standalone KOReader plugin with a Lua engine | Accepted |
-| [003](ADR-003-defer-licensing-distribution.md) | Defer licensing & redistribution-permission work until after the port is functionally complete | Accepted |
+| [003](ADR-003-defer-licensing-distribution.md) | Defer licensing & redistribution-permission work until after the port is functionally complete | Superseded by ADR-008 |
 | [004](ADR-004-plugin-internal-architecture.md) | Plugin internal architecture — three-layer, engine-pure, custom paginated reader | Accepted |
 | [005](ADR-005-debug-trace-toggle.md) | Debug action-trace as a runtime menu toggle | Accepted |
 | [006](ADR-006-no-scene-back-navigation.md) | No in-game "back one scene" / history stack (Phase II) | Accepted |
+| [007](ADR-007-saves-scope.md) | Save-slot scope — 50 slots, delete yes, import/export & rename cut | Accepted |
+| [008](ADR-008-license-and-distribution.md) | License the port AGPL-3.0-or-later; release it freely & non-commercially; story text stays CC BY 4.0 | Accepted |
