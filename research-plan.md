@@ -170,6 +170,48 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-06 (session 33) — Phase V.5: test hardening (items 3, 5, 6 — the remainder)
+
+Owner: "Do the rest of the phase 5.5 as well." Items 3/5/6 implemented on
+`feat/phase-v5-remainder`, merged to `main` via `--no-ff` (`<MERGE>`; branch
+deleted, NOT pushed). All test-only, no device-facing change → no device
+sign-off (same as items 1/2/4/7). Phase V.5 now complete.
+
+- **Item 3 — systematic graph exploration.** `spec/flow/playthrough_spec.lua`:
+  the greedy forward walker from the maxed-stats test extracted to a file-level
+  `greedy_walk(g, scenes, start, apply)` (`apply` runs after `start()`, which
+  wipes the store). New test runs it under 4 stat profiles — `maxed` (all 5),
+  `zero` (Store defaults), `phys` (str/tough/agi/reflex), `mage` (the 4
+  magical stats) — and asserts (a) each profile reaches > 20 distinct scenes
+  (walker not stuck), (b) each *weak* profile reaches ≥ 1 scene the maxed
+  greedy path skips (failed-stat-check branches), (c) the union strictly
+  exceeds the maxed walk alone. Reachability-under-varied-state coverage the
+  per-scene `oracle-corpus` sweep structurally can't give.
+- **Item 5 — content stress paint.** `spec/ui/reader_smoke.lua`: new block
+  parses the whole corpus, sorts every `choice()` label by width, builds a
+  choices page from the 15 widest (longest = **97 chars**) and paints it for
+  real via `Screen.bb` — `RM_PROSE`'s "Go on" never stressed the button
+  column. `spec/ui/savespage_smoke.lua`: audits `locale:header()` across every
+  corpus scene id (widest slot name = **"Book 2 - Chapter 10"**, < 40 chars —
+  bounded by construction, confirmed not assumed) and paints a full 50-slot
+  list built from it (the file had no `paintTo` at all before).
+- **Item 6 — parse-time tripwire.** `spec/engine/story_eager_spec.lua`: one new
+  `it` times a fresh `Story.new{…}:preload()` and asserts `< 3.0s`. Loose on
+  purpose — dev-machine actual ≈ **0.24s**, on-device cold ≈ 2.2s (spike 06);
+  3s never flakes on a busy box but catches an accidental O(n²). Comment says
+  re-measure on device before ever bumping it.
+- **Docs:** Phase V.5 spec Status → all 7 landed + exit criteria filled;
+  roadmap Phase V.5 callout → "Complete", effort-table row, "Shipped
+  2026-09-06" bullet. No ADR (test-infra only). No CLAUDE.md change — the
+  standing regression rule already covers these files by pattern.
+- **Gates:** `test` **132/0** (was 130; +1 varied-profile walk, +1 parse
+  budget), `test-ui` + `test-ui-real` both green (6 smokes each).
+  `oracle-corpus` **not** re-run — pure `spec/` change, no `engine/`/render
+  path touched (baseline stays 8887/8887). `emu-smoke` not run (no runtime
+  code touched).
+- **Next:** Phase VI (settings) — unblocked since session 32; Phase V.5 fully
+  closed now.
+
 ### 2026-09-05 (session 32) — Phase V.5: test hardening (items 1, 2, 4, 7)
 
 Owner: "Start phase 5.5" → "High-value 4" (items 1/2/4/7; 3/5/6 deferred),

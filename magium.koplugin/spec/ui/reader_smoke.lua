@@ -119,5 +119,43 @@ do
     txt:lower():find("choice") == nil)
 end
 
+-- 6. Phase V.5, item 5: stress the choices page with the LONGEST real
+-- choice() labels in the corpus, painted for real. RM_PROSE's "Go on" never
+-- exercises a label wide enough to overflow the button column — the same class
+-- of gap that let the achievements-menu caption crash reach the device.
+do
+  local PLUGIN = assert(package.path:match("^([^;]+)/%?%.lua"), "PLUGIN not in package.path")
+  local parser = require("engine/parser")
+  local Story = require("engine/story")
+
+  local longest = {}
+  for _, f in ipairs(Story._list_magium(PLUGIN .. "/data/en")) do
+    for _, sc in pairs(parser.parse(f)) do
+      for _, c in ipairs(sc.choices) do
+        if c.text and #c.text > 0 then longest[#longest + 1] = c.text end
+      end
+    end
+  end
+  table.sort(longest, function(a, b) return #a > #b end)
+  assert(#longest > 0, "no choice labels parsed from the corpus")
+
+  -- a scene whose choices ARE the 15 widest labels in the whole game
+  local choices = {}
+  for i = 1, math.min(15, #longest) do
+    choices[i] = { text = longest[i], target = "X", set_variables = {}, special = nil }
+  end
+  local rm = {
+    scene_id = "stress", header = "Book 1 - Chapter 1", checkpoint = false,
+    stat_checks = {}, set_variables = {}, paragraphs = { "x" },
+    choices = choices, achievements = {},
+  }
+  local r = make_reader(rm, {})
+  r.page_idx = #r.pages   -- the choices page
+  local ok, err = pcall(function() r:_render(); r[1]:paintTo(Screen.bb, 0, 0) end)
+  check("widest " .. #choices .. " corpus choice labels paint without crashing (longest = "
+    .. #longest[1] .. " chars)", ok)
+  if not ok then print("    " .. tostring(err)) end
+end
+
 print(string.format("\n%s  (%d checks failed)", fails == 0 and "PASS" or "FAIL", fails))
 os.exit(fails == 0 and 0 or 1)

@@ -10,6 +10,7 @@
 if os.getenv("MAGIUM_REAL_SCREEN") then require("spec/support/real_screen") else require("commonrequire") end
 local UIManager = require("ui/uimanager")
 local SavesPage = require("ui/savespage")
+local Screen = require("device").screen
 
 local fails = 0
 local function check(name, cond)
@@ -70,6 +71,41 @@ do
   check("occupied menu offers Load", l:find("load") ~= nil)
   check("occupied menu offers Overwrite", l:find("overwrite") ~= nil)
   check("occupied menu offers Delete", l:find("delete") ~= nil)
+end
+
+-- Phase V.5, item 5: slot names are locale:header(scene) — "Book N - Chapter M"
+-- by construction, so bounded/short (unlike the achievement captions that
+-- crashed). Audit that rather than assume it: compute the header for every
+-- scene id in the corpus, confirm none is unexpectedly long, then paint a full
+-- 50-slot list built from the widest one (the achievements-menu bug was a
+-- paint-time layout crash a structural check missed).
+do
+  local PLUGIN = assert(package.path:match("^([^;]+)/%?%.lua"), "PLUGIN not in package.path")
+  local parser = require("engine/parser")
+  local Story = require("engine/story")
+  local Locale = require("engine/locale")
+  local locale = Locale.load(PLUGIN .. "/data", "en")
+
+  local widest = ""
+  for _, f in ipairs(Story._list_magium(PLUGIN .. "/data/en")) do
+    for id in pairs(parser.parse(f)) do
+      local h = locale:header(id) or ""
+      if #h > #widest then widest = h end
+    end
+  end
+  check("every corpus slot name (locale:header) stays short (<40 chars); widest = '"
+    .. widest .. "'", #widest < 40)
+
+  local full = {}
+  for n = 0, 49 do full[n] = { name = widest, date = os.time() } end
+  local p = SavesPage:new{
+    slots_meta = function() return full end,
+    on_load = function() end, on_save = function() end,
+    on_delete = function() end, on_close = function() end,
+  }
+  local ok, err = pcall(function() p:paintTo(Screen.bb, 0, 0) end)
+  check("full 50-slot list paints with the widest real slot name", ok)
+  if not ok then print("    " .. tostring(err)) end
 end
 
 UIManager.show = real_show

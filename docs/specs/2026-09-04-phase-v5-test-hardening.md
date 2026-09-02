@@ -1,10 +1,9 @@
 # Spec: Phase V.5 — Test hardening
 
-- **Status:** stable — items 1, 2, 4, 7 landed (`feat/phase-v5-test-hardening`,
-  2026-09-05); items 3, 5, 6 deferred to roadmap follow-up (owner call: ship the
-  high-value four now, they unblock Phase VI). Merge commit noted in the
-  running log.
-- **Last updated:** 2026-09-05
+- **Status:** stable — all 7 items landed. Items 1, 2, 4, 7 on
+  `feat/phase-v5-test-hardening` (2026-09-05, merge `88d119c`); items 3, 5, 6 on
+  `feat/phase-v5-remainder` (2026-09-06). Merge commits in the running log.
+- **Last updated:** 2026-09-06
 - **Phase:** Implementation — design cycle 5.5 (roadmap [Phase V.5](../research/09-roadmap-effort.md#phase-v5--test-hardening))
 - **Sources:**
   - Owner-requested audit, 2026-09-04, prompted by two device-only bugs each
@@ -244,14 +243,20 @@ the concrete file names/commands from §3 exist to point to.
 
 ## 5. Exit criteria
 
-- [x] Items 1, 2, 4, 7 shipped with a corresponding test. Items 3, 5, 6
-      **deferred** to roadmap follow-up (owner call 2026-09-05: the four
-      shipped items close the "each piece works ≠ the game works" gap and the
-      misleading-resolution gap — the two things that blocked Phase VI; 3/5/6
-      are incremental coverage, not blockers).
-- [x] `mgm.sh test` (**130/0**), `mgm.sh test-ui` + `mgm.sh test-ui-real`
-      (6 smokes green each), `mgm.sh oracle-corpus` (**8887/8887**, unchanged)
-      all green with the new suites added.
+- [x] Items 1, 2, 4, 7 shipped 2026-09-05. Items 3, 5, 6 shipped 2026-09-06
+      (`feat/phase-v5-remainder`) — all test-only, no device-facing change:
+      - **3** — `spec/flow/playthrough_spec.lua`: greedy walker extracted, new
+        test runs it under 4 stat profiles (maxed / zero / physical / magical)
+        and asserts each weak profile reaches scenes the maxed walk skips.
+      - **5** — `spec/ui/reader_smoke.lua` paints the choices page built from the
+        15 widest real `choice()` labels (longest = 97 chars);
+        `spec/ui/savespage_smoke.lua` audits `locale:header()` across the corpus
+        (widest slot name = "Book 2 - Chapter 10") + paints a full 50-slot list.
+      - **6** — `spec/engine/story_eager_spec.lua`: full-corpus parse under a 3s
+        tripwire budget (dev-machine actual ≈ 0.24s; catches an O(n²) blow-up).
+- [x] `mgm.sh test` (**132/0**), `mgm.sh test-ui` + `mgm.sh test-ui-real`
+      (6 smokes green each). `oracle-corpus` not re-run for 3/5/6 — pure `spec/`
+      change, no render path touched (baseline stays **8887/8887**).
 - [x] CLAUDE.md "Doing implementation work" updated: the test commands
       (incl. `test-ui-real`), the concrete new suite paths, and the standing
       "every phase runs + updates them" rule (§4). `verify` skill updated to
