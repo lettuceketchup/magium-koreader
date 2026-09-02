@@ -6,8 +6,8 @@
 - **Sources:** `github.com/koreader/koreader` — release tag **`v2026.07.1`**, commit
   `9192014d8bd82a91dc1012473be0f238dedfdb54`; `doc/*`, `frontend/**`, `plugins/**`,
   `datastorage.lua`, `kodev`, `platform/kindle/koreader.sh`; WSL2 build verified on-machine
-- **Related:** [`../docs/research/03-koreader-platform.md`](../docs/research/03-koreader-platform.md),
-  [`setup-koreader-wsl.sh`](setup-koreader-wsl.sh), [`07` OQ-012](../docs/research/07-risks-open-questions.md)
+- **Related:** [`../docs/research/03-koreader-platform.md`](../docs/archive/research/03-koreader-platform.md),
+  [`setup-koreader-wsl.sh`](setup-koreader-wsl.sh), [`07` OQ-012](../docs/archive/research/07-risks-open-questions.md)
 
 > Phase 2 analyses the KOReader plugin platform. Two checkouts:
 > 1. **`../koreader`** — a **citation checkout** pinned to the exact release the
@@ -30,14 +30,14 @@ git checkout v2026.07.1      # -> detached HEAD at 9192014
   `../magium-dev`). Cited that way by convention regardless of the citing doc's
   depth — matching the existing `../magium-dev/src/...` style.
 - **`v2026.07.1` is exactly the build the owner runs** (KOReader v2026.07.1
-  release, `kindlehf`, on FW 5.19.5 — see [`00-overview.md`](../docs/research/00-overview.md)).
+  release, `kindlehf`, on FW 5.19.5 — see [`00-overview.md`](../docs/archive/research/00-overview.md)).
   The annotated tags `v2026.07.1` (2026-08-01) and `v2026.07.2` (2026-08-02) both
   point at commit `9192014`; `.2` was a packaging re-tag with no frontend change.
 - Submodules (`base/` = koreader-base, `l10n/`, `resources/fonts`) are **not**
   checked out — not needed for frontend/plugin analysis. koreader-base at this tag
   is pinned to `6e4bc81`; it builds LuaJIT from upstream `github.com/LuaJIT/LuaJIT`
   commit `3c4f9fe` (v2.1 branch, "LuaJIT 2.1.ROLLING", `LUAJIT_VERSION_NUM 20199`)
-  — see [`03-koreader-platform.md` §2](../docs/research/03-koreader-platform.md#2-lua-environment-22).
+  — see [`03-koreader-platform.md` §2](../docs/archive/research/03-koreader-platform.md#2-lua-environment-22).
 
 ## Citing it
 
@@ -90,11 +90,11 @@ for repos outside the session's attached scope, while allowing plain
 steps as above, plus a small patch —
 [`koreader-base-thirdparty-git-fetch.patch`](koreader-base-thirdparty-git-fetch.patch)
 — swapping those 17 fetches for `git clone` at the same tag) and
-[`07` OQ-012](../docs/research/07-risks-open-questions.md)'s Phase 5 note.
+[`07` OQ-012](../docs/archive/research/07-risks-open-questions.md)'s Phase 5 note.
 Verified working end-to-end 2026-08-31 in such a session, headless via
 `xvfb-run -a ./kodev run --simulate=kindle-paperwhite --no-build` (no real
 display, so no e-ink refresh simulation either way — see
-[spike 04](../docs/spikes/04-ui-plugin-skeleton/FINDING.md)).
+[spike 04](../docs/archive/spikes/04-ui-plugin-skeleton/FINDING.md)).
 
 ## Headless UI testing (do this before every device deploy)
 

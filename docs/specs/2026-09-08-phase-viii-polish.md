@@ -7,18 +7,18 @@
   **the port is feature-complete.**
 - **Last updated:** 2026-09-08
 - **Phase:** Implementation — design cycle 8 (roadmap
-  [Phase VIII](../research/09-roadmap-effort.md#phase-viii--polish-on-device-tuning--packaging))
+  [Phase VIII](../archive/research/09-roadmap-effort.md#phase-viii--polish-on-device-tuning--packaging))
 - **Sources:**
-  - [`../research/09-roadmap-effort.md`](../research/09-roadmap-effort.md)
+  - [`../research/09-roadmap-effort.md`](../archive/research/09-roadmap-effort.md)
     Phase VIII (deliverables), §3 (critical path)
-  - [`../research/07-risks-open-questions.md`](../research/07-risks-open-questions.md)
+  - [`../research/07-risks-open-questions.md`](../archive/research/07-risks-open-questions.md)
     OQ-007, OQ-011, OQ-013
-  - [`../research/04-constraints-budget.md`](../research/04-constraints-budget.md)
+  - [`../research/04-constraints-budget.md`](../archive/research/04-constraints-budget.md)
     §3 rows 3/4/7 (parse time, condition outlier, GC), §6 (e-ink refresh split)
-  - [`../spikes/06-ondevice-parse-timing/FINDING.md`](../spikes/06-ondevice-parse-timing/FINDING.md)
+  - [`../spikes/06-ondevice-parse-timing/FINDING.md`](../archive/spikes/06-ondevice-parse-timing/FINDING.md)
     (device is ~5.6× the x86 emulator on CPU-bound Lua)
   - `../../../magium-dev/data/en/b3ch4a.magium:251` (the 2044-clause condition)
-- **Related:** [`../../research-plan.md`](../../research-plan.md),
+- **Related:** [`../../research-plan.md`](../archive/research-plan.md),
   [`2026-08-31-plugin-architecture-and-phase-i.md`](2026-08-31-plugin-architecture-and-phase-i.md)
   §8.3 (refresh policy scoped to `ui/refresh.lua`), §12 Phase VIII
 

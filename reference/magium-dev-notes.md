@@ -4,7 +4,7 @@
 - **Last updated:** 2026-08-31
 - **Phase:** 0
 - **Sources:** `../magium-dev` @ `51f5aa9` — `README`, `package.json`, `src/main_setup.js`, `src/renderers.js`, `src/parser.js`, `src/utils.js`, `templates/main.ejs`, `data/en/ui.json`; run locally with Node v24.11.0 on Windows
-- **Related:** [`../docs/research/01-magium-analysis.md`](../docs/research/01-magium-analysis.md)
+- **Related:** [`../docs/research/01-magium-analysis.md`](../docs/archive/research/01-magium-analysis.md)
 
 > `magium-dev` is the known-good implementation. We run it locally and diff a
 > Lua port's output against it for identical inputs.
@@ -125,6 +125,6 @@ Parsed the full English story in-process
 | Parsed objects, V8 heap delta | ~17.4 MB |
 | `JSON.stringify(story)` length | 8.16 MB |
 
-These feed [`../docs/research/01-magium-analysis.md`](../docs/research/01-magium-analysis.md) §11
-and [`../docs/research/04-constraints-budget.md`](../docs/research/04-constraints-budget.md).
+These feed [`../docs/research/01-magium-analysis.md`](../docs/archive/research/01-magium-analysis.md) §11
+and [`../docs/research/04-constraints-budget.md`](../docs/archive/research/04-constraints-budget.md).
 Lua table overhead differs from V8 — the real on-device number needs spike D.

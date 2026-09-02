@@ -4,7 +4,7 @@
 - **Date:** 2026-09-02
 - **Deciders:** owner (Q&A 2026-09-02), Claude
 - **Phase:** Implementation — Phase III ([spec](../specs/2026-09-02-phase-iii-saves.md))
-- **Related:** [`../research/09-roadmap-effort.md` Phase III](../research/09-roadmap-effort.md#phase-iii--saves), [ADR-006](ADR-006-no-scene-back-navigation.md) (also a "match `magium-dev` except where the device forces a change" call), [`../specs/2026-08-31-plugin-architecture-and-phase-i.md` §9](../specs/2026-08-31-plugin-architecture-and-phase-i.md#9-save-model-savemanagerlua)
+- **Related:** [`../research/09-roadmap-effort.md` Phase III](../archive/research/09-roadmap-effort.md#phase-iii--saves), [ADR-006](ADR-006-no-scene-back-navigation.md) (also a "match `magium-dev` except where the device forces a change" call), [`../specs/2026-08-31-plugin-architecture-and-phase-i.md` §9](../specs/2026-08-31-plugin-architecture-and-phase-i.md#9-save-model-savemanagerlua)
 
 ## Context
 

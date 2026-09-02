@@ -448,17 +448,22 @@ function Magium:openMenu()
     .. "\n\n" .. table.concat({
       "— About this port —",
       "",
-      "magium-koreader is an unofficial, non-commercial fan port of Magium to",
-      "e-ink readers running KOReader. Not affiliated with or endorsed by the",
-      "family of Cristian Mihailescu, the magium-dev project, or KOReader.",
+      "magium-koreader is an unofficial, non-commercial fan port of Magium to"
+        .. " e-ink readers running KOReader. It is not affiliated with or endorsed"
+        .. " by the family of Cristian Mihailescu, the magium-dev project, or KOReader.",
       "",
-      "Story text © Cristian Mihailescu, licensed CC BY 4.0",
-      "(creativecommons.org/licenses/by/4.0/). Transcribed to the .magium",
-      "format by the magium-dev project; reflowed and paginated for KOReader.",
-      "Story content is unchanged.",
+      "The story text is © Cristian Mihailescu and licensed CC BY 4.0"
+        .. " (creativecommons.org/licenses/by/4.0/). It was transcribed to the"
+        .. " .magium format by the magium-dev project and is reflowed and paginated"
+        .. " here for e-ink; the narrative content is unchanged.",
       "",
-      "Engine reimplemented in Lua from magium-dev (MIT). Runs on KOReader",
-      "(AGPL-3.0). This port is licensed AGPL-3.0-or-later.",
+      "The engine is reimplemented in Lua from magium-dev (MIT) and runs on"
+        .. " KOReader (AGPL-3.0). This port's code is licensed AGPL-3.0-or-later.",
+      "",
+      "This port was built largely with AI assistance (Claude Code) under human"
+        .. " direction and on-device testing, and development, fixes, and reviews"
+        .. " continue to use it.",
+      "",
       "Source & full attribution: github.com/lettuceketchup/magium-koreader",
     }, "\n")
   dialog = ButtonDialog:new{

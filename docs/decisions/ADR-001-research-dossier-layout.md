@@ -4,7 +4,7 @@
 - **Date:** 2026-08-31
 - **Deciders:** rishishwarmanu@gmail.com
 - **Phase:** research-phase setup
-- **Related:** [design doc §6](../superpowers/specs/2026-08-31-magium-koreader-research-design.md), [`../../research-plan.md`](../../research-plan.md)
+- **Related:** [design doc §6](../archive/superpowers/specs/2026-08-31-magium-koreader-research-design.md), [`../../research-plan.md`](../archive/research-plan.md)
 
 ## Context
 

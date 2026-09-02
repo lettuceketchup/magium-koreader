@@ -49,13 +49,13 @@
   See §3.6 and §6. Re-tested green (busted **122/0**, all 5 UI smokes
   including reset, two-row, bold, and per-level-line assertions).
 - **Last updated:** 2026-09-04
-- **Phase:** Implementation — design cycle 5 (roadmap [Phase V](../research/09-roadmap-effort.md#phase-v--achievements))
+- **Phase:** Implementation — design cycle 5 (roadmap [Phase V](../archive/research/09-roadmap-effort.md#phase-v--achievements))
 - **Sources:**
   - [`2026-08-31-plugin-architecture-and-phase-i.md`](2026-08-31-plugin-architecture-and-phase-i.md) §6, §12 row V — the architecture this fills in
-  - [`../research/01-magium-analysis.md`](../research/01-magium-analysis.md) §6 (achievements)
+  - [`../research/01-magium-analysis.md`](../archive/research/01-magium-analysis.md) §6 (achievements)
   - `../../../magium-dev` @ `51f5aa9` — `templates/main.ejs:66-83`, `src/renderers.js:79-86,126-148`,
     `templates/achievements_menu*.ejs`, `templates/stats.ejs:175-190`, `data/en/achievements{1,2,3}.json` (port target)
-- **Related:** [`../../research-plan.md`](../../research-plan.md), [Phase IV spec](2026-09-03-phase-iv-stats.md) (deferred the toast here)
+- **Related:** [`../../research-plan.md`](../archive/research-plan.md), [Phase IV spec](2026-09-03-phase-iv-stats.md) (deferred the toast here)
 
 > The achievement **unlock computation** (parsing, the display gate, the
 > consolation-prize special case) shipped in Phase I/II and is oracle-clean.

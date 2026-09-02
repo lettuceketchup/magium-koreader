@@ -8,19 +8,19 @@
 - **Deciders:** rishishwarmanu@gmail.com
 - **Phase:** post-6, affects sequencing of 7/8
 - **Related:** [ADR-008](ADR-008-license-and-distribution.md) (supersedes this);
-  [`../research/07-risks-open-questions.md`](../research/07-risks-open-questions.md)
-  OQ-004, OQ-005; [`../research/08-licensing.md`](../research/08-licensing.md);
+  [`../research/07-risks-open-questions.md`](../archive/research/07-risks-open-questions.md)
+  OQ-004, OQ-005; [`../research/08-licensing.md`](../archive/research/08-licensing.md);
   [`ADR-002-porting-approach.md`](ADR-002-porting-approach.md);
-  [design doc §2, §10, §11](../superpowers/specs/2026-08-31-magium-koreader-research-design.md)
+  [design doc §2, §10, §11](../archive/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 
 ## Context
 
 The governing design doc's phase order runs Phase 6 (approach) → Phase 7
-(licensing & permissions — [`08-licensing.md`](../research/08-licensing.md),
+(licensing & permissions — [`08-licensing.md`](../archive/research/08-licensing.md),
 `LICENSE`, an ADR) → Phase 8 (roadmap/effort). Phase 7's stated goal is
 "know what license the port must adopt and what redistribution of code and
 story text is permitted, **before any public release**"
-([`08`](../research/08-licensing.md)); [`ADR-002`](ADR-002-porting-approach.md)'s
+([`08`](../archive/research/08-licensing.md)); [`ADR-002`](ADR-002-porting-approach.md)'s
 consequences section, written immediately after Phase 6, described **OQ-004**
 (does the family's community-project permission extend to a further port?) as
 "the standing blocker on public distribution... should be pursued in parallel
@@ -55,7 +55,7 @@ ADR supersedes on that one point.
 ### Option B — Drop Phase 7 / OQ-004 entirely
 - Pros: no wasted effort tracking a question the project may never need.
 - Cons: throws away real, already-partially-done groundwork (contacts map,
-  three outreach drafts, [`05` §5–6](../research/05-prior-art.md)) for a
+  three outreach drafts, [`05` §5–6](../archive/research/05-prior-art.md)) for a
   question that *would* matter the moment the owner wants to share this with
   anyone; a hobby project's scope can and often does change once something
   works.
@@ -69,7 +69,7 @@ ADR supersedes on that one point.
   already depends only on Phase 6, per `research-plan.md`).
 - Cons: `08-licensing.md` stays a stub, so the design doc's original exit
   criterion "all nine `docs/research/*` docs are `stable`" ([design doc
-  §11](../superpowers/specs/2026-08-31-magium-koreader-research-design.md#11-handoff--exit-criteria))
+  §11](../archive/superpowers/specs/2026-08-31-magium-koreader-research-design.md#11-handoff--exit-criteria))
   is no longer literally satisfiable on the original schedule — addressed by
   a note in that doc, not by pretending the criterion still holds.
 
@@ -89,7 +89,7 @@ Phases 0–6's technical findings changes if distribution is deferred, and
 nothing about implementation (once a later phase approves it) requires a
 license or redistribution answer to *build* the plugin, only to *share* it.
 Keeping the outreach drafts and contacts map already written
-([`05` §5–6](../research/05-prior-art.md)) means deferring costs nothing —
+([`05` §5–6](../archive/research/05-prior-art.md)) means deferring costs nothing —
 they're ready the moment they're needed, rather than needing to be
 reconstructed. Dropping the question outright (Option B) would be the wrong
 call for the opposite reason Option A is: it assumes distribution definitely
@@ -103,16 +103,16 @@ won't happen, which is not what the owner said either.
   line recommending OQ-004 outreach "in parallel with Phase 7/8" — is
   superseded by this ADR on that one point; ADR-002's actual Decision
   (candidate A) is untouched and this does not change its Status.
-- **[`07-risks-open-questions.md`](../research/07-risks-open-questions.md)**:
+- **[`07-risks-open-questions.md`](../archive/research/07-risks-open-questions.md)**:
   OQ-004's Blocking? column changes from "yes" to "no — deferred," with this
   ADR as the reason, per the design doc's own exit-criteria language ("every
   `OQ-NNN` is either closed or explicitly deferred with a reason").
-- **[`08-licensing.md`](../research/08-licensing.md)** stays a stub by intent
+- **[`08-licensing.md`](../archive/research/08-licensing.md)** stays a stub by intent
   — a short header note points here rather than the doc being silently
   stale. The design doc's "all nine docs stable" exit criterion is amended
   with a note referencing this ADR rather than left contradicted.
 - **What would make us revisit this:** the owner deciding to share the
   finished port with anyone else (a Discord post, a GitHub release, handing
   it to another Kindle owner) — at that point Phase 7 runs for real, using
-  the groundwork already in [`05`](../research/05-prior-art.md) and
-  [`08`](../research/08-licensing.md).
+  the groundwork already in [`05`](../archive/research/05-prior-art.md) and
+  [`08`](../archive/research/08-licensing.md).

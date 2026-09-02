@@ -2,14 +2,14 @@
 
 - **Status:** stable — automated gates green (busted **111/0**, `oracle-corpus` **8887/8887** unchanged, `savespage` + `reader` UI smokes green, headless emu load clean) + owner on-device sign-off 2026-09-02 ("All good"). Built on `feat/phase-iii-saves`.
 - **Last updated:** 2026-09-02
-- **Phase:** Implementation — design cycle 3 (roadmap [Phase III](../research/09-roadmap-effort.md#phase-iii--saves))
+- **Phase:** Implementation — design cycle 3 (roadmap [Phase III](../archive/research/09-roadmap-effort.md#phase-iii--saves))
 - **Sources:**
   - [`2026-08-31-plugin-architecture-and-phase-i.md`](2026-08-31-plugin-architecture-and-phase-i.md) §9 (save model), §12 row III — the architecture this fills in
-  - [`../research/09-roadmap-effort.md`](../research/09-roadmap-effort.md) Phase III — the roadmap this spec opens
+  - [`../research/09-roadmap-effort.md`](../archive/research/09-roadmap-effort.md) Phase III — the roadmap this spec opens
   - [`../decisions/ADR-007-saves-scope.md`](../decisions/ADR-007-saves-scope.md) — D1 (parity deltas)
   - [`../decisions/ADR-004-plugin-internal-architecture.md`](../decisions/ADR-004-plugin-internal-architecture.md) — the "III–V only add modules; `save/manager` takes an injected writer" obligation
   - `../../../magium-dev` @ `51f5aa9` — `public/scripts/saves.js`, `templates/saves.ejs`, `data/en/ui.json` (port target)
-- **Related:** [`../../research-plan.md`](../../research-plan.md)
+- **Related:** [`../../research-plan.md`](../archive/research-plan.md)
 
 > Phase II shipped the full corpus, the in-game menu, and — pulled forward from
 > this phase — the `checkpoint` blob with real `checkpoint_save` /

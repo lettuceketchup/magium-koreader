@@ -17,8 +17,8 @@ and the hand-offs.
 
 ## 1. Pick the phase, check it's unblocked
 
-The newest entry in `research-plan.md`'s running log = current status. Scope
-for the phase = `docs/research/09-roadmap-effort.md`. Confirm nothing blocks
+The newest entry in `docs/archive/research-plan.md`'s running log = current status. Scope
+for the phase = `docs/archive/research/09-roadmap-effort.md`. Confirm nothing blocks
 it — e.g. Phase VI+ is blocked until Phase V.5 lands.
 
 ## 2. Brainstorm → spec
@@ -77,7 +77,7 @@ On sign-off:
 
 ## 9. Running log + memory
 
-Append a dated entry to the bottom of `research-plan.md` (newest-first within
+Append a dated entry to the bottom of `docs/archive/research-plan.md` (newest-first within
 the "Running log" section): what shipped, the gates and their numbers, the
 decisions/ADRs, what's next. Keep doc updates cheap (CLAUDE.md): the log plus
 only the one or two docs that would otherwise be *wrong*, batched and terse.

@@ -6,8 +6,8 @@
 - **Phase:** 7 (licensing & permissions — run now that distribution is the intent)
 - **Related:** supersedes [ADR-003](ADR-003-defer-licensing-distribution.md) (its
   deferral condition — "revisit when the owner decides to share the port" — has
-  now triggered); [`../research/08-licensing.md`](../research/08-licensing.md)
-  (the analysis), [`../research/07-risks-open-questions.md`](../research/07-risks-open-questions.md)
+  now triggered); [`../research/08-licensing.md`](../archive/research/08-licensing.md)
+  (the analysis), [`../research/07-risks-open-questions.md`](../archive/research/07-risks-open-questions.md)
   OQ-004 / OQ-005; [ADR-002](ADR-002-porting-approach.md) (standalone plugin);
   [`../../LICENSE`](../../LICENSE), [`../../THIRD-PARTY-NOTICES.md`](../../THIRD-PARTY-NOTICES.md)
 
@@ -20,7 +20,7 @@ exactly that — a free, non-commercial public release via GitHub, with
 contributors (testers, coders, e-ink specialists, fans) and forks welcome, and
 issues/PRs invited for other e-ink devices. So Phase 7 runs.
 
-The facts, from [`08-licensing.md`](../research/08-licensing.md) (sources cited
+The facts, from [`08-licensing.md`](../archive/research/08-licensing.md) (sources cited
 there):
 
 - **Original `raduprv/Magium`:** code **MIT** (`Copyright (c) 2024 Cristian
@@ -103,7 +103,7 @@ permission chain was murky; confirming the data is CC BY 4.0 dissolved that.
 ## Consequences
 
 - **OQ-004** (redistribution permission) and **OQ-005** (which licence governs
-  a port) both close in [`07-risks-open-questions.md`](../research/07-risks-open-questions.md)
+  a port) both close in [`07-risks-open-questions.md`](../archive/research/07-risks-open-questions.md)
   — resolutions point here.
 - **[ADR-003](ADR-003-defer-licensing-distribution.md)** status →
   `Superseded by ADR-008`. Its deferral was correct for its time and its own

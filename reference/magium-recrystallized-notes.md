@@ -4,7 +4,7 @@
 - **Last updated:** 2026-08-31
 - **Phase:** 0
 - **Sources:** `../magium-recrystallized` @ `0dcfd2e` — `README.md`, `package.json`, `wasm_module/Cargo.toml`, `wasm_module/src/{lib,decoder,wasmtable,utils}.rs`, `static/magium.story` (hex), `src/lib/stores/`
-- **Related:** [`magium-dev-notes.md`](magium-dev-notes.md), [`../docs/research/08-licensing.md`](../docs/research/08-licensing.md), [`../docs/research/06-approach-comparison.md`](../docs/research/06-approach-comparison.md)
+- **Related:** [`magium-dev-notes.md`](magium-dev-notes.md), [`../docs/research/08-licensing.md`](../docs/archive/research/08-licensing.md), [`../docs/research/06-approach-comparison.md`](../docs/archive/research/06-approach-comparison.md)
 
 > Secondary reference. **Not** the porting base. This note records *why*, and what
 > is still worth borrowing.
@@ -42,7 +42,7 @@
 | Binary `.story` format, no `.magium`→`.story` compiler in the repo | We'd depend on an external/unpublished toolchain, or reverse the format. |
 | Engine is Rust/WASM | Can't run as-is under KOReader (LuaJIT). Would need a full reimplementation *and* a WASM runtime, or a rewrite. |
 | Designed for HTTP range streaming | Opposite of what a self-contained offline Kindle plugin needs. |
-| AGPL-3.0 | More restrictive than `magium-dev`'s MIT (matters for distribution — [`08-licensing.md`](../docs/research/08-licensing.md)). |
+| AGPL-3.0 | More restrictive than `magium-dev`'s MIT (matters for distribution — [`08-licensing.md`](../docs/archive/research/08-licensing.md)). |
 | Scripting layer unfinished (`run_guard` stub) | Semantics not fully pinned down; the sample `.story` is partial. |
 
 vs. `magium-dev`: ~650 LOC JS, human-readable `.magium` data, runtime parser,
