@@ -71,7 +71,8 @@
 > KOReader widget stack (`mgm.sh test-ui`) and/or a `spec/flow/*` navigation
 > test — *before* the owner is asked to test on-device. The device pass
 > confirms e-ink feel and real input only; it is never the first check that the
-> code works. Codified in `CLAUDE.md` → "Doing implementation work".
+> code works. Codified in `CLAUDE.md` → "Doing implementation work"; the
+> per-change procedure is the **`verify`** skill.
 
 ### Milestone 0 — Pre-flight: on-device parse-timing gate
 

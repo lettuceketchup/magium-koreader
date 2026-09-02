@@ -4,6 +4,9 @@ Design specs for the actual port (one per subsystem or per plan), produced by a
 new brainstorming/spec cycle after
 [`../research/09-roadmap-effort.md`](../research/09-roadmap-effort.md) handed off.
 
+Running a phase (spec → implement → verify → device sign-off → merge → log) is
+the **`phase`** skill.
+
 | Spec | Status | Covers |
 |---|---|---|
 | [2026-08-31-plugin-architecture-and-phase-i.md](2026-08-31-plugin-architecture-and-phase-i.md) | Phase I complete (signed off 2026-09-01) | The permanent three-layer module architecture; **Milestone 0** (on-device parse-timing gate) and **Phase I** (MVP) in build-ready detail; phases II–VIII as architectural notes. |

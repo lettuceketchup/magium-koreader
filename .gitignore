@@ -15,6 +15,10 @@ Thumbs.db
 # Subagent-driven-development workspace (ledger, briefs, review packages — scratch)
 /.superpowers/
 
+# Claude Code local state (the skills under .claude/skills/ ARE tracked)
+/.claude/scheduled_tasks.lock
+/.claude/settings.local.json
+
 # Spike build artifacts (spike source IS tracked; built output is not)
 docs/spikes/**/node_modules/
 docs/spikes/**/target/
