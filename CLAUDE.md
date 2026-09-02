@@ -28,6 +28,22 @@ running log in `research-plan.md` and the roadmap in
 5. `SUMMARY.md` — the research conclusions + confidence tags (background; research is done).
 6. `docs/research/09-roadmap-effort.md` — the phased implementation roadmap.
 
+## Workflow skills — invoke these, don't re-derive
+
+Three project skills capture the repeating procedures. Use them instead of
+reconstructing the steps from this file, the running log, or memory:
+
+- **`phase`** — run an implementation phase end to end: pick it, brainstorm,
+  spec, branch, implement, verify, owner device sign-off, merge, log.
+- **`verify`** — the test-gate decision matrix for a change: which of `busted` /
+  `oracle-corpus` / `test-ui` / `emu-smoke` to run, what green means, how to
+  triage a failure.
+- **`device`** — deploy to the owner's Kindle and pull `crash.log` + save state
+  when a device bug comes back.
+
+This file keeps only the *rules* that outlive the tooling; the *how* is in the
+skills.
+
 ## Reference implementations (sibling folders, not in this repo)
 
 Two community recreations of Magium live next to this repo and are used for
@@ -103,43 +119,24 @@ Scene header ("Book X - Chapter Y") is derived from the scene ID:
   behavioral reference for every engine question.
 - `ui/` needs the KOReader emulator (WSL2, see `reference/`) or the device. No
   hot reload: copy to `koreader/plugins/`, restart, read `koreader/crash.log`.
-- **Every `ui/` change is verified in the emulator before the owner is asked to
-  test it, and lands an automated UI check.** `mgm.sh test-ui` runs the real
-  KOReader widget stack headlessly (`spec/ui/*_smoke.lua` — widget construction,
-  tap/callback dispatch, screen assembly, title-bar affordances) and
-  `spec/flow/*` covers navigation/special-hook flows through `headless_game`.
-  A new screen or a changed interaction adds/extends one of these so the
-  regression is caught without the device; `mgm.sh emu-smoke` confirms the
-  plugin still loads. The owner's device pass is the *final* confirmation of
-  e-ink feel and real input — never the first check that the code works, and
-  never the first time a screen is actually asked to render.
-  - **Structural checks (item_table contents, callback dispatch) are not
-    enough — a smoke test must also actually paint the screen.** KOReader
-    widgets often size/lay out lazily at paint time, not construction (e.g.
-    `MenuItem`'s `mandatory` field is an unwrapped `TextWidget` whose width is
-    only computed in `paintTo` — a too-long `mandatory` string passed the
-    achievements-menu smoke test's structural asserts cleanly and still
-    crashed on the real device, 2026-09-04). For every screen/state reachable
-    through real data (not just one sampled case — the bug was data-length-
-    dependent), call `widget:paintTo(Screen.bb, 0, 0)` inside a `pcall` and
-    assert it doesn't error, per `koreader/spec/unit/widget_progresswidget_spec.lua`'s
-    own pattern. Do this for any state combination realistic user data can
-    reach, not just the first one that comes to mind.
+- **Every `ui/` change is emulator-verified and lands an automated check —
+  a `spec/ui/*_smoke.lua` (real `paintTo` for every state realistic data can
+  reach, not just structural asserts) and/or a `spec/flow/*` — before the
+  owner is asked to test on device.** The device pass confirms e-ink feel and
+  real input, never that the code works or that a screen renders. The smoke
+  paint runs at a dummy 600×800, so it proves "doesn't crash", not "looks
+  right at 1272×1696" — real layout is a device or screenshot check.
+  → **`verify`** and **`device`** skills.
+- **Every regression suite that exists is run and updated by every later phase
+  or change, not just the one that added it.** A behavior change that doesn't
+  update the test asserting the old behavior is incomplete. Phase VI+ is
+  **blocked on Phase V.5** landing first
+  (`docs/specs/2026-09-04-phase-v5-test-hardening.md`). → **`verify`** skill.
 - Still-open items that need device time or code are tracked as roadmap work, not
   `OQ-NNN` (see `docs/research/07-risks-open-questions.md` blocking-status note).
-- **Every regression suite that exists must be run and kept up to date by every
-  later phase or change — not just the one that added it.** (Owner rule,
-  2026-09-04, prompted by Phase V.5: `docs/specs/2026-09-04-phase-v5-test-hardening.md`.)
-  A change that alters behavior without updating the test that asserted the
-  old behavior is incomplete, the same way a `ui/` change without an emulator
-  check is incomplete. Today that means `busted` (`mgm.sh test`),
-  `oracle-corpus` (`mgm.sh oracle-corpus`), and `spec/ui/*_smoke.lua`
-  (`mgm.sh test-ui`); Phase V.5 adds an app-level E2E harness, a content-integrity
-  check over the achievements data, and others — once it lands, this line
-  covers those too. Phase VI+ is **blocked on Phase V.5 landing first** — see
-  the roadmap's Phase V.5 entry.
 
 ## Git
 
 - Branch `main`, no CI yet. Feature work on a `feat/…` branch; never commit straight to `main` unasked.
 - Commit messages: what changed + which phase/task + why. Reference `ADR-NNN` when relevant.
+- Full phase lifecycle (spec → branch → verify → device sign-off → `--no-ff` merge → log): the **`phase`** skill.

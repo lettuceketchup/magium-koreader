@@ -170,6 +170,41 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-04 (session 31) — project workflow skills (`phase` / `verify` / `device`)
+
+Tooling/docs only — no `magium.koplugin/` code touched, so no gates apply.
+
+- Audited the 30-session running log for repeating semi-deterministic tasks
+  (build, test, deploy, ssh, ui verification, log retrieval, the phase
+  merge ritual). Captured the three highest-cost ones as project skills under
+  `.claude/skills/` (auto-discovered by Claude Code, pointed at from CLAUDE.md):
+  - **`verify`** — the change→test-suite decision matrix (`busted` /
+    `oracle-corpus` / `test-ui` / `emu-smoke`), what "green" means, the
+    `paintTo`-per-reachable-state rule + the dummy-`Screen` 600×800 caveat,
+    the "regression suites stay current" rule, and oracle-DIFF triage.
+  - **`device`** — SSH deploy (`kindle-ssh-deploy.ps1 -Name paperwhite`), the
+    MTP fallback + its silent-no-overwrite gotcha, the owner-checklist framing,
+    and a new **`.claude/skills/device/scripts/kindle-pull-logs.ps1`** (reuses
+    `tools/kindle-ssh-common.ps1`) that pulls `crash.log` + the whole
+    `koreader/magium/` state dir to a scratch dir and greps the log — the
+    "pull evidence before theorizing" step that was hand-written each device pass.
+  - **`phase`** — the full lifecycle: pick/unblock → brainstorm → spec (+
+    `docs/specs/README.md` row) → `feat/` branch → implement (ponytail) → ADR
+    if a decision closes an alternative → `verify` → `device` sign-off →
+    `--no-ff` merge + re-verify + branch teardown → running-log + memory.
+- **Docs re-pointed at the skills, redundancy trimmed:** CLAUDE.md gains a
+  "Workflow skills" section and its two fat "Doing implementation work" bullets
+  (ui-verification, regression-suites) collapse to one-liners + a skill
+  pointer; `reference/koreader-notes.md`'s two workflow sections get a
+  "workflow entry point: the X skill" note above the (retained) command
+  reference; `docs/research/09-roadmap-effort.md` §1 and `docs/specs/README.md`
+  get one-line pointers. The three procedural memory files
+  (`device-deploy-and-ui-testing`, `emulator-first-for-ui-changes`,
+  `regression-tests-stay-current`) trimmed to the *why* + owner-directive
+  origin, deferring the *how* to the skills; `MEMORY.md` index updated.
+- **Next:** unchanged — owner runs Phase V.5, then Phase VI (via the `phase`
+  skill).
+
 ### 2026-09-04 (session 30) — Phase V implemented: achievements
 
 Built the achievement unlock toast and browsable menu, per

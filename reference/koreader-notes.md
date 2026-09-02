@@ -98,6 +98,9 @@ display, so no e-ink refresh simulation either way — see
 
 ## Headless UI testing (do this before every device deploy)
 
+> Workflow entry point: the **`verify`** skill (which gate for which change,
+> what green means). This section is the underlying command reference.
+
 The engine layer is oracle-tested; the **UI layer** now has headless coverage too
 — run it in the emulator's real KOReader env, no X server:
 
@@ -115,6 +118,10 @@ exercises checkpoint / restart. `spec/engine/navigation_spec.lua` statically
 checks every choice target resolves + reachability from `Ch1-Intro1`.
 
 ## On-device deployment & debugging (the real target)
+
+> Workflow entry point: the **`device`** skill (deploy command, what to ask the
+> owner to check, `kindle-pull-logs.ps1` for a bug report). This section is the
+> one-time setup + the mechanics it relies on.
 
 Restart KOReader after any copy, then read `koreader/crash.log` — all `logger`
 output + tracebacks, last 500 KB (`../koreader/platform/kindle/koreader.sh:323-334`).
