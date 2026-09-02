@@ -82,26 +82,41 @@ do  -- drilling into book 2: split chapters inline between 3 and 5 (D5)
   paint(m, "book 2 chapter list")
 end
 
-do  -- drilling into an entry list: locked/unlocked, and this is exactly the
+do  -- drilling into an entry list: locked/unlocked, title/caption as two
+    -- real rows (not one "\n"-joined row — MenuItem:init unconditionally
+    -- collapses "\n" to a space, menu.lua:211), and this is exactly the
     -- screen that crashed on-device (long captions in mandatory) — paint it.
   local m = make({ v_ac_ch1_coward = "1" })
   m:onMenuSelect(m.item_table[1])   -- Book 1
   local ch1 = find_by_prefix(m.item_table, "Chapter 1")
   check("found Chapter 1 row", ch1 ~= nil and ch1.text == "Chapter 1")
   m:onMenuSelect(ch1)
-  local coward = find_by_prefix(m.item_table, "Who are you calling a coward?")
-  check("found the coward entry", coward ~= nil)
+
+  local coward, coward_idx
+  for i, it in ipairs(m.item_table) do
+    if it.level == "entry" and it.text == "Who are you calling a coward?" then
+      coward, coward_idx = it, i
+    end
+  end
+  check("found the coward title row", coward ~= nil)
   check("unlocked entry shows the checked glyph", coward and coward.mandatory == CHECKED)
   check("mandatory is a short glyph, not the long caption (the crash class)",
     coward and #coward.mandatory <= 4)
-  check("caption is folded into text (multilines_show_more_text wraps it)",
-    coward and coward.text:find("A true warrior", 1, true) ~= nil)
 
-  local other
+  local caption = coward_idx and m.item_table[coward_idx + 1]
+  check("caption is its own row right after the title (a real 2nd line)",
+    caption ~= nil and caption.level == "caption"
+    and caption.text == "A true warrior never backs down from a challenge.")
+  check("caption row is dim and not tappable (no checkbox, no selection)",
+    caption and caption.dim == true and caption.select_enabled == false
+    and caption.mandatory == nil)
+
+  local other_title
   for _, it in ipairs(m.item_table) do
-    if it ~= coward then other = it end
+    if it.level == "entry" and it ~= coward then other_title = it end
   end
-  check("a not-yet-earned entry shows the unchecked glyph", other and other.mandatory == UNCHECKED)
+  check("a not-yet-earned entry shows the unchecked glyph",
+    other_title and other_title.mandatory == UNCHECKED)
   check("2 levels deep", #m.paths == 2)
   paint(m, "book 1 chapter 1 entries")
 end

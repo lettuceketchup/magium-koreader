@@ -95,6 +95,13 @@ end
 -- in the app, so they're guaranteed to render on every supported font/device.
 local CHECKED, UNCHECKED = "\xe2\x9c\x93 ", "\xe2\x96\xa2 "   -- "✓ ", "▢ "
 
+-- Two Menu rows per achievement (title+checkbox, then a dim caption row) —
+-- NOT one row with an embedded "\n". MenuItem:init unconditionally runs
+-- `self.text:gsub("\n", " ")` (menu.lua:211) before any font-size/wrap
+-- branch even sees the string, so no in-`text` trick can force a hard line
+-- break inside a single row (confirmed by reading that line, and by
+-- screenshot: multilines_show_more_text still ran the two sentences
+-- together). A genuine second line means a genuine second Menu row.
 function AchievementsMenu:_entry_items(book_n, key)
   local items = {}
   for _, e in ipairs(self.locale:achievement_entries(book_n, key)) do
@@ -102,20 +109,18 @@ function AchievementsMenu:_entry_items(book_n, key)
     local unlocked = v ~= nil and v ~= "0"
     -- `mandatory` is a single-line, unwrapped, untruncated TextWidget (file
     -- size, page number, ...) — a full caption sentence in it crashes paint
-    -- (menu.lua:200-202: available_width can go negative), which is why the
-    -- caption lives in `text` (wrapped by multilines_show_more_text above),
-    -- not here. A short checkbox glyph is exactly what `mandatory` is for.
-    -- NOTE: "\n" between title/caption does NOT force a hard line break here
-    -- (TextBoxWidget's harfbuzz/xtext path collapses it to whitespace inside
-    -- MenuItem's multilines_show_more_text reconstruction, unlike its
-    -- documented standalone behavior) — verified via screenshot. It still
-    -- reads fine as one flowing wrapped block; a true bold-title/small-caption
-    -- split (full HTML parity) would need a custom item widget, not worth it
-    -- here.
+    -- (menu.lua:200-202: available_width can go negative). A short checkbox
+    -- glyph is exactly what it's for; it only goes on the title row.
     items[#items + 1] = {
-      text = e.title .. "\n" .. e.caption,
+      text = e.title,
       mandatory = unlocked and CHECKED or UNCHECKED,
       level = "entry",
+    }
+    items[#items + 1] = {
+      text = e.caption,
+      dim = true,
+      select_enabled = false,   -- Menu:onMenuSelect no-ops on this natively
+      level = "caption",
     }
   end
   return items

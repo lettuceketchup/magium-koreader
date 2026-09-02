@@ -25,9 +25,18 @@
      that field, not the field itself) — koreader's own
      `ui/widget/checkmark.lua` convention. Also added an owner-requested
      **reset-all-achievements** action (title-bar warning icon +
-     `ConfirmBox`, no reference in magium-dev). See §3.6 and §6.
-  Re-tested green (busted **122/0**, all 5 UI smokes including 2 new reset
-  checks). Awaiting a third device pass.
+     `ConfirmBox`, no reference in magium-dev). Also caught: keyboard-shortcut
+     letter boxes in the screenshots — a screenshot-environment artifact only
+     (the ad hoc verification script didn't select a touch-only device
+     profile); not a real bug, confirmed by reading `menu.lua:604`.
+  3. **Owner review of that fix, same round:** the caption still ran into the
+     title on one line — `"\n"` between them doesn't force a break;
+     `MenuItem:init` unconditionally collapses it to a space
+     (`menu.lua:211`), independent of `multilines_show_more_text`. Fixed with
+     two real Menu rows per achievement (title+checkbox, then a dim
+     non-tappable caption row) instead of one joined string.
+  See §3.6 and §6. Re-tested green (busted **122/0**, all 5 UI smokes
+  including reset + two-row assertions). Awaiting a follow-up device pass.
 - **Last updated:** 2026-09-04
 - **Phase:** Implementation — design cycle 5 (roadmap [Phase V](../research/09-roadmap-effort.md#phase-v--achievements))
 - **Sources:**
@@ -160,44 +169,55 @@ flat single-level list.
   since Phase I) and opens `Magium:openAchievements()`, mirroring
   `openSaves()`/`openStats()`.
 
-### 3.6 Entry-row layout: title/caption wrap + a real checkbox (2026-09-04, 2nd pass)
+### 3.6 Entry-row layout: title/caption as two real lines + a checkbox (2026-09-04, 2nd + 3rd pass)
 
-Two on-device findings, both from a screen the emulator's dummy-`Screen`
-paint checks had already "passed" (§0/Status — see the diagnosis note
-there):
+Findings from a screen the emulator's dummy-`Screen` paint checks had
+already "passed" (§0/Status — see the diagnosis note there):
 
-- **Title didn't fit — single-line ellipsis, not wrapped.** `MenuItem`
-  auto-promotes to single-line-with-ellipsis whenever the font can't fit 2
-  lines at the row's *default* height (`menu.lua:142-156`) — true for a
-  title+caption pair even with room to spare, since the promotion check runs
-  before considering how much text there actually is. Fix: `multilines_show_more_text
-  = true` on the `Menu` — koreader's own mechanism for "let long item text
-  actually show, shrinking font as needed" (`menu.lua`'s
-  `multilines_show_more_text` branch), not a custom widget.
-- **No visible checkbox — dim color only.** The original `dim = not unlocked`
-  (native "greyed out" row) was the *only* locked/unlocked signal, and wasn't
-  visible enough. Fix: a real checkbox glyph in `mandatory` — `"✓ "` /
-  `"▢ "`, the exact glyphs `ui/widget/checkmark.lua` uses for the same
-  purpose everywhere else in koreader (guaranteed font coverage). This reuses
-  `mandatory`, the same field the 1st-pass crash came from — safe here
-  because the crash was specifically about *long* text in an unwrapped
-  field; a 2-character glyph is exactly what `mandatory` is for (file size,
-  page number, ...).
-- **Known simplification kept:** title and caption share one font/size (no
-  bold-title/small-caption split like the reference's separate `<div>`s) —
-  `text = title .. "\n" .. caption`, and the `\n` renders as a soft
-  wrap-point, not a guaranteed hard break (verified via screenshot — this
-  particular `TextBoxWidget` reconstruction path doesn't honor embedded `\n`
-  the way its own doc comment describes). Still reads correctly as one
-  flowing wrapped block; true HTML parity would need a custom item widget,
-  not justified here.
+- **Title didn't fit — single-line ellipsis, not wrapped (2nd pass).**
+  `MenuItem` auto-promotes to single-line-with-ellipsis whenever the font
+  can't fit 2 lines at the row's *default* height (`menu.lua:142-156`) —
+  true for a title+caption pair even with room to spare, since the
+  promotion check runs before considering how much text there actually is.
+  Fix: `multilines_show_more_text = true` on the `Menu` — koreader's own
+  mechanism for "let long item text actually show, shrinking font as
+  needed", not a custom widget.
+- **No visible checkbox — dim color only (2nd pass).** The original
+  `dim = not unlocked` (native "greyed out" row) was the *only*
+  locked/unlocked signal, and wasn't visible enough. Fix: a real checkbox
+  glyph in `mandatory` — `"✓ "` / `"▢ "`, the exact glyphs
+  `ui/widget/checkmark.lua` uses for the same purpose everywhere else in
+  koreader (guaranteed font coverage). This reuses `mandatory`, the same
+  field the 1st-pass crash came from — safe here because the crash was
+  specifically about *long* text in an unwrapped field; a 2-character glyph
+  is exactly what `mandatory` is for (file size, page number, ...).
+- **Caption still ran into the title on one line, not its own (3rd pass).**
+  `text = title .. "\n" .. caption` did NOT produce a hard break: read the
+  actual code — `MenuItem:init` unconditionally runs
+  `self.text:gsub("\n", " ")` (`menu.lua:211`) before any font-size or wrap
+  branch even sees the string, so **no in-`text` trick can force a line
+  break inside one Menu row**, `multilines_show_more_text` or not. Real fix:
+  **two Menu rows per achievement** — a title row (`text=title`,
+  `mandatory` = the checkbox) followed immediately by a caption row
+  (`text=caption`, `dim=true`, `select_enabled=false`, no `mandatory`). Each
+  row is a genuine line by construction; no custom widget needed, still 100%
+  native `Menu`/`MenuItem`. Trade-off accepted: the per-row separator line
+  now also appears between title and caption (Menu draws one under every
+  row, no per-item override exists) — visually minor, and the checkbox only
+  ever appearing on the title row keeps the pairing clear regardless.
 
 Verified with a one-off, non-`commonrequire` script
 (`Device.screen:init()` without `einkfb.dummy = true`, real SDL headless via
 `xvfb-run -a`, `EMULATE_READER_W=1272 EMULATE_READER_H=1696`) that painted
 the actual entry-list screen to a PNG (`Screen.bb:writePNG`) and was visually
-inspected — before/after screenshots confirmed both the wrap and the
-checkbox render correctly at the real PW12 resolution.
+inspected each pass — screenshots confirmed the wrap, the checkbox, and
+finally the real two-line split all render correctly at the real PW12
+resolution. (The same screenshots also showed keyboard-shortcut letter boxes
+next to each row — a screenshot-environment artifact only: the ad hoc
+bootstrap didn't select a touch-only device profile, so `Device:hasKeyboard()`
+defaulted true and `menu.lua:604`'s `is_enable_shortcut` followed suit. The
+real PW12 (`Device:hasKeys()` false) never shows these; nothing in this
+plugin's code is involved.)
 
 ### 3.7 Reset all achievements (owner-requested, no reference in magium-dev)
 

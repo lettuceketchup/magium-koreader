@@ -296,13 +296,37 @@ Built the achievement unlock toast and browsable menu, per
   - Smoke test updated to match (`✓`/`▢` glyph assertions, reset-flow
     assertions); busted 122/0, all 5 UI smokes green. `oracle-corpus` not
     re-run (zero `engine/` touch this round, UI-file changes only).
-  - **Redeploy attempted, device unreachable** (SSH connect timeout —
-    `192.168.1.11:2222`, likely asleep/off WiFi). Not yet on the device.
-- **Next:** get the device back online, redeploy, then the same device-pass
-  checklist as before (toast, drill-down, immersion toast) **plus**: titles
-  wrap across multiple lines, a real checkbox per entry, and the reset icon
-  asks for confirmation and actually clears every achievement. Then
-  **Phase V.5** (owner's own session, test hardening — now also covers the
+  - Redeployed once the device came back online (79/79 files verified).
+- **Owner review of that fix, same session:** title now wraps and the
+  checkbox shows, but the caption still ran directly into the title on one
+  line instead of its own — and no keyboard boxes should appear on the
+  screenshots (real device is touch-only).
+  - **Keyboard-shortcut boxes: confirmed screenshot-environment artifact,
+    not a bug.** `is_enable_shortcut = Device:hasKeyboard()`
+    (`menu.lua:604`) — purely a device-capability flag, nothing in this
+    plugin's code. The ad hoc verification script never selected a
+    touch-only device profile, so the desktop-like default reported a
+    keyboard. Real PW12 (`Device:hasKeys()` false) never shows these.
+  - **Caption-on-its-own-line: real bug, root-caused precisely.**
+    `text = title .. "\n" .. caption` never produced a hard break because
+    `MenuItem:init` unconditionally runs `self.text:gsub("\n", " ")`
+    (`menu.lua:211`) *before* any font-size/wrap branch even sees the
+    string — true regardless of `multilines_show_more_text`. No in-`text`
+    trick can force a break inside one Menu row. **Fix:** two real Menu rows
+    per achievement — title row (checkbox in `mandatory`) immediately
+    followed by a caption row (`dim=true`, `select_enabled=false`, no
+    `mandatory`) — each row is a genuine line by construction, no custom
+    widget. Trade-off: the per-row separator line now also falls between
+    title and caption (Menu has no per-item override for it) — minor,
+    still reads clearly since only title rows carry the checkbox.
+  - Verified via a fresh screenshot at the real resolution: title + caption
+    now genuinely on separate lines. Smoke test rewritten to match (checks
+    the caption is a distinct `level="caption"` row right after its title,
+    not text baked into the title row). busted 122/0, all 5 UI smokes
+    green. Redeployed.
+- **Next:** owner device pass (toast, drill-down — captions now their own
+  line — checkbox, immersion toast, reset-with-confirmation). Then
+  **Phase V.5** (owner's own session, test hardening — covers the
   dummy-`Screen` resolution gap found this round) — Phase VI does not start
   until it lands.
 
