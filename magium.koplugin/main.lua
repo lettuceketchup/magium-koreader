@@ -445,6 +445,22 @@ function Magium:openMenu()
   local about = (self.locale:str("aboutIntroText")
     or "Magium — a Choose Your Own Adventure game by Cristian Mihailescu.")
     :gsub("<br%s*/?>", "\n")
+    .. "\n\n" .. table.concat({
+      "— About this port —",
+      "",
+      "magium-koreader is an unofficial, non-commercial fan port of Magium to",
+      "e-ink readers running KOReader. Not affiliated with or endorsed by the",
+      "family of Cristian Mihailescu, the magium-dev project, or KOReader.",
+      "",
+      "Story text © Cristian Mihailescu, licensed CC BY 4.0",
+      "(creativecommons.org/licenses/by/4.0/). Transcribed to the .magium",
+      "format by the magium-dev project; reflowed and paginated for KOReader.",
+      "Story content is unchanged.",
+      "",
+      "Engine reimplemented in Lua from magium-dev (MIT). Runs on KOReader",
+      "(AGPL-3.0). This port is licensed AGPL-3.0-or-later.",
+      "Source & full attribution: github.com/lettuceketchup/magium-koreader",
+    }, "\n")
   dialog = ButtonDialog:new{
     title = _("Magium"), title_align = "center",
     buttons = {

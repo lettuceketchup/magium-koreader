@@ -15,13 +15,18 @@ KOReader v2026.07.1 (`kindlehf`), ~1 GB RAM.
 
 ## Status
 
-**Phase: IMPLEMENTATION.** Research is complete — chosen approach
+**Feature-complete (`v1.0`, 2026-09-08).** All three books are playable
+end-to-end on the reference device, with saves, stats, achievements, and
+settings. Research is complete — chosen approach
 ([ADR-002](docs/decisions/ADR-002-porting-approach.md)), phased roadmap
-([`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md)). Phase I (MVP: the
-full engine, chapter 1 playable end-to-end on the real Kindle, autosave/resume)
-has landed; Phase II (full corpus + navigation) is next. See the running log in
-[`research-plan.md`](research-plan.md) for live status and
-[`docs/specs/`](docs/specs/) for the implementation spec.
+([`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md)); Phases I–VI + VIII
+shipped with on-device sign-off. Work now is maintenance and polish. French
+localization is built but shelved pending a complete upstream translation.
+See the running log in [`research-plan.md`](research-plan.md).
+
+Install: [`INSTALL.md`](INSTALL.md). It targets the Kindle Paperwhite 12 but
+should run on other KOReader devices — reports welcome
+([`CONTRIBUTING.md`](CONTRIBUTING.md)).
 
 ## Where to look
 
@@ -63,6 +68,38 @@ Neither is vendored here — they are consulted as references.
 
 ## Credit
 
-Magium was created by Cristian Mihailescu. The community recreations continue his
-work with his family's permission. This project is an independent, non-commercial
-attempt to make the story playable on e-ink readers.
+**Magium was created by [Cristian Mihailescu](https://github.com/raduprv/Magium)**
+(1996–2024). After his passing, his family released the game and **licensed all
+of its story text [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)** so
+the community could preserve, translate, and continue it — which is what this
+port does.
+
+- The **story text** here is copied from [magium-dev](https://github.com/thuiop/magium-dev),
+  which transcribed the original into the `.magium` scene format. It is © Cristian
+  Mihailescu, CC BY 4.0; this port reflows and paginates it for e-ink, and the
+  narrative content is unchanged.
+- The **engine** is a Lua reimplementation of magium-dev's engine (MIT).
+- The **platform** is [KOReader](https://github.com/koreader/koreader) (AGPL-3.0).
+
+Full attribution and the third-party licence texts:
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
+
+This is an **unofficial, non-commercial fan project**. It is not affiliated with
+or endorsed by the family of Cristian Mihailescu, the magium-dev or
+magium-recrystallized projects, or KOReader.
+
+## Licence
+
+- This port's **code, docs, and tooling**: **AGPL-3.0-or-later**
+  ([`LICENSE`](LICENSE)) — matching KOReader, into which the plugin loads. See
+  [ADR-008](docs/decisions/ADR-008-license-and-distribution.md) and
+  [`docs/research/08-licensing.md`](docs/research/08-licensing.md).
+- The bundled **Magium story text**: **CC BY 4.0**, © Cristian Mihailescu — not
+  relicensed.
+
+## Contributing
+
+Contributors are welcome — testers, coders, e-ink specialists, or fans. Bug
+reports (especially for e-ink devices other than the Kindle Paperwhite 12),
+issues, PRs, and forks that continue the work are all invited. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md).

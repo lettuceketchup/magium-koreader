@@ -8,8 +8,12 @@
   condition ≈ 15 ms/render on device — already mitigated by parse-time DNF
   caching), OQ-013 (custom paginated reader, Phase I). `oracle-corpus`
   8887/8887, busted 134/0. Install: `INSTALL.md`, tag `v1.0`. Research phase
-  (Phases 0–6, 8) complete; Phase 7 licensing deferred
-  ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
+  (Phases 0–8) complete; **Phase 7 licensing run 2026-09-08
+  ([ADR-008](docs/decisions/ADR-008-license-and-distribution.md))** — port code
+  **AGPL-3.0-or-later**, Magium story text stays **CC BY 4.0** (the family's
+  release licence, no permission request needed), `LICENSE` +
+  `THIRD-PARTY-NOTICES.md` + `CONTRIBUTING.md` added — **the port is cleared for
+  a free, non-commercial release.**
   _(Detail below is the historical research/early-implementation record.)_
   **Phase I complete** ([spec](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
   + [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md); on-device
@@ -70,11 +74,15 @@ mitigation, the parse-strategy gate) rather than threatening the choice
 itself — see [`06` §3](docs/research/06-approach-comparison.md#3-blocking-open-questions-63) /
 [`07`'s blocking-status note](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6).
 **OQ-004** (does the family's permission extend to a further port?) and
-**OQ-005** (license) would matter for public distribution, but the owner has
-confirmed this is a **personal hobby project for use on their own device
-only, with no near-term distribution intent** — so Phase 7 (licensing &
-permissions) and OQ-004 outreach are **deferred** until that changes, not
-pursued now ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
+**OQ-005** (license) are **closed** (Phase 7, 2026-09-08,
+[ADR-008](docs/decisions/ADR-008-license-and-distribution.md), superseding the
+ADR-003 deferral once the owner decided to release the port). The family
+released the Magium story text **CC BY 4.0** explicitly for ports and
+translations — so redistribution needs **no permission request**, only
+attribution and a note that the text was reformatted. The port's own code is
+licensed **AGPL-3.0-or-later** to match KOReader (into whose Lua state a plugin
+loads); the story text stays CC BY 4.0. A free, non-commercial GitHub release
+is fully permitted — see [`08-licensing.md`](docs/research/08-licensing.md).
 **Phase 8 (roadmap/effort) is now done** — see
 [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md): a phased
 implementation roadmap for candidate A (Milestone 0 pre-flight → 8 build
@@ -167,7 +175,7 @@ setup or the real Kindle.
 | 29 | **Candidates B and C fail for structural reasons, not close calls.** Phase 4 already showed neither has anything real to build on — no existing KOReader plugin plays CYOA content to extend (B, OQ-003/F-30), no e-ink/KOReader player exists for whatever `.magium` gets converted into (C, F-27). Phase 6's scored decision matrix confirms this holds even scoring B and C generously on every other axis: weighted totals A 95, D 70, B 53, C 47 (out of 100) — [`06` §2](docs/research/06-approach-comparison.md#2-decision-matrix-62). | high | [`06`](docs/research/06-approach-comparison.md) §1–2 |
 | 30 | **Candidate D (build-time preprocess) is a real second-place option, not a strawman — same parity ceiling as A — but its rationale is undercut by Phase 5's own measurements.** D exists to avoid a slow runtime parse; spikes 02/03 measured the full 54-file corpus parsing in 112–205 ms under two LuaJIT builds, close to the original 95–130 ms V8/desktop anchor, not the order-of-magnitude-worse case D was scoped against. D also adds a standing cost A doesn't have: a build pipeline to write and a second, self-designed format to keep in sync with every upstream `.magium` update. | high | [`06`](docs/research/06-approach-comparison.md) §1–2 |
 | 31 | **No open question changes the A/B/C/D ranking.** Every still-open `OQ-NNN` narrows an implementation detail inside candidate A (pagination widget chrome, parse-strategy trigger, one outlier condition's mitigation, e-ink redraw tuning) rather than threatening the choice of A itself. | high | [`06` §3](docs/research/06-approach-comparison.md#3-blocking-open-questions-63), [`07`](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6) |
-| 32 | **Project scope confirmed: personal hobby project, owner's own device, no near-term distribution.** OQ-004 (redistribution permission) and OQ-005 (license) — and Phase 7 generally — are **deferred**, not pursued, until the owner is actually considering sharing the port. Neither blocks Phase 8 or any implementation phase; nothing about Phases 0–6's technical findings changes. | high | [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md) |
+| 32 | **Licensing settled (Phase 7, 2026-09-08) — the port is cleared for a free, non-commercial release.** The family released the Magium **story text CC BY 4.0**, explicitly for ports/translations, so redistribution needs **no permission request** — only attribution + a note that the text was reformatted to `.magium` and reflowed. The port's own **code is AGPL-3.0-or-later** (matching KOReader, into whose Lua state a plugin loads; MIT engine code composes in cleanly). `LICENSE` + `THIRD-PARTY-NOTICES.md` + `CONTRIBUTING.md` added; About screen + README carry the attribution. OQ-004 + OQ-005 closed. Earlier (2026-08-31): scope was personal-use-only and Phase 7 was deferred under ADR-003 — [ADR-008](docs/decisions/ADR-008-license-and-distribution.md) supersedes it. | high | [ADR-008](docs/decisions/ADR-008-license-and-distribution.md), [`08-licensing.md`](docs/research/08-licensing.md) |
 | 33 | **Full roadmap for candidate A bands to ~100–162 hrs** across a pre-flight parse-timing gate (Milestone 0) and eight build phases (MVP → full story/nav → saves → stats → achievements → settings → i18n → polish). The two widest-uncertainty items are Phase I's custom fullscreen pagination widget (no KOReader prior art does "fullscreen + paginated" together — OQ-013) and Phase VIII's on-device tuning (e-ink feel/OQ-007, condition-outlier cost/OQ-011) — both flagged as the best-targeted spots for community help. Everything else is closer to mechanical, oracle-checked translation. | medium | [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md) §1–2 |
 | 34 | **Saves, stats, and achievements (roadmap phases III–V) are mutually independent extensions of the same variable engine, and localization (phase VII) depends only on the full-corpus/navigation phase (II)** — three real opportunities to parallelize implementation work or hand off to a contributor, not a strictly linear build order. | high | [`09`](docs/research/09-roadmap-effort.md) §3 |
 | 35 | **The three still-open OQs that survived Phase 6 (OQ-001's parse-time tail, OQ-007, OQ-011) plus OQ-013 are not researchable further on paper** — each needs real device time or actual code. Phase 8 resolved this by scheduling them as concrete roadmap work (a pre-flight gate for OQ-001; built into Phase I by design for OQ-013; Phase VIII line items for OQ-007/OQ-011) rather than leaving them open-ended, satisfying the design doc's "closed or explicitly deferred with a reason" exit criterion for every remaining row. | high | [`09`](docs/research/09-roadmap-effort.md) §5, [`07`](docs/research/07-risks-open-questions.md#blocking-status-after-phase-6) |
@@ -177,10 +185,12 @@ setup or the real Kindle.
 ## Open questions
 
 Tracked in [`docs/research/07-risks-open-questions.md`](docs/research/07-risks-open-questions.md)
-(OQ-001 … OQ-013). Closed: OQ-003, OQ-006, OQ-010. Mostly resolved: OQ-001, OQ-008,
-OQ-009, OQ-012. **Deferred (not pursued for now):** OQ-004 (redistribution
-permission), OQ-005 (license) — personal-use-only scope,
-[ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md). **Phase 6:**
+(OQ-001 … OQ-013). **Every OQ is now closed.** OQ-004 (redistribution
+permission) + OQ-005 (license) closed in Phase 7, 2026-09-08
+([ADR-008](docs/decisions/ADR-008-license-and-distribution.md)): story text is
+CC BY 4.0 (no permission request needed), port code is AGPL-3.0-or-later.
+OQ-007 / OQ-011 / OQ-013 closed in Phase VIII. Earlier: OQ-003, OQ-006, OQ-010
+closed; OQ-001, OQ-008, OQ-009, OQ-012 resolved. **Phase 6:**
 none of the remaining open questions block the approach decision (all narrow
 an implementation detail inside the chosen candidate A) — see the table above
 and [`07`'s blocking-status
@@ -228,10 +238,12 @@ See [`docs/decisions/`](docs/decisions/).
 
 - [ADR-001](docs/decisions/ADR-001-research-dossier-layout.md) — research organized as a modular dossier (not a single report or a wiki).
 - [ADR-002](docs/decisions/ADR-002-porting-approach.md) — port Magium as a standalone KOReader plugin with a Lua reimplementation of the engine (candidate A), over extending an existing plugin (B), converting to Twine/Ink + an existing player (C), or a build-time hybrid (D).
-- [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md) — defer licensing & redistribution-permission work (Phase 7, OQ-004) until the port is actually being distributed; project is personal-use-only for now.
+- [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md) — *(superseded by ADR-008)* deferred licensing work while the project was personal-use-only.
 - [ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md) — plugin internal architecture: three-layer (engine-pure / ui / save), a custom fullscreen paginated reading widget (resolves OQ-013), choices rendered as the final page.
 - [ADR-005](docs/decisions/ADR-005-debug-trace-toggle.md) — the debug action-trace is a runtime menu toggle, not a build variant.
 - [ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md) — **no** in-game "back one scene" / history stack: `magium-dev` has none, and parity is the standard. Overrides the roadmap's Phase II "back/history stack" line.
+- [ADR-007](docs/decisions/ADR-007-saves-scope.md) — save-slot scope: 50 slots, delete yes, import/export & rename cut.
+- [ADR-008](docs/decisions/ADR-008-license-and-distribution.md) — license the port **AGPL-3.0-or-later** (matching KOReader), release it freely and non-commercially, keep the bundled Magium story text under **CC BY 4.0**. Supersedes ADR-003.
 
 ## Next steps
 

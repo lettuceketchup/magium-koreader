@@ -14,14 +14,19 @@ gen (2024) via KOReader** (owner's device: FW 5.19.5, KOReader v2026.07.1
 produced lives under `docs/`. The game code is the KOReader plugin in
 `magium.koplugin/`.
 
-Current phase: **FEATURE-COMPLETE** — Phase VIII (final) merged 2026-09-08,
-tag `v1.0`; Phases I–VI + V.5 all shipped with owner on-device sign-off; Phase
-VII (fr localization) built + shelved on upstream content (`phase-vii-shelved`).
-Every research OQ is closed or deferred. Work now is **maintenance** — bug
-fixes, and any polish the owner asks for. Non-blocking follow-ups: Phase VII
-(needs a real fr `.magium` set), Phase 7 licensing ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md),
-only if distribution is considered), a GC post-release watch. See the running
-log in `research-plan.md` and the roadmap in
+Current phase: **FEATURE-COMPLETE + CLEARED FOR RELEASE** — Phase VIII (final)
+merged 2026-09-08, tag `v1.0`; Phases I–VI + V.5 all shipped with owner
+on-device sign-off; Phase VII (fr localization) built + shelved on upstream
+content (`phase-vii-shelved`). **Phase 7 (licensing) done 2026-09-08**
+([ADR-008](docs/decisions/ADR-008-license-and-distribution.md)): port code is
+**AGPL-3.0-or-later** (`LICENSE`), the bundled Magium story text stays **CC BY
+4.0** (© Cristian Mihailescu — the family's release licence, no permission
+request needed); `THIRD-PARTY-NOTICES.md` + `CONTRIBUTING.md` added. **Scope:
+freely distributable, non-commercial.** Every research OQ is closed. Work now is
+**maintenance** — bug fixes, and any polish the owner asks for. Non-blocking
+follow-ups: Phase VII (needs a real fr `.magium` set), a GitHub Release +
+optional KOReader plugin-index listing, a GC post-release watch. See the
+running log in `research-plan.md` and the roadmap in
 `docs/research/09-roadmap-effort.md`.
 
 ## Orientation — read these first, in order
@@ -69,8 +74,12 @@ reference them by relative path + commit hash.
   `../magium-dev`). Setup + how to run the emulator on Windows:
   `reference/koreader-notes.md`. License: AGPL-3.0.
 
-The MIT/AGPL split matters for what license the port can adopt — see
-`docs/research/08-licensing.md`.
+Licensing is settled ([ADR-008](docs/decisions/ADR-008-license-and-distribution.md),
+`docs/research/08-licensing.md`): this port's code is **AGPL-3.0-or-later**
+(`LICENSE`), the bundled Magium story text (`magium.koplugin/data/**`) is **CC BY
+4.0** © Cristian Mihailescu and must keep its attribution
+(`THIRD-PARTY-NOTICES.md`). Don't add code or text under incompatible terms;
+new story text must preserve CC BY 4.0 provenance.
 
 ## How the Magium engine works (short version)
 

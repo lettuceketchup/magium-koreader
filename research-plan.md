@@ -1,9 +1,12 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** **IMPLEMENTATION COMPLETE — the port is feature-complete.**
-  Research phase done (Phases 0–6, 8; approach — [ADR-002](docs/decisions/ADR-002-porting-approach.md),
-  roadmap — [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md); Phase 7
-  licensing deferred — [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
+- **Status:** **IMPLEMENTATION COMPLETE — the port is feature-complete, and
+  cleared for a free non-commercial release.** Research phase done (Phases 0–8;
+  approach — [ADR-002](docs/decisions/ADR-002-porting-approach.md), roadmap —
+  [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md); **Phase 7
+  licensing run 2026-09-08 — [ADR-008](docs/decisions/ADR-008-license-and-distribution.md)**:
+  port code AGPL-3.0-or-later, Magium story text stays CC BY 4.0, `LICENSE` +
+  `THIRD-PARTY-NOTICES.md` + `CONTRIBUTING.md` added, OQ-004 + OQ-005 closed).
   Implementation: **Phases I–VI + V.5 all merged to `main`** with owner
   on-device sign-off (ADRs 004/006/007); **Phase VII** (fr localization) built +
   rolled back, blocked on upstream translation completeness (tag
@@ -11,11 +14,11 @@
   (e-ink feel acceptable on device), OQ-011 (2044-clause condition ≈ 15 ms/render
   on device, already mitigated by parse-time DNF caching), OQ-013 (custom
   paginated reader, Phase I) all closed; `INSTALL.md` + tag `v1.0`.
-  `oracle-corpus` 8887/8887, busted 134/0. **Every OQ is closed or deferred.**
+  `oracle-corpus` 8887/8887, busted 134/0. **Every OQ is closed.**
   Newest-first detail in the [running log](#running-log). **Next: nothing
-  scheduled** — the port is in personal use; open non-blocking follow-ups are
-  Phase VII (upstream fr content), Phase 7 (licensing, if distribution is ever
-  considered), and a GC post-release watch.
+  scheduled** — the port is releasable; open non-blocking follow-ups are
+  Phase VII (upstream fr content), a GitHub Release + optional KOReader
+  plugin-index listing, and a GC post-release watch.
 - **Last updated:** 2026-09-08
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
@@ -126,21 +129,20 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[-]` dropp
 
 ## Phase 7 — Licensing & permissions
 
-**DEFERRED (2026-08-31, [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)):**
-project scope confirmed as personal use on the owner's own device only, no
-near-term distribution intent. This phase only matters once distribution is
-actually being considered — not dropped, just not run now. Revisit before
-any public release. Phase 8 does not depend on this phase, so research
-proceeds to Phase 8 in the meantime.
+**DONE (2026-09-08, [ADR-008](docs/decisions/ADR-008-license-and-distribution.md);
+supersedes the [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)
+deferral).** Deferred 2026-08-31 while the scope was personal-use-only; the owner
+then decided to release the port freely and non-commercially and welcome
+contributors — the revisit trigger ADR-003 named — so Phase 7 ran.
 
 **Goal:** know what license the port must use and what redistribution is allowed.
-**Deliverable:** `docs/research/08-licensing.md`, `LICENSE`, an ADR.
+**Deliverable:** `docs/research/08-licensing.md`, `LICENSE`, an ADR. — all landed.
 
-- [ ] 7.1 Compare upstream licenses: `magium-dev` MIT, `magium-recrystallized` AGPL-3.0, original `raduprv/Magium`. Determine what a port inherits depending on which code/data it derives from.
-- [ ] 7.2 The story-text permission chain: the family's permission to the community projects — does it extend to a further port? Who to ask (Magium Discord / project maintainers).
-- [ ] 7.3 KOReader's own license (AGPL-3.0) and what that implies for a plugin distributed with/for it.
-- [ ] 7.4 Distribution implications for each channel (KOReader plugin index, kindlemodshelf, GitHub releases).
-- [ ] 7.5 Pick a license for this repo; record as an ADR; add `LICENSE`.
+- [x] 7.1 Upstream licenses — [`08` §1](docs/research/08-licensing.md#1-upstream-code-licences-71): `magium-dev` **MIT**, `magium-recrystallized` **AGPL-3.0** (unused → not engaged), original `raduprv/Magium` **MIT** code + **CC BY 4.0** data. The binding pair for this port: MIT (engine, via magium-dev) + CC BY 4.0 (story text).
+- [x] 7.2 Story-text permission chain — [`08` §2](docs/research/08-licensing.md#2-story-text-permission-chain-72): the family released the text **CC BY 4.0** explicitly for ports/translations. No permission request needed; attribution + a reformatting note are the obligations. **OQ-004 closed.**
+- [x] 7.3 KOReader AGPL implications — [`08` §3](docs/research/08-licensing.md#3-koreaders-license-and-plugin-implications-73): a plugin `require`d into KOReader's Lua state has a plausible derivative-work reading → license the port **AGPL-3.0-or-later** to match; MIT engine code composes in cleanly. **OQ-005 closed.**
+- [x] 7.4 Distribution channels — [`08` §4](docs/research/08-licensing.md#4-distribution-channel-implications-74): free non-commercial **GitHub repo + Releases** is fully permitted; checklist there. KOReader plugin index optional/later. KindleModShelf out of scope.
+- [x] 7.5 License picked + recorded — `LICENSE` (AGPL-3.0), `THIRD-PARTY-NOTICES.md`, `CONTRIBUTING.md` added; [ADR-008](docs/decisions/ADR-008-license-and-distribution.md); About screen + README updated.
 
 ## Phase 8 — Roadmap, effort, timeline
 
@@ -160,6 +162,67 @@ proceeds to Phase 8 in the meantime.
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-09-08 (session 37) — Phase 7 (licensing) run — the port is cleared for a free release
+
+Owner: after the feature-complete report, asked what the upstream licences
+actually permit for an e-ink / KOReader-plugin port and a GitHub release, then
+"do it all" — write the licence, attribution, and intent; contributors, forks,
+issues/PRs for other e-ink devices all welcome; non-commercial, freely
+distributable. This is the revisit trigger [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)
+named, so Phase 7 ran for real.
+
+**Findings** (all cited in [`08-licensing.md`](docs/research/08-licensing.md),
+now `stable`):
+
+- **`raduprv/Magium`** (fetched 2026-09-08): code **MIT** (`Copyright (c) 2024
+  Cristian Mihailescu`); README states verbatim *"All the data (text and such)
+  is released under CC BY 4.0 license"* — released by the author's brother with
+  the family's permission, explicitly for "porting the game to other languages,
+  and hopefully finishing it too."
+- **`magium-dev`** (this port's base): **MIT**; its `data/en/*.magium` is a
+  format transcription of the CC BY 4.0 original → CC BY 4.0 flows through.
+- **`magium-recrystallized`** (AGPL): research reference only, nothing shipped
+  from it → its copyleft never attaches.
+- **KOReader**: AGPL-3.0; a `.koplugin` is `require`d into its Lua state — a
+  plausible "single program / derivative" reading.
+
+**Decisions ([ADR-008](docs/decisions/ADR-008-license-and-distribution.md),
+supersedes ADR-003):**
+
+1. Port code / docs / tooling → **AGPL-3.0-or-later** (`LICENSE` = GNU AGPL-3.0
+   text). Matches the host; MIT engine code composes into the AGPL aggregate
+   cleanly, MIT notice retained.
+2. Bundled Magium story text + UI/achievement JSON → **stays CC BY 4.0**, ©
+   Cristian Mihailescu. Not ours to relicense. Attribution + "reformatted to
+   `.magium`, reflowed for KOReader, content unchanged" carried in
+   `THIRD-PARTY-NOTICES.md`, `README.md`, and the in-app **About** screen.
+3. Distribution: free, non-commercial, via the GitHub repo + tagged Releases.
+   **No permission request required** — the licences are the grant. Plugin-index
+   listing (`koreader-plugin` topic) is an optional later step.
+4. Contributions under AGPL-3.0-or-later, inbound = outbound; forks/continuations
+   explicitly welcome (`CONTRIBUTING.md`).
+
+**Files:** new — `LICENSE`, `THIRD-PARTY-NOTICES.md`, `CONTRIBUTING.md`,
+`docs/decisions/ADR-008-*.md`. Filled — `docs/research/08-licensing.md` (stub →
+stable, F-31…F-34). Edited — `main.lua` (About screen attribution + licence
+lines), `README.md` (Credit/Licence/Contributing/disclaimer + stale status
+fixed), `INSTALL.md` (licence line; dropped "personal-use"), `07-…` (OQ-004 +
+OQ-005 closed; **every OQ now closed**), `09-…` (Phase 7 done, distribution in
+scope), ADR-003 → `Superseded by ADR-008`, `docs/decisions/README.md` (ADR-007 +
+008 rows), `CLAUDE.md` (scope line). Repo remote is
+`github.com/lettuceketchup/magium-koreader`.
+
+**Gates:** `main.lua` changed (About-screen string only, no logic) — busted +
+`test-ui` + `emu-smoke` run, green. No engine/scene change → `oracle-corpus` not
+re-run.
+
+**Branch** `feat/licensing`, merged `--no-ff` to `main` (`<merge-sha>`).
+**Not pushed** — push is stop-and-ask.
+
+**Next:** nothing scheduled. The port is releasable — a GitHub Release (tarball
+of `magium.koplugin/`) is the owner's call; then optionally the plugin-index
+topic. Phase VII (fr) still blocked on upstream content. GC post-release watch.
 
 ### 2026-09-08 (session 36) — Phase VIII (polish) MERGED — the port is feature-complete
 

@@ -1,10 +1,14 @@
 # ADR-003: Defer licensing & redistribution-permission work (Phase 7 / OQ-004) until after the port is functionally complete
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-008](ADR-008-license-and-distribution.md)
+  (2026-09-08 — the owner decided to release the port, which is precisely the
+  revisit trigger this ADR names in its Consequences section; ADR-008 runs
+  Phase 7 for real)
 - **Date:** 2026-08-31
 - **Deciders:** rishishwarmanu@gmail.com
 - **Phase:** post-6, affects sequencing of 7/8
-- **Related:** [`../research/07-risks-open-questions.md`](../research/07-risks-open-questions.md)
+- **Related:** [ADR-008](ADR-008-license-and-distribution.md) (supersedes this);
+  [`../research/07-risks-open-questions.md`](../research/07-risks-open-questions.md)
   OQ-004, OQ-005; [`../research/08-licensing.md`](../research/08-licensing.md);
   [`ADR-002-porting-approach.md`](ADR-002-porting-approach.md);
   [design doc §2, §10, §11](../superpowers/specs/2026-08-31-magium-koreader-research-design.md)

@@ -392,8 +392,15 @@ Design doc §3 "Localization (en, fr)."
 > - **OQ-013** — already resolved (custom paginated `ui/reader.lua`, Phase I).
 > - **GC tuning** — not needed; downgraded to a post-release watch.
 > - **Full-corpus QA** — `oracle-corpus` (all 2159 scenes) at the baseline.
-> - **Packaging** — `INSTALL.md` (personal install only, [ADR-003](../decisions/ADR-003-defer-licensing-distribution.md));
->   `v1.0` tag. No ADR (no alternative closed). busted 134/0.
+> - **Packaging** — `INSTALL.md`; `v1.0` tag. busted 134/0.
+>
+> **Phase 7 (licensing) — DONE 2026-09-08**, run once the owner decided to
+> release the port freely (non-commercial): story text is CC BY 4.0 (the
+> family's release licence — no permission request needed), the port's code is
+> **AGPL-3.0-or-later** to match KOReader. `LICENSE`, `THIRD-PARTY-NOTICES.md`,
+> `CONTRIBUTING.md` added; [`08-licensing.md`](08-licensing.md) → stable;
+> [ADR-008](../decisions/ADR-008-license-and-distribution.md) supersedes
+> ADR-003. OQ-004 + OQ-005 closed.
 
 Closes out the remaining 🟡s from [`04` §3](04-constraints-budget.md#3-budget-table-33)
 and design doc §3's residual parity gap (nothing left unaddressed by
@@ -419,11 +426,13 @@ Phases I–VII).
   - **Full-corpus QA**: run `oracle-diff.js` across all 2159 scenes, not
     just the fixture set, as a final parity check; a `crash.log`-driven bug
     bash on the real device.
-  - **Minimal packaging** for the owner's own install (`koreader/plugins/`
-    copy) — distribution-channel packaging (KOReader plugin index,
-    KindleModShelf, GitHub releases) is **out of scope while Phase 7
-    ([ADR-003](../decisions/ADR-003-defer-licensing-distribution.md)) stays
-    deferred**; revisit this line item if that changes.
+  - **Packaging**: `INSTALL.md` for a manual `koreader/plugins/` copy;
+    `v1.0` tag; a GitHub Release (a tarball of `magium.koplugin/`). Free,
+    non-commercial distribution is now in scope and cleared —
+    [ADR-008](../decisions/ADR-008-license-and-distribution.md) /
+    [`08` §4](08-licensing.md#4-distribution-channel-implications-74). The
+    KOReader plugin index (`koreader-plugin` GitHub topic) is an optional
+    later step.
 - **Depends on:** everything — needs the whole plugin in hand to tune
   against.
 - **Effort band: 15–25 hrs.**
