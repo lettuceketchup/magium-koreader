@@ -20,11 +20,22 @@
 
 > **This phase is measurement-driven.** Three of the roadmap's five Phase VIII
 > deliverables (condition-outlier mitigation, GC tuning, the e-ink policy
-> itself) are explicitly *conditional* — "only if profiling on-device shows X".
-> One instrumented device pass gathers every number at once; then we implement
-> **only** what the numbers justify. The expected outcome for OQ-011 and GC is
-> **no code** (see §3). Phase VIII is the project's last phase — on sign-off the
-> port is declared feature-complete.
+> itself) are explicitly *conditional* — "only if profiling shows X".
+>
+> **The owner cannot run sessions longer than ~5 minutes** (stated 2026-09-08).
+> So the on-device work is a **single ≤5-minute e-ink pass** — the one thing no
+> emulator can judge. Everything else moves off the device:
+> - **OQ-011** — closed on the dev bench (§3: 2.6 ms/render x86 → ~15 ms device
+>   at spike 06's validated ×5.6). No device confirmation needed.
+> - **GC stutter** — not a phase gate (a long session would be needed to
+>   provoke it, and ~11.5 MB resident heap makes it very unlikely). Downgraded
+>   to a post-release watch: if the owner ever notices a hitch in normal play,
+>   reopen with a `collectgarbage` knob.
+> - **Full-corpus crash bash** — `mgm.sh oracle-corpus` already renders all
+>   2159 scenes headlessly; that *is* the full-corpus render-crash check.
+>
+> Phase VIII is the project's last phase — on sign-off the port is declared
+> feature-complete.
 
 ---
 
@@ -34,24 +45,23 @@
 
 1. **OQ-011 dev bench** — `spec/engine/condition_perf_spec.lua` (new): a loose
    regression tripwire around rendering the 2044-clause-condition scene, same
-   shape as the existing parse tripwire in `story_eager_spec.lua`. The one
-   always-written piece of code in this phase.
-2. **One device measurement pass** — deploy current `main`, action trace on,
-   owner plays Book 1 → Book 3. Pull `trace-*.jsonl` + `crash.log`. No code
-   change to measure (see §2).
-3. **E-ink tuning (OQ-007)** — primarily `magium.koplugin/ui/refresh.lua`
-   constants (the 4 `return` values + `DEGHOST_EVERY`). Tuned to the owner's
-   perceptual sign-off over as many redeploy rounds as it takes. If a modal
-   open/close transition (stats / saves / menu) reads wrong on device, the fix
-   lands at that call site too — but only if the device pass flags it (the
-   `on_modal()` helper exists unused; KOReader's default show/close refresh
-   currently governs those transitions).
-4. **Conditional mitigations** — OQ-011 atom-match memo and/or GC knob, *only
-   if* the measurement pass shows a real stall / stutter (§3).
-5. **Full-corpus QA** — run `mgm.sh oracle-corpus`, confirm the baseline holds;
-   the device playthrough is the `crash.log` bug bash.
-6. **Packaging** — `INSTALL.md` at repo root; `v1.0` annotated tag on merge.
-7. **Close-out** — OQ-007 / OQ-011 / OQ-013 → `closed`; roadmap, `SUMMARY.md`,
+   shape as the existing parse tripwire in `story_eager_spec.lua`. Landed
+   (measured 2.6 ms/render x86). Closes OQ-011 (§3).
+2. **One ≤5-minute device e-ink pass** — deploy, owner taps through ~2–3 min of
+   prose + a handful of choices in any chapter, opens Stats / Saves / Menu once
+   each, reports feel; `crash.log` clean after. Pull `crash.log` (+
+   `trace-*.jsonl` if they left the trace on). That's the whole device ask.
+3. **E-ink tuning (OQ-007)** — `magium.koplugin/ui/refresh.lua` constants (the 4
+   `return` values + `DEGHOST_EVERY`), tuned to the owner's ≤5-min-pass report
+   over as many quick redeploy rounds as it takes. Modal open/close fix lands at
+   the `main.lua` call sites *only if* the pass flags it (the `on_modal()`
+   helper exists unused; KOReader's default show/close refresh governs those
+   today).
+4. **Full-corpus QA** — `mgm.sh oracle-corpus` (renders all 2159 scenes) + the
+   device pass's clean `crash.log`.
+5. **Packaging** — `INSTALL.md` at repo root (landed); `v1.0` annotated tag on
+   merge.
+6. **Close-out** — OQ-007 / OQ-011 / OQ-013 → `closed`; roadmap, `SUMMARY.md`,
    running log, memory updated; project declared feature-complete.
 
 ### 1.2 Out of scope
@@ -74,21 +84,16 @@
   Stays deferred — the once-per-session ~2.2 s parse behind a progress bar is
   accepted; nothing in this phase revisits it.
 
-## 2. Why measurement needs no new code
+## 2. The device pass needs no new code
 
-- **The action trace already timestamps every event in monotonic ms.**
-  `main.lua:165` configures `trace` with
-  `clock = function() return time.to_ms(time.now()) end` (CLOCK_MONOTONIC_COARSE,
-  ms resolution).
-- **`main.lua:363` already emits a `render` event per scene**, right after the
-  `scene.render` call (`main.lua:356`) that carries all condition evaluation.
-- So the device OQ-011 number is the `t` delta between the `choice` event and
-  the following `render` event in the pulled `trace-*.jsonl`, at
-  `B3-Ch04a-Stats-spent`. A normal scene hop is ~1 ms; a 2044-clause DNF walk
-  that stalls would show as a visible spike. No timing line to add, no special
-  build to deploy for measurement — current `main` already carries it.
-- e-ink feel and GC stutter are **perceptual** — the owner's report is the
-  measurement, no instrumentation possible or needed.
+- **e-ink feel is perceptual** — the owner's ≤5-min report *is* the
+  measurement; nothing to instrument.
+- If the owner leaves *Menu → Settings → Record debug log* on, the trace is a
+  bonus: `main.lua:165` already stamps every event in monotonic ms
+  (`time.to_ms(time.now())`) and `main.lua:363` emits a `render` event per
+  scene, so a `choice`→`render` `t` delta is there for free if we want to spot
+  a slow hop. Not required — OQ-011 is closed on the dev bench (§3), and no
+  other per-scene cost is in question.
 
 ## 3. OQ-011: what's already mitigated, what the bench decides
 
@@ -112,14 +117,17 @@ to **~15 ms on the owner's Kindle** — imperceptible.
 | ~50–200 ms | ~0.3–1.1 s | Add a module-level `atom → {name,op,num}` memo in `engine/conditions.lua` (atoms are immutable strings; the `string.match` per atom is the hot cost). Re-bench. |
 | still slow after the memo | | Special-case `B3-Ch04a-Stats-spent` as a direct `v_*` comparison in `engine/specials.lua`. → **ADR** (closes the build-time-precompile alternative). Not expected. |
 
-The device `choice`→`render` delta from §2 is the final confirmation. On the
-2.6 ms measurement, **no mitigation code is expected** — the bench lands as a
-permanent tripwire and OQ-011 closes.
+**Outcome: OQ-011 closes on the 2.6 ms measurement.** No mitigation code; the
+bench lands as a permanent tripwire. The owner can't reach `B3-Ch04a-Stats-spent`
+in a 5-min pass and no device confirmation is required — spike 06 already
+measured the x86→device factor (×5.6) directly on the same class of CPU-bound
+Lua, and even a 10× pessimistic factor leaves this under 30 ms.
 
-GC: resident heap after preload is ~11.5 MB (spike 03). A stutter is not
-expected. If the owner reports one during the long session:
-`collectgarbage("setstepmul", …)` at plugin init, or `collectgarbage("step")` on
-page-turn in `ui/reader.lua:_turn`. Only if visible. → running log, not an ADR.
+GC (not a phase gate — see the header note): resident heap after preload is
+~11.5 MB (spike 03); a stutter would need a long session to provoke and is very
+unlikely. Post-release watch only — if the owner ever notices a hitch in normal
+play, reopen with `collectgarbage("setstepmul", …)` at plugin init or
+`collectgarbage("step")` in `ui/reader.lua:_turn`. → running log, not an ADR.
 
 ## 4. The dev bench — `spec/engine/condition_perf_spec.lua`
 
@@ -144,7 +152,7 @@ chosen `choice` really does carry a DNF with >1000 AND-groups (so a future
 data change that drops the outlier makes the bench fail loudly rather than
 silently measure nothing).
 
-## 5. E-ink policy — `ui/refresh.lua` + two call sites
+## 5. E-ink policy — `ui/refresh.lua`
 
 Current policy (`ui/refresh.lua`, 14 lines):
 
@@ -155,7 +163,7 @@ Current policy (`ui/refresh.lua`, 14 lines):
 | `on_new_scene` | `ui`, `full` every 6th (`DEGHOST_EVERY`) | choice commit (`reader.lua:326`) |
 | `on_modal` | `flashui` | **defined, unused** — stats/saves/menu currently ride KOReader's default show/close refresh; their in-widget `_refresh()` uses a literal `"ui"` (correct — an in-place tap update, not a modal transition) |
 
-Changes, applied **per the owner's device report** (nothing here is done
+Changes, applied **per the owner's ≤5-min pass report** (nothing here is done
 speculatively):
 
 - **`on_page_turn` / `on_new_scene` type**, `DEGHOST_EVERY` value — tuned to the
@@ -168,8 +176,9 @@ speculatively):
   new `on_modal_close`) at the `UIManager:show`/`close` call sites in `main.lua`.
   Not expected; not pre-built.
 
-Every round that touches `ui/`: `test-ui` + `test-ui-real` + `test-ui-matrix`
-green, redeploy, owner re-judges.
+If the first pass is "feels fine", `ui/refresh.lua` ships unchanged and OQ-007
+closes on that. Each round that does touch `ui/`: `test-ui` + `test-ui-real` +
+`test-ui-matrix` green, redeploy, owner re-judges.
 
 ## 6. Packaging
 
@@ -200,19 +209,21 @@ green, redeploy, owner re-judges.
 ## 8. Decisions
 
 - **D1** — Phase VIII is measurement-driven: conditional deliverables ship zero
-  code unless the one device pass shows they're needed. Rationale: the roadmap
-  itself scopes them "only if profiling shows X"; OQ-011 mitigation #1 is
-  already the architecture (§3).
-- **D2** — No release-zip build script; `INSTALL.md` + the existing deploy
+  code unless shown needed. Rationale: the roadmap scopes them "only if
+  profiling shows X"; OQ-011 mitigation #1 is already the architecture (§3).
+- **D2** — The owner's ≤5-min session limit (2026-09-08) reshapes the device
+  work: **OQ-011 closes on the dev bench** (no device confirmation — spike 06
+  already measured the ×5.6 x86→device factor for this class of work);
+  **GC is a post-release watch, not a phase gate** (a long session is needed to
+  provoke it); the only on-device deliverable is the e-ink feel pass, which
+  fits in ≤5 min of tapping any chapter.
+- **D3** — No release-zip build script; `INSTALL.md` + the existing deploy
   scripts are the whole packaging story. Distribution stays out of scope
   ([ADR-003](../decisions/ADR-003-defer-licensing-distribution.md)).
-- **D3** — Device measurement uses the existing ms-stamped action trace, not a
-  new timing line (§2).
-- **D4** — An ADR is written **only** if OQ-011 needs the targeted special-case
-  (§3 row 3) — that would close the build-time-precompile alternative. The
-  e-ink constants, the `on_modal` wiring, and "no GC tuning needed" are not
-  ADR-worthy (refresh policy is already scoped to `ui/refresh.lua` in the Phase
-  I spec).
+- **D4** — An ADR is written **only** if OQ-011 unexpectedly needs the targeted
+  special-case (§3 row 3) — that would close the build-time-precompile
+  alternative. The e-ink constants and the GC watch are not ADR-worthy (refresh
+  policy is already scoped to `ui/refresh.lua` in the Phase I spec).
 
 ## 9. Tests
 
@@ -232,20 +243,18 @@ green, redeploy, owner re-judges.
 
 ## 10. Exit criteria
 
-- [ ] `spec/engine/condition_perf_spec.lua` lands and passes; the device
-      `choice`→`render` trace delta at `B3-Ch04a-Stats-spent` confirms it is
-      not a perceptible stall — **or** a §3 mitigation is in place, tested, and
-      re-benched.
-- [ ] `ui/refresh.lua` tuned to the owner's e-ink sign-off on the PW12 (page
-      turns, choice-commit de-ghost cadence, modal transitions all judged
-      acceptable — or fixed).
-- [ ] GC: owner confirms no visible stutter across a full Book 1 → 3 session —
-      or a tuning knob is in and tested.
+- [x] `spec/engine/condition_perf_spec.lua` lands and passes (2.6 ms/render
+      x86 → ~15 ms device). OQ-011 closed on the bench — no device confirmation
+      required (D2).
+- [ ] `ui/refresh.lua`: owner's ≤5-min e-ink pass on the PW12 — page turns,
+      choice-commit de-ghost cadence, and stats/saves/menu transitions all
+      judged acceptable, or tuned until they are.
+- [ ] `crash.log` clean after that pass, incl. resume across reader-close /
+      device suspend / full KOReader restart.
 - [ ] `mgm.sh oracle-corpus` green at the baseline (2159 scenes swept);
       `busted`, `test-ui`, `test-ui-real`, `test-ui-matrix`, `emu-smoke` all
       green on the merged tree.
-- [ ] `crash.log` clean across the long playthrough, incl. resume across
-      reader-close / device suspend / full KOReader restart.
-- [ ] `INSTALL.md` written; `v1.0` tag on the merge commit.
+- [x] `INSTALL.md` written. `v1.0` tag on the merge commit — at merge.
 - [ ] OQ-007 / OQ-011 / OQ-013 → `closed` in `07-…`; roadmap, `SUMMARY.md`,
       running log, and memory updated; project declared feature-complete.
+- GC stutter: post-release watch, not an exit criterion (D2).
