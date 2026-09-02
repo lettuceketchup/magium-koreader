@@ -347,9 +347,18 @@ future story edits, or for a format-conversion tool.
   (scan / `diff`).
 - **Scene structure matches** — spot-checked `ch1` (12 scenes each), `ch3` (91),
   `b2ch1` (47), `b3ch12b` (46): identical `ID:` counts, so the branching graph
-  and variable logic are shared; only prose and choice **labels** are
-  translated. Scene ids, variable names, conditions, `set()` targets and values
-  are language-independent (they're code, not text).
+  and variable logic are shared. Scene ids, variable names, conditions, `set()`
+  targets and values are language-independent (they're code, not text).
+  Re-verified 2026-09-08: all 54 fr files parse and their scene-ID sets equal en
+  file-for-file.
+- **⚠️ But the fr prose is barely translated** (checked 2026-09-08, Phase VII —
+  the §-note spot-checks above counted `ID:` lines, never checked the *language*
+  of the prose). @ `51f5aa9`: **only `ch1.magium` has French text**; 29/54 fr
+  files are byte-identical to `data/en/`, the rest are English with minor
+  structural drift (e.g. `ch2.magium` → *"Both Daren and I turn around…"*). A
+  byte scan for UTF-8 `é` across `data/fr/*.magium` matches exactly one file.
+  `ui.json` is fully French; `achievements*.json` ~1 entry. The fr set is a
+  stub, not a French edition.
 - **`ui.json` differs** per locale, including the header template:
   `"Book&nbsp;<%= book %> - Chapter&nbsp;<%= chapter %>"` (en) vs
   `"Livre <%= book %> - Chapitre <%= chapter %>"` (fr) — note the en template
@@ -381,6 +390,11 @@ future story edits, or for a format-conversion tool.
   hazard on the target device. Needs measurement in spike B; may force
   condition-caching or a build-time pre-compile step (approach D). Feeds
   [`04-constraints-budget.md`](04-constraints-budget.md) and OQ-001.
-- **F-08 (confidence: high):** en and fr differ only in prose and labels; scene
-  graph, variables and conditions are shared. i18n for the port is "swap the
-  string bundle", not "reparse a different story".
+- **F-08 (confidence: high for *structure*; the *content* half was wrong):** the
+  en and fr scene graph, variables and conditions are shared — i18n for the port
+  is mechanically "swap the string bundle", not "reparse a different story", and
+  this was re-verified 2026-09-08. **However**, the original claim that fr "only
+  differs in translated prose and labels" implied a *complete* translation; in
+  fact @ `51f5aa9` the fr `.magium` prose is a stub (1/54 files — see §5). Phase
+  VII built the bundle-swap, hit this, and was rolled back
+  ([roadmap Phase VII](09-roadmap-effort.md#phase-vii--localization-en--fr)).

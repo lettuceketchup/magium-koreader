@@ -1,7 +1,7 @@
 # 09 — Implementation roadmap, effort & timeline
 
-- **Status:** stable
-- **Last updated:** 2026-08-31
+- **Status:** stable (Phase VII marked **blocked** 2026-09-08 — see its section)
+- **Last updated:** 2026-09-08
 - **Phase:** 8
 - **Sources:** [`06-approach-comparison.md`](06-approach-comparison.md) (chosen
   approach, candidate A), [`04-constraints-budget.md`](04-constraints-budget.md)
@@ -344,6 +344,21 @@ Design doc §3 "Settings / theming (Original, Catppuccin)."
 
 ### Phase VII — Localization (en + fr)
 
+> **BLOCKED on upstream translation completeness (2026-09-08).** Implemented and
+> device-tested this session, then **rolled back** — nothing merged; the work is
+> preserved as the annotated tag `phase-vii-shelved`
+> ([running log session 35](../../research-plan.md)). `../magium-dev/data/fr/` @
+> `51f5aa9` turned out to be a near-abandoned stub: `ui.json` is fully French but
+> the **story prose is 1 of 54 `.magium` files** (`ch1` only; 29/54 byte-identical
+> to `data/en/`). The switch/re-parse/re-render mechanism works (verified on the
+> owner's device), but there is almost no French content to render. This
+> invalidates the "i18n = string-bundle swap" assumption for *content*
+> (structure is still identical) — see the caveats added to
+> [`01` §9](01-magium-analysis.md#9-localization-task-19),
+> [`02` §5](02-magium-format-spec.md#5-en-vs-fr-divergence), F-08. **Revisit only
+> when a substantially complete fr `.magium` set exists** (upstream, or another
+> source). The tagged implementation is directly reusable.
+
 Design doc §3 "Localization (en, fr)."
 
 - **Deliverables:** bundle the French `.magium` set + `ui.json` alongside
@@ -355,8 +370,10 @@ Design doc §3 "Localization (en, fr)."
 - **Depends on:** Phase II only — **does not** depend on III–VI, since it's
   a data-bundle swap plus UI-chrome strings, not new engine logic. Good
   candidate to hand to a French-fluent contributor in parallel with III–VI
-  (see §3).
-- **Effort band: 4–8 hrs.**
+  (see §3). *(Superseded by the block note above — the dependency was never
+  the issue; the content is.)*
+- **Effort band: 4–8 hrs.** *(The implementation cost ~this; the blocker is
+  data, not effort.)*
 
 ### Phase VIII — Polish, on-device tuning & packaging
 
@@ -405,7 +422,7 @@ Phases I–VII).
 | V | Achievements | II (∥ III, IV) | 6–10 hrs |
 | V.5 | Test hardening — **done** (app-level E2E, achievements content-integrity, save-schema regression, real-resolution smoke bootstrap, varied-profile walk, content stress-paint, parse-time budget) | V | 13–21 hrs |
 | VI | Settings/themes — **done** (scoped down: cheat mode + reader text-size preset only; + custom-reader viewport robustness + a reopen-bug fix) | II, V.5 | 4–8 hrs |
-| VII | Localization en+fr | II (∥ III–VI) | 4–8 hrs |
+| VII | Localization en+fr — **blocked** (upstream fr `.magium` is a stub: 1/54 files translated; implemented + rolled back 2026-09-08, tag `phase-vii-shelved`) | II (∥ III–VI) | 4–8 hrs (spent; blocker is data) |
 | VIII | Polish: e-ink tuning (OQ-007), condition mitigation (OQ-011), GC tuning, full-corpus QA, packaging | all | 15–25 hrs |
 | **Total** | | | **~113–183 hrs** |
 
@@ -439,7 +456,11 @@ once II lands, several branches stop depending on each other:
   early** — it depends only on II (the full corpus + nav structure being in
   place), not on III–VI's logic at all, since it's a data-bundle swap plus
   UI-chrome `.po` strings. A French-fluent contributor could start this
-  the moment Phase II lands.
+  the moment Phase II lands. *(Update 2026-09-08: the code side was done in
+  ~one session and is trivial. The actual blocker is that no substantially
+  complete French `.magium` translation exists upstream — see the Phase VII
+  block note. A "French-fluent contributor" would be doing translation work,
+  not porting work.)*
 - **VI (settings/themes) is also low-coupling** — independent of stats/saves/
   achievements internals, and likely to shrink once the KOReader-redundancy
   scoping pass (§1) runs.

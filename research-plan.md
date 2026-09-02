@@ -170,6 +170,87 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-08 (session 35) — Phase VII (localization) implemented, then ROLLED BACK: upstream fr translation is a stub
+
+Owner: "Start phase 7 planning" → brainstorm (3 decisions: chrome scope = prose
++ `ui.json` only; default `en` + switch in Settings; live-reload switch) →
+approved plan → spec
+[`docs/specs/2026-09-08-phase-vii-localization.md`](docs/specs/2026-09-08-phase-vii-localization.md)
+(on the deleted branch) → implemented on `feat/phase-vii-localization` → device
+test → **rolled back**. Nothing merged. The implementation commit is preserved
+as the annotated tag **`phase-vii-shelved`** (`git show phase-vii-shelved`) so a
+future re-attempt doesn't start from zero.
+
+**Why it was rolled back — the blocker (the reason this entry is detailed):**
+
+`../magium-dev/data/fr/` @ `51f5aa9` is a **near-abandoned translation stub**,
+not a French edition:
+
+| Asset | Actual state @ `51f5aa9` |
+|---|---|
+| `ui.json` (menu/dialog chrome) | **fully translated** — "MENU PRINCIPAL", "Livre 1 - Chapitre 2", "Oui/Non", the fr header template |
+| Story prose (`data/fr/*.magium`) | **1 of 54 files translated** — only `ch1.magium` contains French text. 29/54 are byte-identical to `data/en/`; the rest are English prose with minor structural drift (e.g. `ch2.magium` opens *"Both Daren and I turn around…"*). A byte scan for UTF-8 `é` hits exactly **1** file. |
+| `achievements{1,2,3}.json` | ~1 entry translated; the rest English |
+
+`git log -- data/fr/` upstream shows the last fr-touching commit is *"French
+localization for themes"* — the fr effort was theme labels, never story content.
+
+This **invalidates the research-phase assumption** that "i18n = a string-bundle
+swap" (F-08, [`SUMMARY.md`](SUMMARY.md) row 11, [`01` §9](docs/research/01-magium-analysis.md#9-localization-task-19),
+[`02` §5](docs/research/02-magium-format-spec.md#5-en-vs-fr-divergence)). The
+*structure* claim (identical scene ids / vars / conditions) is still true and
+was re-verified this session (all 54 fr files parse, scene-ID sets == en). What
+was never checked in Phase 1 is **how much of the prose is actually French** —
+the §5 spot-checks counted `ID:` lines, not language. Docs updated with the
+caveat this session.
+
+**On-device result of shipping it anyway:** switching to "Français" gave a fully
+French UI + chapter header over English prose (the owner's save is at
+`Ch2-Protection` → `ch2.magium` → untranslated). Confirmed via SSH `crash.log` +
+trace pull: the mechanism worked perfectly — `settings lang=fr` → new session →
+`preload_start` → `preload_done ok=true scenes=2159` → `open`/`resume`/`render`,
+no crash. The switch, re-parse and re-render are all correct; there is just
+almost no French content to show.
+
+**The implementation (preserved in tag `phase-vii-shelved`, ~300 lines) — what a
+re-attempt can reuse verbatim once upstream has real fr content:**
+
+- `magium.koplugin/data/fr/` — `../magium-dev/data/fr/` @ `51f5aa9` verbatim.
+- `main.lua` — module locals `current_lang()` (`G_reader_settings` key
+  `magium_lang`, default+clamp `"en"`) and `ensure_locale(data_dir)` (single
+  source of truth for `shared_locale`, rebuilds on a lang change).
+  `new_story` / `init` / top of `openReader` use them instead of hardcoded
+  `"en"`. `_setLanguage(lang)`: persist the key, drop
+  `shared_story`/`shared_loaded`, `_reopenReader()` → `openReader` re-parses in
+  the new language behind the existing Trapper bar and re-renders
+  `v_current_scene` in place (locale-invariant IDs ⇒ play state carries over —
+  verified on device). Shared `_openPickerDialog(title, options, current, apply)`
+  extracted from `_openTextSizeDialog` (2 call sites); new "Language" row in
+  Settings.
+- `engine/locale.lua` — unknown lang dir → fall back to `"en"`.
+- Chrome scope decision (was ADR-008, on the deleted branch): strings already
+  routed `self.locale:str("k") or _("…")` turn French from `ui.json`; the ~25
+  bare `_()` strings stay English; **no `.po`/`.mo` catalog**.
+- Tests (all extended existing files): `spec/engine/navigation_spec.lua`
+  fr-parity block, `spec/engine/locale_spec.lua` fr block,
+  `spec/ui/main_e2e_smoke.lua` Language path, `spec/ui/reader_smoke.lua` fr
+  paint. **Lesson: the fr-parity + paint tests only checked *structure*, not
+  that the rendered text was French — that gap is why CI stayed green while the
+  feature was hollow. A real re-attempt must assert French prose (byte-scan for
+  accented chars, or a known fr substring).**
+- Gates were all green (`busted` 139/0, `test-ui` / `test-ui-real` /
+  `test-ui-matrix` / `emu-smoke`); `oracle-corpus` untouched at 8887/8887.
+
+**Actions taken:** branch `feat/phase-vii-localization` deleted; work tagged
+`phase-vii-shelved`; Phase VI plugin re-deployed to the owner's device to clear
+the half-French state; docs updated (roadmap Phase VII → blocked, `01` §9 /
+`02` §5 / `SUMMARY.md` rows 2 & 11 gain the translation-completeness caveat).
+
+**Next:** **Phase VII is blocked on upstream translation completeness** — revisit
+only if `magium-dev` (or another source) ships a substantially complete fr
+`.magium` set. Proceed to **Phase VIII** (polish: e-ink refresh tuning /
+OQ-007, condition-outlier cost / OQ-011, GC tuning, full-corpus QA, packaging).
+
 ### 2026-09-07 (session 34) — Phase VI implemented: settings + viewport robustness
 
 Owner: "Start phase 6 planning" → approved plan (after a `/ponytail` pass that

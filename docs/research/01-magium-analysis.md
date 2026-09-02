@@ -418,11 +418,19 @@ save slots, achievements, and `locale`. Save-blob size and write frequency feed
 - **`data/<locale>/achievements{1,2,3}.json`** — same keys per locale, only
   `title`/`caption` translated.
 - **`.magium` files**: en and fr are **structurally identical** — same 54
-  filenames, same scene ids, same counts, same variables and conditions; only
-  prose and choice labels are translated. See
+  filenames, same scene ids, same counts, same variables and conditions. See
   [`02` §5](02-magium-format-spec.md#5-en-vs-fr-divergence) and [F-08](#findings).
+  **⚠️ Translation completeness (verified 2026-09-08, Phase VII):** the fr *prose*
+  @ `51f5aa9` is a near-abandoned stub — only **`ch1.magium`** contains French
+  text; 29/54 fr files are byte-identical to `data/en/` and the rest are English
+  with minor structural drift. `ui.json` is fully French; `achievements*.json` is
+  ~1 entry translated. The original §5 spot-checks counted `ID:` lines, not
+  language.
 - **Consequence for the port:** one engine + one "story logic", `N` prose
-  bundles. i18n is a string-bundle swap, not a re-parse.
+  bundles — i18n is a string-bundle swap, not a re-parse. But **as of `51f5aa9`
+  there is no French prose bundle worth swapping to** (Phase VII implemented the
+  swap, found this, and was rolled back — [roadmap Phase VII](09-roadmap-effort.md#phase-vii--localization-en--fr),
+  running-log session 35).
 
 ---
 
