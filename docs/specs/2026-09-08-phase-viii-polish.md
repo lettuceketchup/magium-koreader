@@ -1,6 +1,10 @@
 # Spec: Phase VIII — Polish, on-device tuning & packaging (final phase)
 
-- **Status:** draft — awaiting owner review
+- **Status:** **stable — merged to `main` 2026-09-08** (`--no-ff`, tag `v1.0`;
+  `feat/phase-viii-polish` deleted, not pushed). Owner device pass: e-ink
+  acceptable, `ui/refresh.lua` unchanged, `crash.log` clean. Gates: busted
+  **134/0**, `oracle-corpus` **8887/8887**. OQ-007 / OQ-011 / OQ-013 closed —
+  **the port is feature-complete.**
 - **Last updated:** 2026-09-08
 - **Phase:** Implementation — design cycle 8 (roadmap
   [Phase VIII](../research/09-roadmap-effort.md#phase-viii--polish-on-device-tuning--packaging))
