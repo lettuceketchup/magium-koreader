@@ -27,7 +27,7 @@ non-commercial and not affiliated with the Magium authors or KOReader.
   panels, packaging for the KOReader plugin index — all open.
 - **French (or other) localization.** The mechanism is built and shelved
   pending a complete upstream `.magium` translation
-  ([tag `phase-vii-shelved`](../../tree/phase-vii-shelved)).
+  ([tag `phase-vii-shelved`](https://github.com/lettuceketchup/magium-koreader/tree/phase-vii-shelved)).
 
 ## Reporting a bug or a device problem
 
