@@ -26,4 +26,35 @@ describe("Locale", function()
     assert.is_truthy(txt:find("3"))
     assert.is_falsy(txt:find("  "))       -- whitespace collapsed
   end)
+
+  it("loads all 3 achievement books, 136 entries total", function()
+    assert.are.equal(3, loc:achievement_book_count())
+    local total = 0
+    for book = 1, 3 do
+      for _, key in ipairs(loc:achievement_chapters(book)) do
+        total = total + #loc:achievement_entries(book, key)
+      end
+    end
+    assert.are.equal(136, total)
+  end)
+
+  it("preserves on-disk declaration order, inlining split chapters", function()
+    local chapters = loc:achievement_chapters(2)
+    local idx = {}
+    for i, key in ipairs(chapters) do idx[key] = i end
+    assert.is_truthy(idx.b2ch3 and idx.b2ch41 and idx.b2ch42 and idx.b2ch5)
+    assert.are.equal(idx.b2ch3 + 1, idx.b2ch41)
+    assert.are.equal(idx.b2ch41 + 1, idx.b2ch42)
+    assert.are.equal(idx.b2ch42 + 1, idx.b2ch5)
+  end)
+
+  it("reads a known achievement entry's variable", function()
+    local entries = loc:achievement_entries(1, "b1ch1")
+    local found
+    for _, e in ipairs(entries) do
+      if e.variable == "v_ac_ch1_coward" then found = e end
+    end
+    assert.is_truthy(found)
+    assert.are.equal("Who are you calling a coward?", found.title)
+  end)
 end)

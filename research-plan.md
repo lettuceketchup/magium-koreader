@@ -170,6 +170,195 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-04 (session 30) — Phase V implemented: achievements
+
+Built the achievement unlock toast and browsable menu, per
+[Phase V spec](docs/specs/2026-09-04-phase-v-achievements.md).
+
+- **`engine/scene.lua:persist_effects`** extended (not a new function) to flip
+  each shown achievement's flag `"1"` → `"2"` (seen), mirroring the JS
+  oracle's `storeVariable(variable,"2")` in the same per-render loop that
+  shows the modal. `scene.render()` itself untouched — `oracle-corpus` stays
+  **8887/8887**.
+- **`engine/locale.lua`** loads `achievements{1,2,3}.json` (136 entries),
+  indexed by group key (menu) and by variable (`achievement_title`, for the
+  one special case with no in-story `achievement()` call). Owner asked for
+  exact on-disk chapter ordering (`b2ch41`/`b2ch42` inline between
+  `b2ch3`/`b2ch5`, not sorted after the book's last chapter) — `json.decode`
+  doesn't preserve key order, so recovered it with one `gmatch` pass over each
+  book's raw JSON text at load time.
+- **`ui/toast.lua`** (new) — one `Notification` per unlock, single combined
+  line (`"ACHIEVEMENT UNLOCKED: <title>"`); KOReader's `Notification` wraps a
+  single-line `TextWidget` (confirmed from source, no wrap), collapsing the
+  reference's two-row layout — flagged as an easy later swap if the owner
+  wants two stacked toasts instead.
+- **`ui/achievementsmenu.lua`** (new) — `Menu:extend`, 3-level book → chapter
+  → entry drill-down via the standard `self.paths` + `switchItemTable` +
+  `onReturn` idiom (`koreader/plugins/opds.koplugin`), not `savespage.lua`'s
+  flat list. Locked/unlocked via native `dim`, not a hand-rolled glyph.
+- **`main.lua`**: toast wired into `render_current()` (every render that shows
+  achievements) and into `openStats()`'s `v_ac_ch6_immersion` special case
+  (its own modal in the reference, no in-story `achievement()` call — found
+  while wiring, not in the original plan); "Achievements" menu row enabled
+  (was disabled since Phase I); `openAchievements()` added.
+- Tests: `scene_spec` (latch + freeze), `locale_spec` (136 entries, exact
+  chapter order), `toast_smoke.lua` (new), `achievementsmenu_smoke.lua` (new,
+  asserts chapter-order-by-position + locked/unlocked), a real-achievement
+  flow case in `playthrough_spec.lua` (Ch1 "coward" — shows once, latches,
+  no re-toast).
+- All green: busted **122/0** (was 116), `oracle-corpus` **8887/8887**
+  (unchanged), all 5 `spec/ui/*_smoke.lua` incl. the 2 new ones, `emu-smoke`
+  clean load. Not pushed; not yet on-device.
+- Deployed to the device via `tools/kindle-ssh-deploy.ps1 -Name paperwhite`
+  (79/79 files verified). **SSH deploy is now the standing default — always
+  use it when the device is reachable; USB/MTP (`deploy-kindle.ps1`) is
+  fallback-only** (owner directive; updated `reference/koreader-notes.md`).
+- **First device pass (same session):** toast confirmed working; opening
+  Achievements → Book 1 worked, but **selecting any chapter crashed**
+  (`textwidget.lua:224: bad argument #2 to 'makeLine' (width must be
+  strictly positive)`, pulled via SSH `crash.log`). Root cause: entry rows
+  used `mandatory = e.caption` — `mandatory` is an unwrapped single-line
+  `TextWidget` (file size, page number, ...), and a full caption sentence
+  overflows it, driving `available_width` negative at paint. The smoke test
+  had only asserted `item_table` structure, never actually painted the
+  widget, so it missed this entirely.
+  - **Fix:** fold the caption into `text` instead (`title .. " — " ..
+    caption`), which Menu wraps/shrinks/ellipsizes safely by default.
+  - **Test gap closed:** `spec/ui/achievementsmenu_smoke.lua` now calls
+    `widget:paintTo(Screen.bb, 0, 0)` for real (inside `pcall`) — the book
+    list, one chapter list, and all 34 chapter entry-list screens across the
+    3 books — not just structural asserts. Verified this would have caught
+    the original bug (reintroduced the buggy line locally, confirmed 35
+    checks failed; restored the fix, confirmed 0 failed).
+  - **Rule sharpened:** CLAUDE.md's emulator-first rule (and the
+    `emulator-first-for-ui-changes` memory) now explicitly requires a real
+    `paintTo` per reachable screen/state, not just structural checks —
+    owner directive, 2026-09-04.
+  - Re-deployed via SSH; busted 122/0, all 5 UI smokes green (36 paint
+    checks in the achievements menu alone). Awaiting a second device pass.
+- **Phase V.5 (test hardening) scoped, same session.** Owner asked what
+  "proper testing" for a game of this shape would look like and what's
+  missing — audited the whole suite against a standard test pyramid
+  (differential/unit/content-validation/flow/widget/app-level/manual).
+  Strong on differential (`oracle-corpus`), unit, content-validation
+  (`navigation_spec.lua`), flow, and widget layers; **zero coverage of the
+  app-level layer** — nothing ever constructs the real `Magium` object
+  (`main.lua`) and drives it, which is exactly the layer both device-only
+  bugs this session lived in. Scoped as a new **Phase V.5**, inserted
+  between V and VI in the roadmap, owner's own session, **blocks Phase VI**:
+  1. app-level/E2E harness (highest value — construct real `Magium`
+     headlessly, drive menu→screens→newGame→suspend/close)
+  2. orphaned-achievement content-integrity check (cross-reference JSON
+     variables against parsed `achievement()` calls + `specials.lua`
+     exceptions)
+  3. systematic graph exploration (multi-profile walk, lower priority —
+     `oracle-corpus` already covers per-scene condition correctness)
+  4. save schema/compatibility regression fixture
+  5. content stress-testing beyond achievements (longest choice label, etc.)
+  6. parse-time performance regression tripwire
+
+  Full design notes in
+  [`docs/specs/2026-09-04-phase-v5-test-hardening.md`](docs/specs/2026-09-04-phase-v5-test-hardening.md);
+  roadmap entry in `docs/research/09-roadmap-effort.md`. **New standing rule**
+  (CLAUDE.md "Doing implementation work"): every subsequent phase/change must
+  run and update whatever regression suites exist, not just add its own.
+- **Second device pass, same session.** Chapters opened without crashing
+  (1st-pass fix held), but two real layout problems remained: the title text
+  was single-line-ellipsized (not multi-line) and locked/unlocked had no
+  visible checkbox, only text-dim color.
+  - **Root cause of BOTH the bug and why the emulator "passed" it: found a
+    real infra gap.** Every `spec/ui/*_smoke.lua` requires `commonrequire`,
+    which sets `einkfb.dummy = true` — koreader's dummy `Screen` backend
+    **hardcodes a 600×800 buffer unconditionally**
+    (`base/ffi/framebuffer_SDL3.lua:17`), ignoring `EMULATE_READER_W/H`
+    entirely (those vars ARE real and correctly read by the *non-dummy* SDL
+    path, `base/ffi/SDL3.lua:118` — just never reached in dummy mode). So
+    every "paints without crashing" check this whole phase has only proven
+    exactly that — crash-avoidance — never actual PW12-resolution layout.
+    Diagnosed + fixed `mgm.sh koenv`'s misleading comment; built a one-off
+    non-dummy, `Xvfb`-backed screenshot script
+    (`Device.screen:init()` without the dummy flag + `Screen.bb:writePNG`) to
+    get a real 1272×1696 render and actually look at the bug.
+  - **Fix:** `multilines_show_more_text = true` on the `AchievementsMenu`
+    (koreader's own "shrink font to show wrapped text" mechanism — the
+    default path auto-promotes to single-line-ellipsis whenever the font
+    doesn't fit 2 lines at the row's *default* height, regardless of how much
+    room the row actually has); a real `✓`/`▢` checkbox glyph in `mandatory`
+    (short — safe, unlike the 1st-pass crash which was a *long* caption
+    there) — the exact glyphs koreader's own `ui/widget/checkmark.lua` uses
+    for the same purpose everywhere else in the app. Verified via
+    before/after screenshots.
+  - **New feature (owner-requested, no magium-dev reference):** reset-all-achievements
+    — a title-bar warning icon + `ConfirmBox`
+    ("Reset all achievements? This cannot be undone.") on the achievements
+    screen, `on_reset` callback wired in `main.lua` (keeps everything except
+    `v_ac_*`, mirrors `reset_to_intro`'s inverse).
+  - Smoke test updated to match (`✓`/`▢` glyph assertions, reset-flow
+    assertions); busted 122/0, all 5 UI smokes green. `oracle-corpus` not
+    re-run (zero `engine/` touch this round, UI-file changes only).
+  - Redeployed once the device came back online (79/79 files verified).
+- **Owner review of that fix, same session:** title now wraps and the
+  checkbox shows, but the caption still ran directly into the title on one
+  line instead of its own — and no keyboard boxes should appear on the
+  screenshots (real device is touch-only).
+  - **Keyboard-shortcut boxes: confirmed screenshot-environment artifact,
+    not a bug.** `is_enable_shortcut = Device:hasKeyboard()`
+    (`menu.lua:604`) — purely a device-capability flag, nothing in this
+    plugin's code. The ad hoc verification script never selected a
+    touch-only device profile, so the desktop-like default reported a
+    keyboard. Real PW12 (`Device:hasKeys()` false) never shows these.
+  - **Caption-on-its-own-line: real bug, root-caused precisely.**
+    `text = title .. "\n" .. caption` never produced a hard break because
+    `MenuItem:init` unconditionally runs `self.text:gsub("\n", " ")`
+    (`menu.lua:211`) *before* any font-size/wrap branch even sees the
+    string — true regardless of `multilines_show_more_text`. No in-`text`
+    trick can force a break inside one Menu row. **Fix:** two real Menu rows
+    per achievement — title row (checkbox in `mandatory`) immediately
+    followed by a caption row (`dim=true`, `select_enabled=false`, no
+    `mandatory`) — each row is a genuine line by construction, no custom
+    widget. Trade-off: the per-row separator line now also falls between
+    title and caption (Menu has no per-item override for it) — minor,
+    still reads clearly since only title rows carry the checkbox.
+  - Verified via a fresh screenshot at the real resolution: title + caption
+    now genuinely on separate lines. Smoke test rewritten to match (checks
+    the caption is a distinct `level="caption"` row right after its title,
+    not text baked into the title row). busted 122/0, all 5 UI smokes
+    green. Redeployed.
+- **Owner review of that fix, same session:** caption had its own line now,
+  but a separator rule fell between title and caption too (same weight as
+  between different achievements), and title/caption looked near-identical
+  besides the checkbox + slightly lighter grey.
+  - Asked first (per owner request): presented 4 options — bold title only;
+    bold title + drop the separator line at the entries level, relying on
+    the bold to mark new groups; soften all lines uniformly (rejected as a
+    wash — softens the wanted separation between achievements too); a full
+    custom row widget bypassing `Menu`'s per-row renderer (rejected —
+    `Menu:updateItems()` hardcodes `MenuItem:new{...}` with no override
+    hook, so custom would mean reimplementing scroll/paging/tap-hitboxes or
+    monkey-patching koreader's own vendored file; not justified here).
+  - Owner picked bold + drop-the-line. `bold` turns out to be a real
+    per-item field (`menu.lua:1110`, missed in the earlier passes);
+    `self.linesize`/`line_color` are Menu-instance-wide only (no per-item
+    override exists), so toggled `self.linesize = 0` right before switching
+    into the entries level and restored it (pushed/popped alongside
+    `self.paths`) on the way back out. Books/chapters keep their lines.
+  - Verified with a fresh screenshot before deploying (owner asked to see it
+    first): clean result — bold black title + checkbox, dim caption right
+    below, no line anywhere in the entry list, chapters/books unaffected.
+  - Smoke test extended: title `bold==true`, `m.linesize==0` at entries,
+    `m.linesize~=0` at chapters and after `onReturn`. busted 122/0, all 5 UI
+    smokes green. Redeployed.
+- **Owner confirmed the achievements-menu layout fix on device: "looks
+  good."** Branch pushed to `origin/feat/phase-v-achievements` (not merged to
+  `main` yet).
+- **Next:** owner confirmation still open on the rest of the Phase V exit
+  checklist (toast fires once + no repeat on resume, immersion toast from
+  the stats screen, reset icon asks for confirmation and actually clears
+  every achievement) — then merge `feat/phase-v-achievements` to `main`.
+  Then **Phase V.5** (owner's own session, test hardening — covers the
+  dummy-`Screen` resolution gap found this round) — Phase VI does not start
+  until it lands.
+
 ### 2026-09-03 (session 29b) — Phase IV: first device pass, tutorial reworked
 
 Owner ran Phase IV on the PW12. **2–6 (spend / Confirm / Cancel / persist /

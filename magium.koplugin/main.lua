@@ -334,6 +334,11 @@ function Magium:openReader()
     end
     local rm = scene.render(st, self.store:view(), self.locale)
     scene.persist_effects(self.store, rm)   -- persist this scene's own set() effects (spec §4)
+    if #rm.achievements > 0 then
+      local Toast = require("ui/toast")
+      Toast.show(self.locale, rm.achievements)
+      self.save:on_achievement_unlocked()   -- flush the now-"2" (seen) blob right away
+    end
     trace.event("render", {
       scene = rm.scene_id,
       paras = #rm.paragraphs,
@@ -410,8 +415,8 @@ function Magium:openReader()
 end
 
 -- The in-game menu (spec §6, D2). The full magium-dev menu.ejs shell;
--- Achievements / Settings are disabled until their phases (V–VI). Reached from
--- the reader header's "Menu" tap zone and from the special:stats choice.
+-- Settings is disabled until its phase (VI). Reached from the reader header's
+-- "Menu" tap zone and from the special:stats choice.
 function Magium:openMenu()
   local ButtonDialog = require("ui/widget/buttondialog")
   local TextViewer = require("ui/widget/textviewer")
@@ -435,7 +440,10 @@ function Magium:openMenu()
         callback = act(function() self:openSaves() end),
       }},
       {{ text = _("Stats"), callback = act(function() self:openStats() end) }},
-      {{ text = _("Achievements"), enabled = false }},
+      {{
+        text = self.locale:str("menuAchievementsText") or _("Achievements"),
+        callback = act(function() self:openAchievements() end),
+      }},
       {{ text = _("Settings"), enabled = false }},
       {{ text = _("About"), callback = act(function()
         UIManager:show(TextViewer:new{ title = _("About"), text = about })
@@ -514,11 +522,17 @@ function Magium:openStats()
 
   -- special case #5/#11: at Ch6-Eiden-vs-dragon with v_maximized_stats_used the
   -- screen unlocks "Full immersion" (renderStats + stats.ejs:175). The count-up
-  -- animation is cosmetic and cut; only the unlock is ported. Toast is Phase V.
+  -- animation is cosmetic and cut; only the unlock is ported. This achievement
+  -- has no in-story achievement() call (stats.ejs shows its own modal, not
+  -- main.ejs's per-scene loop), so it never reaches scene.persist_effects's
+  -- "1"->"2" latch — the oracle itself never advances it past "1" either.
   if specials.maximized_stats(scene_id, self.store:view())
      and tonumber(self.store:get("v_ac_ch6_immersion") or 0) == 0 then
     self.store:set("v_ac_ch6_immersion", "1")
     self.save:on_achievement_unlocked()
+    local Toast = require("ui/toast")
+    Toast.show(self.locale, { { variable = "v_ac_ch6_immersion",
+      text = self.locale:achievement_title("v_ac_ch6_immersion") } })
     trace.event("stats", { op = "immersion" })
   end
 
@@ -538,6 +552,32 @@ function Magium:openStats()
   }
   UIManager:show(self.stats)
   trace.event("menu", { action = "stats" })
+end
+
+-- The achievements browser (spec §12 row V). Reached from the in-game menu's
+-- "Achievements" row. Read-only over the current save (view = a snapshot) —
+-- nothing to persist or re-render on close.
+function Magium:openAchievements()
+  local AchievementsMenu = require("ui/achievementsmenu")
+  self.achievements_ui = AchievementsMenu:new{
+    locale = self.locale,
+    view = self.store:snapshot(),
+    on_close = function() trace.event("menu", { action = "achievements_close" }) end,
+    on_reset = function()
+      -- keep everything EXCEPT v_ac_* (mirrors reset_to_intro's inverse: that
+      -- keeps only v_ac_*, this drops only v_ac_*). Owner-requested feature,
+      -- no reference in magium-dev.
+      local keep = {}
+      for k, v in pairs(self.store:snapshot()) do
+        if k:sub(1, 5) ~= "v_ac_" then keep[k] = v end
+      end
+      self.store:restore(keep)
+      self.save:flush_now("achievements-reset")
+      trace.event("achievements", { op = "reset" })
+    end,
+  }
+  UIManager:show(self.achievements_ui)
+  trace.event("menu", { action = "achievements" })
 end
 
 -- Close the current reader (flushing) and re-open on the current v_current_scene.

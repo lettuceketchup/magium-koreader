@@ -111,9 +111,33 @@ Scene header ("Book X - Chapter Y") is derived from the scene ID:
   A new screen or a changed interaction adds/extends one of these so the
   regression is caught without the device; `mgm.sh emu-smoke` confirms the
   plugin still loads. The owner's device pass is the *final* confirmation of
-  e-ink feel and real input — never the first check that the code works.
+  e-ink feel and real input — never the first check that the code works, and
+  never the first time a screen is actually asked to render.
+  - **Structural checks (item_table contents, callback dispatch) are not
+    enough — a smoke test must also actually paint the screen.** KOReader
+    widgets often size/lay out lazily at paint time, not construction (e.g.
+    `MenuItem`'s `mandatory` field is an unwrapped `TextWidget` whose width is
+    only computed in `paintTo` — a too-long `mandatory` string passed the
+    achievements-menu smoke test's structural asserts cleanly and still
+    crashed on the real device, 2026-09-04). For every screen/state reachable
+    through real data (not just one sampled case — the bug was data-length-
+    dependent), call `widget:paintTo(Screen.bb, 0, 0)` inside a `pcall` and
+    assert it doesn't error, per `koreader/spec/unit/widget_progresswidget_spec.lua`'s
+    own pattern. Do this for any state combination realistic user data can
+    reach, not just the first one that comes to mind.
 - Still-open items that need device time or code are tracked as roadmap work, not
   `OQ-NNN` (see `docs/research/07-risks-open-questions.md` blocking-status note).
+- **Every regression suite that exists must be run and kept up to date by every
+  later phase or change — not just the one that added it.** (Owner rule,
+  2026-09-04, prompted by Phase V.5: `docs/specs/2026-09-04-phase-v5-test-hardening.md`.)
+  A change that alters behavior without updating the test that asserted the
+  old behavior is incomplete, the same way a `ui/` change without an emulator
+  check is incomplete. Today that means `busted` (`mgm.sh test`),
+  `oracle-corpus` (`mgm.sh oracle-corpus`), and `spec/ui/*_smoke.lua`
+  (`mgm.sh test-ui`); Phase V.5 adds an app-level E2E harness, a content-integrity
+  check over the achievements data, and others — once it lands, this line
+  covers those too. Phase VI+ is **blocked on Phase V.5 landing first** — see
+  the roadmap's Phase V.5 entry.
 
 ## Git
 

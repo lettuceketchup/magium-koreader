@@ -138,6 +138,7 @@ describe("scene.persist_effects", function()
         { name = "v_flag", value = "1" },
         { name = "v_gold", value = "+2" },
       },
+      achievements = {},
     }
     local s = Store.new({ v_gold = "10" })
     scene.persist_effects(s, rm)
@@ -146,7 +147,7 @@ describe("scene.persist_effects", function()
   end)
 
   it("respects the v_ac_* latch on write-back", function()
-    local rm = { set_variables = { { name = "v_ac_x", value = "1" } } }
+    local rm = { set_variables = { { name = "v_ac_x", value = "1" } }, achievements = {} }
     local s = Store.new({ v_ac_x = "2" })
     scene.persist_effects(s, rm)
     assert.are.equal("2", s:get("v_ac_x"))
@@ -154,8 +155,22 @@ describe("scene.persist_effects", function()
 
   it("is a no-op when the scene set nothing", function()
     local s = Store.new({ v_a = "1" })
-    scene.persist_effects(s, { set_variables = {} })
+    scene.persist_effects(s, { set_variables = {}, achievements = {} })
     assert.are.equal("1", s:get("v_a"))
+  end)
+
+  it("flips a just-shown achievement's flag 1 -> 2 (seen latch)", function()
+    local rm = { set_variables = {}, achievements = { { variable = "v_ac_x", text = "t" } } }
+    local s = Store.new({ v_ac_x = "1" })
+    scene.persist_effects(s, rm)
+    assert.are.equal("2", s:get("v_ac_x"))
+  end)
+
+  it("does not re-latch an already-seen achievement", function()
+    local rm = { set_variables = {}, achievements = { { variable = "v_ac_x", text = "t" } } }
+    local s = Store.new({ v_ac_x = "2" })
+    scene.persist_effects(s, rm)
+    assert.are.equal("2", s:get("v_ac_x"))
   end)
 end)
 

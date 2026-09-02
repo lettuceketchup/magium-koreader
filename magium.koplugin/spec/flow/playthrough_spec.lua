@@ -188,6 +188,33 @@ describe("playthrough (headless, whole engine)", function()
     assert.are.equal("1", g.store:get("v_ac_ch1_coward"))
   end)
 
+  -- Phase V: a real achievement() call (Ch1-Cutthroat Dave / v_ac_ch1_coward)
+  -- shows on the render that unlocks it, then latches "1" -> "2" so it never
+  -- shows again — engine/scene.lua:persist_effects, spec §D1/D4.
+  it("shows an achievement once and latches it, no re-toast on re-render", function()
+    local g = HeadlessGame.new(DATA_ROOT)
+    g:start("Ch1-Intro2")
+    local rm = g:choose(function(c)
+      return c.set_variables and c.set_variables.v_ac_ch1_coward == "1"
+    end)
+
+    local function shown_coward(render_model)
+      for _, a in ipairs(render_model.achievements) do
+        if a.variable == "v_ac_ch1_coward" then return a end
+      end
+    end
+
+    local a = shown_coward(rm)
+    assert.is_truthy(a, "coward achievement not in render_model.achievements")
+    assert.are.equal("Who are you calling a coward?", a.text)
+    -- persist_effects (called inside render(), which choose() triggers) already latched it
+    assert.are.equal("2", g.store:get("v_ac_ch1_coward"))
+
+    local rm2 = g:render()   -- re-render the same scene
+    assert.is_nil(shown_coward(rm2), "achievement re-shown after being seen")
+    assert.are.equal("2", g.store:get("v_ac_ch1_coward"))
+  end)
+
   -- The "-spent" scene: a special:stats "Invest points now" choice carries BOTH
   -- v_current_scene = <Scene>-Stats-spent AND special:stats. So the choice
   -- navigates the player to a near-duplicate scene whose only choice is

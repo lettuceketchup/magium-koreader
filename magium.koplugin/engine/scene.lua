@@ -146,9 +146,17 @@ end
 -- magium-dev does (each resume re-POSTs and re-emits the script). ~10 relative
 -- set() lines corpus-wide, most conditional. Upgrade path if the owner hits a
 -- runaway counter: gate this on a per-session visited-scene set.
+-- Phase V: flip each shown achievement's flag "1" -> "2" (seen), so it never
+-- re-toasts. magium-dev emits storeVariable(variable,"2") in the SAME
+-- template loop that renders the achievement modal (main.ejs:66-67 @51f5aa9);
+-- store:set already carries the freeze-at-2 guard + consolation special case
+-- (engine/store.lua:22-26,38-43), so this just exercises it.
 function M.persist_effects(store, render_model)
   for _, sv in ipairs(render_model.set_variables) do
     store:set(sv.name, sv.value)
+  end
+  for _, a in ipairs(render_model.achievements) do
+    store:set(a.variable, "2")
   end
 end
 
