@@ -1,8 +1,10 @@
 # 09 — Implementation roadmap, effort & timeline
 
-- **Status:** stable (Phase VII marked **blocked** 2026-09-08 — see its section)
+- **Status:** stable — **implementation complete** (Phase VIII merged
+  2026-09-08, the port is feature-complete; Phase VII localization stays
+  **blocked** on upstream fr content — see its section)
 - **Last updated:** 2026-09-08
-- **Phase:** 8
+- **Phase:** 8 (done)
 - **Sources:** [`06-approach-comparison.md`](06-approach-comparison.md) (chosen
   approach, candidate A), [`04-constraints-budget.md`](04-constraints-budget.md)
   (device budget + parse-strategy fork), [`03-koreader-platform.md`](03-koreader-platform.md)
@@ -377,6 +379,22 @@ Design doc §3 "Localization (en, fr)."
 
 ### Phase VIII — Polish, on-device tuning & packaging
 
+> **DONE — merged to `main` 2026-09-08** ([spec](../specs/2026-09-08-phase-viii-polish.md)
+> → stable). **The port is feature-complete.** Measurement-driven, and reshaped
+> once the owner stated a ≤5-min session limit:
+> - **OQ-011** (the 2044-clause `b3ch4a:251` condition) — closed on a dev bench
+>   (`spec/engine/condition_perf_spec.lua`): **2.6 ms/render x86 → ~15 ms on
+>   device**. Mitigation #1 (parse-time DNF caching) was already the
+>   architecture; no mitigation code, bench kept as a tripwire.
+> - **OQ-007** (e-ink feel) — owner ran the choice→page loop on the real PW12,
+>   judged it **acceptable** (minor ghosting, not worth tuning for personal
+>   use). `ui/refresh.lua` ships unchanged. `crash.log` clean across the pass.
+> - **OQ-013** — already resolved (custom paginated `ui/reader.lua`, Phase I).
+> - **GC tuning** — not needed; downgraded to a post-release watch.
+> - **Full-corpus QA** — `oracle-corpus` (all 2159 scenes) at the baseline.
+> - **Packaging** — `INSTALL.md` (personal install only, [ADR-003](../decisions/ADR-003-defer-licensing-distribution.md));
+>   `v1.0` tag. No ADR (no alternative closed). busted 134/0.
+
 Closes out the remaining 🟡s from [`04` §3](04-constraints-budget.md#3-budget-table-33)
 and design doc §3's residual parity gap (nothing left unaddressed by
 Phases I–VII).
@@ -423,7 +441,7 @@ Phases I–VII).
 | V.5 | Test hardening — **done** (app-level E2E, achievements content-integrity, save-schema regression, real-resolution smoke bootstrap, varied-profile walk, content stress-paint, parse-time budget) | V | 13–21 hrs |
 | VI | Settings/themes — **done** (scoped down: cheat mode + reader text-size preset only; + custom-reader viewport robustness + a reopen-bug fix) | II, V.5 | 4–8 hrs |
 | VII | Localization en+fr — **blocked** (upstream fr `.magium` is a stub: 1/54 files translated; implemented + rolled back 2026-09-08, tag `phase-vii-shelved`) | II (∥ III–VI) | 4–8 hrs (spent; blocker is data) |
-| VIII | Polish: e-ink tuning (OQ-007), condition mitigation (OQ-011), GC tuning, full-corpus QA, packaging | all | 15–25 hrs |
+| VIII | Polish — **done** (OQ-011 closed on a dev bench ~15 ms/render device; OQ-007 e-ink judged acceptable on device, `refresh.lua` unchanged; OQ-013 already done in Phase I; GC → post-release watch; `oracle-corpus` full-corpus QA; `INSTALL.md` + `v1.0`) | all | 15–25 hrs (well under — most items closed by measurement, no code) |
 | **Total** | | | **~113–183 hrs** |
 
 The total is a rough band, not a promise — the two widest-uncertainty items

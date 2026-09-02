@@ -1,31 +1,22 @@
 # Research Plan — Magium on KOReader
 
-- **Status:** research phase complete — Phases 0–6 and 8 done
-  (approach chosen — [ADR-002](docs/decisions/ADR-002-porting-approach.md);
-  roadmap written — [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md));
-  **Phase 7 deferred** (personal-use-only scope confirmed by owner —
-  [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
-  **Implementation underway** — the [Phase I spec](docs/specs/2026-08-31-plugin-architecture-and-phase-i.md)
-  ([ADR-004](docs/decisions/ADR-004-plugin-internal-architecture.md)) is approved
-  and **Phase I is complete** (on-device sign-off 2026-09-01).
-  **Phase II merged to `main` 2026-09-02** (owner on-device sign-off) — full-corpus
-  oracle parity **8887/8887**, in-game menu, back-nav cut
-  ([ADR-006](docs/decisions/ADR-006-no-scene-back-navigation.md)).
-  **Phase III merged to `main` 2026-09-02** ([spec](docs/specs/2026-09-02-phase-iii-saves.md) → stable,
-  [ADR-007](docs/decisions/ADR-007-saves-scope.md)) — 50 manual save slots +
-  `ui/savespage.lua`; import/export + rename cut, delete added. Owner on-device
-  sign-off; busted 111/0, oracle-corpus 8887/8887, not pushed.
-  **Phase IV merged to `main` 2026-09-03** ([spec](docs/specs/2026-09-03-phase-iv-stats.md)
-  → stable) — `ui/statspage.lua` (the `KeyValuePage` allocation screen, faithful
-  Confirm/Cancel, `?`-button tutorial), three stats-screen gates in
-  `specials.lua` (#5/#9/#10), "Full immersion" unlock (#11), `main.lua` wiring
-  (`special:stats`, menu row). Owner device sign-off after a first-pass fix
-  (lingering tutorial popup → `?` button). busted 116/0, oracle-corpus 8887/8887
-  (no `engine/scene` change), UI + flow smokes green. Not pushed.
-  **New enforced convention:** every `ui/` change is emulator-verified + lands a
-  `spec/ui`/`spec/flow` check before owner testing (CLAUDE.md). **Next: Phase V**
-  (achievements).
-- **Last updated:** 2026-09-03
+- **Status:** **IMPLEMENTATION COMPLETE — the port is feature-complete.**
+  Research phase done (Phases 0–6, 8; approach — [ADR-002](docs/decisions/ADR-002-porting-approach.md),
+  roadmap — [`09-roadmap-effort.md`](docs/research/09-roadmap-effort.md); Phase 7
+  licensing deferred — [ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
+  Implementation: **Phases I–VI + V.5 all merged to `main`** with owner
+  on-device sign-off (ADRs 004/006/007); **Phase VII** (fr localization) built +
+  rolled back, blocked on upstream translation completeness (tag
+  `phase-vii-shelved`); **Phase VIII (polish) merged 2026-09-08** — OQ-007
+  (e-ink feel acceptable on device), OQ-011 (2044-clause condition ≈ 15 ms/render
+  on device, already mitigated by parse-time DNF caching), OQ-013 (custom
+  paginated reader, Phase I) all closed; `INSTALL.md` + tag `v1.0`.
+  `oracle-corpus` 8887/8887, busted 134/0. **Every OQ is closed or deferred.**
+  Newest-first detail in the [running log](#running-log). **Next: nothing
+  scheduled** — the port is in personal use; open non-blocking follow-ups are
+  Phase VII (upstream fr content), Phase 7 (licensing, if distribution is ever
+  considered), and a GC post-release watch.
+- **Last updated:** 2026-09-08
 - **Governing design:** [`docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md`](docs/superpowers/specs/2026-08-31-magium-koreader-research-design.md)
 - **Conventions:** see design doc §8 and [`CLAUDE.md`](CLAUDE.md). Every deliverable
   doc uses the standard header; every claim is cited; findings carry a confidence tag.
@@ -169,6 +160,88 @@ proceeds to Phase 8 in the meantime.
 ## Running log
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
+
+### 2026-09-08 (session 36) — Phase VIII (polish) MERGED — the port is feature-complete
+
+Owner: "Start phase 8 planning" → `/ponytail`. Spec
+[`docs/specs/2026-09-08-phase-viii-polish.md`](docs/specs/2026-09-08-phase-viii-polish.md)
+→ stable. Branch `feat/phase-viii-polish`, merged to `main` via `--no-ff`
+(`<merge-sha>`; branch deleted, **not pushed**). Tag **`v1.0`** on the merge
+commit. **No ADR** (no alternative closed). **This is the last phase — Magium on
+KOReader is feature-complete.**
+
+**Measurement-driven, and reshaped mid-phase.** The roadmap's Phase VIII has
+three *conditional* deliverables ("only if profiling shows X"). Then the owner
+stated a hard **≤5-minute session limit** — so everything that needed a long
+device session moved off the device:
+
+- **OQ-011** — the `b3ch4a.magium:251` outlier (one ~490 KB `choice … if (…)`
+  with **2044 OR-clauses**, scene `B3-Ch04a-Stats-spent`). **Closed on a dev
+  bench, not the device.** `spec/engine/condition_perf_spec.lua` (new) times
+  `scene.render` of that scene: **2.6 ms/render on dev x86 LuaJIT** (1.1 ms with
+  an empty view) → **~15 ms on the Kindle** at spike 06's directly-measured
+  ×5.6 x86→device factor. Root reason it's cheap: **`engine/parser.lua` parses
+  the condition string into its DNF table once, at preload** (inside the
+  ~2.2 s cold parse already accepted), and `engine/conditions.lua:eval` only
+  walks the pre-built table per render — roadmap mitigation #1 ("memoise the
+  parsed DNF") was already the architecture. **No mitigation code.** The bench
+  ships as a permanent tripwire (loose 50 ms/render x86 budget + a guard that
+  the >1000-clause outlier still exists, so a future data change can't silently
+  gut it). Can't reach that scene in a 5-min pass and the margin is 20×+, so no
+  device confirmation was taken.
+- **OQ-007** — e-ink feel. **One ≤5-min device pass** (deploy via
+  `kindle-ssh-deploy.ps1 -Name paperwhite`, 79/79 files): owner tapped through
+  ~15 page-turns + 4 choices + an achievement toast + saves open/close +
+  suspend/close, in `Ch1`. **Verdict: acceptable** — "a bit of ghosting, but I
+  don't really care… no point optimizing unless people ask or I notice an
+  issue." `magium.koplugin/ui/refresh.lua` (the 14-line policy: `"ui"` on
+  page-turn/scene-swap, `"full"` every 6th scene, `"full"` on open) **ships
+  unchanged**. `crash.log` pulled + read: **clean** — `preload_done ms=2054
+  ok=true scenes=2159`, no `[MGM]` error/traceback/warn lines this session (the
+  stale `textwidget.lua:224` / `readermenu.lua:90` entries are pre-fix, from
+  earlier phases; `crash.log` is append-only). Reopen the four `return` values
+  in `refresh.lua` if it ever grates.
+- **OQ-013** — already resolved by Phase I (the custom paginated
+  `ui/reader.lua`, not `TextViewer`). Recorded closed on this final pass.
+- **GC tuning** — **not a phase gate.** Provoking a GC stutter needs a long
+  session (which the owner can't run) and ~11.5 MB resident heap makes it
+  unlikely. Downgraded to a **post-release watch**: `collectgarbage` knob in
+  `main.lua` init or `ui/reader.lua:_turn` only if a hitch ever shows in normal
+  play.
+- **Full-corpus QA** — `mgm.sh oracle-corpus` (`gen_cases.lua` already emits a
+  baseline `{}` case for *every* one of the 2159 scenes, so the sweep is
+  whole-corpus by construction): **8887/8887**.
+- **Packaging** — `INSTALL.md` at repo root (personal-use install only: SSH +
+  MTP deploy, the ~2.2 s first-open parse, on-device paths, the
+  no-live-rotation limitation). **No release-zip script** (`kindle-ssh-deploy.ps1`
+  already strips `spec/` + dotfiles) — distribution stays out of scope
+  ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)). `v1.0`
+  annotated tag.
+
+**Decisions:** D1 measurement-driven (conditional items ship no code unless
+shown needed); D2 the ≤5-min limit → OQ-011 closes on the bench, GC → post-release
+watch, only the e-ink pass stays on-device; D3 no release-zip; D4 an ADR only if
+OQ-011 had needed the targeted special-case (it didn't).
+
+**Gates:** `busted` **134/0** (+2, `condition_perf_spec.lua`).
+`oracle-corpus` **8887/8887** (no `engine/` behaviour changed — the bench is
+pure `spec/`; run as the Phase VIII full-corpus QA deliverable).
+`test-ui` / `test-ui-real` / `test-ui-matrix` — **not re-run**: no `ui/` file
+changed (`refresh.lua` ships unchanged). `emu-smoke` — device deploy + clean
+`crash.log` supersedes it this phase.
+
+**Docs:** `07-risks-open-questions.md` (OQ-007/011/013 → closed; header +
+blocking-status section); `09-roadmap-effort.md` (Phase VIII → done, effort
+table, header → "implementation complete"); `SUMMARY.md` (status block, row 12);
+`docs/specs/README.md` (Phase VIII row); this log. Memory:
+`project-goal-and-phase.md` (feature-complete), `oracle-corpus-parity-harness.md`
+(baseline is 8887/8887 — the crossbow diff was resolved in Phase II, not still
+open).
+
+**Next: nothing scheduled.** The port is feature-complete and in personal use.
+Open follow-ups, none blocking: Phase VII fr localization (blocked on upstream
+content — tag `phase-vii-shelved`); Phase 7 licensing (deferred, ADR-003, only
+matters if distribution is ever considered); the GC post-release watch.
 
 ### 2026-09-08 (session 35) — Phase VII (localization) implemented, then ROLLED BACK: upstream fr translation is a stub
 
