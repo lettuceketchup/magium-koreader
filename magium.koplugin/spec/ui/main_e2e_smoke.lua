@@ -193,6 +193,34 @@ do  -- Settings (Phase VI): cheat mode + text size, driven from the real menu
   check("reader is live again after a text-size change", top_is_reader())
 end
 
+do  -- Language (Phase VII): switch to fr, reader re-renders in place, switch back
+  m.store:set("v_current_scene", "Ch1-Intro1")
+  m:openSettings()
+  local sd = top()
+  local function pick_language(match)
+    for _, row in ipairs(sd.buttons or {}) do
+      for _, b in ipairs(row) do if b.text == "Language" then b.callback() end end
+    end
+    local ld = top()
+    for _, row in ipairs(ld.buttons or {}) do
+      for _, b in ipairs(row) do if b.text:find(match, 1, true) then b.callback(); return end end
+    end
+    error("no language row matching " .. match)
+  end
+  pick_language("Français")
+  check("switching to fr rebuilt the locale bundle", m.locale.lang == "fr")
+  check("fr switch re-renders on a live Reader", top_is_reader())
+  check("fr header uses the fr template",
+    m.locale:header(m.store:get("v_current_scene")) == "Livre 1 - Chapitre 1")
+  check("scene position is unchanged across the switch",
+    m.store:get("v_current_scene") == "Ch1-Intro1")
+  m:openSettings(); sd = top()
+  pick_language("English")
+  check("switching back to en rebuilt the locale bundle", m.locale.lang == "en")
+  check("en switch lands on a live Reader", top_is_reader())
+  G_reader_settings:delSetting("magium_lang")
+end
+
 do  -- Achievements
   m.store:set("v_ac_ch1_coward", "1")   -- pretend one is earned
   open_from_menu(m.locale:str("menuAchievementsText") or "Achievements")

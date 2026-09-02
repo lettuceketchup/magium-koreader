@@ -59,8 +59,27 @@ local Magium = WidgetContainer:extend{ name = "magium", is_doc_only = false }
 
 -- ---- helpers ----------------------------------------------------------------
 
+-- Phase VII: the story language. G_reader_settings key `magium_lang` (same
+-- convention as `magium_trace` / `magium_prose_size`); default + fallback "en".
+-- Only en/fr exist upstream, so anything else clamps to en.
+local function current_lang()
+  local l = G_reader_settings and G_reader_settings:readSetting("magium_lang")
+  return l == "fr" and "fr" or "en"
+end
+
+-- Single source of truth for `shared_locale` — rebuilds it when the language
+-- changed (Locale stores self.lang, so the check is free). Used by init() and
+-- openReader() so a language switch in one plugin instance reaches the others.
+local function ensure_locale(data_dir)
+  local want = current_lang()
+  if not shared_locale or shared_locale.lang ~= want then
+    shared_locale = Locale.load(data_dir, want)
+  end
+  return shared_locale
+end
+
 local function new_story(data_dir)
-  return Story.new{ data_dir = data_dir, locale = "en", strategy = PARSE_STRATEGY }
+  return Story.new{ data_dir = data_dir, locale = current_lang(), strategy = PARSE_STRATEGY }
 end
 
 -- Reset to a fresh playthrough but KEEP earned achievements. Parity: magium-dev's
@@ -119,8 +138,7 @@ function Magium:init()
   self:onDispatcherRegisterActions()
   self.ui.menu:registerToMainMenu(self)
   self.data_dir = self.path .. "/data"
-  shared_locale = shared_locale or Locale.load(self.data_dir, "en")
-  self.locale = shared_locale
+  self.locale = ensure_locale(self.data_dir)
   self.story = shared_story   -- nil until the first successful _ensureLoaded()
   self.store = Store.new()
   self.save = SaveManager.new{
@@ -306,6 +324,7 @@ function Magium:onMagiumOpen() self:openReader(); return true end
 
 function Magium:openReader()
   self:_configureTrace()   -- (re)arm the trace for this open — reads the menu toggle, opens a fresh file
+  self.locale = ensure_locale(self.data_dir)   -- Phase VII: pick up a language switch made elsewhere
   self:_ensureLoaded()     -- first open this session: ~2.2 s parse behind a progress bar
   trace.event("open")
 
@@ -600,9 +619,9 @@ function Magium:openAchievements()
   trace.event("menu", { action = "achievements" })
 end
 
--- The Settings screen (spec §3, roadmap Phase VI). Reached from the in-game
--- menu's "Settings" row. Scoping pass: theme is KOReader's job, language is
--- Phase VII — only cheat mode + a reader-local text-size preset are ported.
+-- The Settings screen (spec §3, roadmap Phases VI–VII). Reached from the in-game
+-- menu's "Settings" row. Scoping pass: theme is KOReader's job — only cheat mode,
+-- a reader-local text-size preset, and (Phase VII) the story language are ported.
 function Magium:openSettings()
   local ButtonDialog = require("ui/widget/buttondialog")
   local dialog
@@ -611,6 +630,7 @@ function Magium:openSettings()
     title = _("Settings"), title_align = "center",
     buttons = {
       {{ text = _("Text size"), callback = act(function() self:_openTextSizeDialog() end) }},
+      {{ text = _("Language"), callback = act(function() self:_openLanguageDialog() end) }},
       {{
         text = self.locale:str("settingsCheatModeText") or _("Cheat mode"),
         callback = act(function() self:_confirmCheatMode() end),
@@ -622,29 +642,54 @@ function Magium:openSettings()
   trace.event("menu", { action = "settings" })
 end
 
+-- A single-choice picker: one row per { label, value }, " ✓" on the active row,
+-- a Cancel row. Tap → close, then apply(value) (apply is a no-op guard's job).
+function Magium:_openPickerDialog(title, options, current, apply)
+  local ButtonDialog = require("ui/widget/buttondialog")
+  local dialog
+  local rows = {}
+  for _, opt in ipairs(options) do
+    local label, value = opt[1], opt[2]
+    rows[#rows + 1] = {{
+      text = value == current and (label .. " ✓") or label,
+      callback = function() UIManager:close(dialog); apply(value) end,
+    }}
+  end
+  rows[#rows + 1] = {{ text = _("Cancel"), callback = function() UIManager:close(dialog) end }}
+  dialog = ButtonDialog:new{ title = title, title_align = "center", buttons = rows }
+  UIManager:show(dialog)
+end
+
 -- Text size: 3 presets, persisted as G_reader_settings `magium_prose_size`
 -- (ui/reader.lua:init reads it). Applying = write the key + reopen the reader;
 -- _reopenReader re-runs Reader:init which re-paginates at the new size.
 function Magium:_openTextSizeDialog()
-  local ButtonDialog = require("ui/widget/buttondialog")
   local current = G_reader_settings:readSetting("magium_prose_size") or PROSE_DEFAULT
-  local dialog
-  local rows = {}
-  for _, preset in ipairs(PROSE_PRESETS) do
-    local label, pt = preset[1], preset[2]
-    rows[#rows + 1] = {{
-      text = pt == current and (label .. " ✓") or label,
-      callback = function()
-        UIManager:close(dialog)
-        G_reader_settings:saveSetting("magium_prose_size", pt)
-        trace.event("settings", { op = "text_size", pt = pt })
-        if pt ~= current then self:_reopenReader() end
-      end,
-    }}
-  end
-  rows[#rows + 1] = {{ text = _("Cancel"), callback = function() UIManager:close(dialog) end }}
-  dialog = ButtonDialog:new{ title = _("Text size"), title_align = "center", buttons = rows }
-  UIManager:show(dialog)
+  self:_openPickerDialog(_("Text size"), PROSE_PRESETS, current, function(pt)
+    if pt == current then return end
+    G_reader_settings:saveSetting("magium_prose_size", pt)
+    trace.event("settings", { op = "text_size", pt = pt })
+    self:_reopenReader()
+  end)
+end
+
+-- Story language (Phase VII). English / Français — the only bundles that exist.
+function Magium:_openLanguageDialog()
+  self:_openPickerDialog(_("Language"),
+    { { "English", "en" }, { "Français", "fr" } }, current_lang(),
+    function(lang) self:_setLanguage(lang) end)
+end
+
+-- Switch the story language: persist the key, drop the parsed corpus so the next
+-- open re-parses in the new language, reopen on the current scene. Scene IDs and
+-- v_* vars are locale-invariant, so play state carries over untouched; the
+-- ~2.2 s device re-parse rides the existing "Loading Magium…" Trapper bar.
+function Magium:_setLanguage(lang)
+  if lang == current_lang() then return end
+  G_reader_settings:saveSetting("magium_lang", lang)
+  shared_story, shared_loaded = nil, false
+  trace.event("settings", { op = "language", lang = lang })
+  self:_reopenReader()   -- openReader → ensure_locale + _ensureLoaded rebuild both
 end
 
 -- Cheat mode: parity with magium-dev settings.ejs — one-shot, unconditional,

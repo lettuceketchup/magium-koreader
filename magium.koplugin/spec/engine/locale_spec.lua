@@ -58,3 +58,42 @@ describe("Locale", function()
     assert.are.equal("Who are you calling a coward?", found.title)
   end)
 end)
+
+describe("Locale (fr, Phase VII)", function()
+  local loc
+  setup(function() loc = Locale.load(DATA_ROOT, "fr") end)
+
+  it("loads the fr bundle", function()
+    assert.are.equal("fr", loc.lang)
+    assert.are.equal("Oui", loc:str("localeYes"))
+  end)
+
+  it("derives the header from the fr template", function()
+    assert.are.equal("Livre 1 - Chapitre 1", loc:header("Ch1-Intro1"))
+    assert.are.equal("Livre 2 - Chapitre 7", loc:header("B2-Ch07a-Intro"))
+  end)
+
+  it("renders a stat-check line in fr", function()
+    local txt = loc:stat_check_text({ variable = "Observation", value = 3, success = true })
+    assert.is_truthy(txt:find("Observation"))
+    assert.is_truthy(txt:find("3"))
+    assert.is_falsy(txt:find("  "))
+  end)
+
+  it("has the same 136 achievements in the same declaration order as en", function()
+    local en = Locale.load(DATA_ROOT, "en")
+    local total = 0
+    for book = 1, 3 do
+      assert.are.same(en:achievement_chapters(book), loc:achievement_chapters(book))
+      for _, key in ipairs(loc:achievement_chapters(book)) do
+        total = total + #loc:achievement_entries(book, key)
+      end
+    end
+    assert.are.equal(136, total)
+  end)
+
+  it("falls back to en for an unknown language", function()
+    local bad = Locale.load(DATA_ROOT, "zz")
+    assert.are.equal("en", bad.lang)
+  end)
+end)

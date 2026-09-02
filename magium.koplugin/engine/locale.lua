@@ -14,8 +14,17 @@ local function read_file(path)
   return s
 end
 
+local function dir_has_ui_json(data_dir, lang)
+  local f = io.open(data_dir .. "/" .. lang .. "/ui.json", "r")
+  if f then f:close(); return true end
+  return false
+end
+
 function Locale.load(data_dir, lang)
   local self = setmetatable({}, Locale)
+  -- Belt-and-braces: an unknown lang (bad magium_lang value) falls back to en
+  -- rather than throwing in read_file's assert at startup.
+  if not dir_has_ui_json(data_dir, lang) then lang = "en" end
   self.lang = lang
   self.strings = json.decode(read_file(data_dir .. "/" .. lang .. "/ui.json"))
 

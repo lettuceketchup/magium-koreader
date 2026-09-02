@@ -23,3 +23,5 @@ Record here, so the reasoning survives after the decision looks obvious.
 | [004](ADR-004-plugin-internal-architecture.md) | Plugin internal architecture — three-layer, engine-pure, custom paginated reader | Accepted |
 | [005](ADR-005-debug-trace-toggle.md) | Debug action-trace as a runtime menu toggle | Accepted |
 | [006](ADR-006-no-scene-back-navigation.md) | No in-game "back one scene" / history stack (Phase II) | Accepted |
+| [007](ADR-007-saves-scope.md) | Phase III saves — drop import/export & rename, add delete | Accepted |
+| [008](ADR-008-localization-scope.md) | Phase VII localization — story bundle only, no plugin-chrome catalog | Accepted |

@@ -172,3 +172,59 @@ describe("achievements content integrity (JSON <-> corpus)", function()
     end
   end)
 end)
+
+-- Phase VII: the French bundle (data/fr/) must be a structural drop-in — same
+-- 54 files, and every file's scene-ID set identical to English. The engine,
+-- save schema and oracle are all locale-agnostic, so this is the ONLY gate that
+-- proves fr is safe to load. If it fails, the fr .magium files diverged from en
+-- upstream and the port can't assume state carries across a language switch.
+describe("fr bundle parity with en (Phase VII)", function()
+  local function basename(p) return (p:match("([^/]+)$")) end
+  local function id_set(path)
+    local ids = {}
+    for id in pairs(parser.parse(path)) do ids[id] = true end
+    return ids
+  end
+
+  local en_files, fr_files
+  setup(function()
+    en_files, fr_files = {}, {}
+    for _, p in ipairs(Story._list_magium("./data/en")) do en_files[basename(p)] = p end
+    for _, p in ipairs(Story._list_magium("./data/fr")) do fr_files[basename(p)] = p end
+  end)
+
+  it("has the same set of .magium files as en", function()
+    local missing = {}
+    for name in pairs(en_files) do
+      if not fr_files[name] then missing[#missing + 1] = name end
+    end
+    for name in pairs(fr_files) do
+      if not en_files[name] then missing[#missing + 1] = "extra: " .. name end
+    end
+    table.sort(missing)
+    assert.message("file mismatch:\n  " .. table.concat(missing, "\n  ")).are.same({}, missing)
+  end)
+
+  it("every fr file parses and its scene-ID set matches en", function()
+    local bad = {}
+    for name, en_path in pairs(en_files) do
+      local fr_path = fr_files[name]
+      if fr_path then
+        local ok, fr_ids = pcall(id_set, fr_path)
+        if not ok then
+          bad[#bad + 1] = name .. ": fr parse error — " .. tostring(fr_ids)
+        else
+          local en_ids = id_set(en_path)
+          for id in pairs(en_ids) do
+            if not fr_ids[id] then bad[#bad + 1] = name .. ": missing in fr — " .. id end
+          end
+          for id in pairs(fr_ids) do
+            if not en_ids[id] then bad[#bad + 1] = name .. ": extra in fr — " .. id end
+          end
+        end
+      end
+    end
+    table.sort(bad)
+    assert.message("fr/en scene-ID divergence:\n  " .. table.concat(bad, "\n  ")).are.same({}, bad)
+  end)
+end)

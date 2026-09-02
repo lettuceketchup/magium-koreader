@@ -225,5 +225,49 @@ do
     .. r.geometry.prose_height .. ")", #r.pages <= 12 and r.geometry.prose_height > 0)
 end
 
+-- 9. Phase VII: a real French scene must paginate + paint. The custom widget
+-- uses PROSE_FACE, not KOReader's document font, so accented glyphs (é à ç ê î
+-- œ « ») and longer French words are only exercised here. Pull the widest prose
+-- scene out of the fr bundle and render it for real.
+do
+  local PLUGIN = assert(package.path:match("^([^;]+)/%?%.lua"), "PLUGIN not in package.path")
+  local parser = require("engine/parser")
+  local Story = require("engine/story")
+
+  -- parser paragraphs are { text = "...", cond = ... } blocks; the render model
+  -- wants plain strings. Flatten unconditionally (a smoke, not a condition test).
+  local best, best_len, best_prose = nil, 0, nil
+  for _, f in ipairs(Story._list_magium(PLUGIN .. "/data/fr")) do
+    for id, sc in pairs(parser.parse(f)) do
+      local prose, n = {}, 0
+      for _, p in ipairs(sc.paragraphs or {}) do
+        if p.text and #p.text > 0 then prose[#prose + 1] = p.text; n = n + #p.text end
+      end
+      if n > best_len and #sc.choices > 0 then
+        best, best_len, best_prose = { id = id, sc = sc }, n, prose
+      end
+    end
+  end
+  assert(best, "no fr prose scene parsed")
+  local choices = {}
+  for i, c in ipairs(best.sc.choices) do
+    choices[i] = { text = c.text or "…", target = "X", set_variables = {}, special = nil }
+  end
+  local rm = {
+    scene_id = best.id, header = "Livre 1 - Chapitre 1", checkpoint = false,
+    stat_checks = {}, set_variables = {}, paragraphs = best_prose,
+    choices = choices, achievements = {},
+  }
+  local r = make_reader(rm, {})
+  local ok, err = pcall(function()
+    for i = 1, #r.pages do r.page_idx = i; r:_render(); r[1]:paintTo(Screen.bb, 0, 0) end
+  end)
+  check(string.format("fr scene %s paints across all %d pages (%d prose chars)",
+    best.id, #r.pages, best_len), ok)
+  if not ok then print("    " .. tostring(err)) end
+  r.page_idx = 1; r:_render()
+  check("fr prose page fits the frame", r[1][1]:getSize().h <= r.dimen.h)
+end
+
 print(string.format("\n%s  (%d checks failed)", fails == 0 and "PASS" or "FAIL", fails))
 os.exit(fails == 0 and 0 or 1)

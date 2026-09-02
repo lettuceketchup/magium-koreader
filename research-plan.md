@@ -170,6 +170,65 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-08 (session 35) — Phase VII implemented: localization (en + fr)
+
+Owner: "Start phase 7 planning" → brainstorm (3 decisions: chrome scope = prose
++ `ui.json` only; default `en` + switch in Settings; live-reload switch) →
+approved plan → `/ponytail` pass → spec
+[`docs/specs/2026-09-08-phase-vii-localization.md`](docs/specs/2026-09-08-phase-vii-localization.md).
+Branch `feat/phase-vii-localization`. **Not merged — awaiting owner device
+sign-off** (exit criteria in the spec §6).
+
+- **Verified up front (de-risks the whole phase):** all 54
+  `../magium-dev/data/fr/*.magium` parse clean with `engine/parser.lua`, and
+  every file's scene-ID set is identical to `data/en/` — French is a structural
+  drop-in. Scene IDs + `v_*` vars are locale-invariant, so parser / engine /
+  save schema / oracle are all untouched.
+- **`magium.koplugin/data/fr/`** — `../magium-dev/data/fr/` @ `51f5aa9` copied
+  verbatim (54 `.magium` + `ui.json` + `achievements{1,2,3}.json`, ~7.7 MB —
+  doubles the data dir; device has 10.6 GB free).
+- **`main.lua`** — new module locals `current_lang()` (reads `G_reader_settings`
+  key **`magium_lang`**; default + clamp `"en"`, only `en`/`fr` valid) and
+  `ensure_locale(data_dir)` (single source of truth for `shared_locale`,
+  rebuilds on a language change — `Locale` already stores `self.lang`).
+  `new_story()` / `init()` / top of `openReader()` use them instead of a
+  hardcoded `"en"`. New `_setLanguage(lang)`: persist the key, drop
+  `shared_story`/`shared_loaded`, `_reopenReader()` → `openReader` re-parses in
+  the new language behind the existing "Loading Magium… n/54" Trapper bar and
+  re-renders `v_current_scene` in place (play state carries over untouched).
+- **Settings dialog** — extracted a shared `_openPickerDialog(title, options,
+  current, apply)` from `_openTextSizeDialog` (2 call sites now); new
+  **"Language"** row → English / Français picker.
+- **`engine/locale.lua`** — one-line guard: unknown lang dir → fall back to `en`
+  (belt-and-braces; `current_lang` already clamps).
+- **Chrome scope ([ADR-008](docs/decisions/ADR-008-localization-scope.md)):**
+  the ~15 strings already routed `self.locale:str("k") or _("…")` turn French
+  from `ui.json` (About, cheat-mode, Yes/No, Save-Load / Achievements labels,
+  stat labels, `mainHeaderTemplate`); the ~25 bare `_()` strings stay English.
+  **No `.po`/`.mo` catalog, no build step** — one English-reading user, no
+  distribution ([ADR-003](docs/decisions/ADR-003-defer-licensing-distribution.md)).
+- **Decisions:** D1 fr = verbatim runtime-parsed bundle · D2 chrome not
+  `locale:str()`-routed stays English, no catalog (**ADR-008**) · D3 default
+  `en`, `magium_lang` key, switch in Settings · D4 switch = live reload,
+  locale-invariant state carries over · D5 unknown lang → `en`.
+- **Tests (all extend existing files, no new spec file):**
+  `spec/engine/navigation_spec.lua` — new "fr bundle parity with en" block (54
+  files parse + scene-ID sets == en); `spec/engine/locale_spec.lua` — fr bundle
+  block (fr header template "Livre 1 - Chapitre 1", `localeYes` "Oui", 136
+  achievements in en order, unknown-lang → en fallback);
+  `spec/ui/main_e2e_smoke.lua` — `openSettings → Language → Français` (locale
+  rebuilt, reader re-renders, scene unchanged) then back to English;
+  `spec/ui/reader_smoke.lua` — paints the widest fr prose scene
+  (`B2-Ch01a-Innocent`, 17.7k chars, 16–17 pages) for real, accented glyphs
+  through `PROSE_FACE` + pagination.
+- **Gates:** `busted` **139/0** (was 132, +7); `test-ui` + `test-ui-real` +
+  `test-ui-matrix` (all 4 device profiles) green; `emu-smoke` clean (crash.log
+  empty). **`oracle-corpus` not re-run** — no `engine/` or `scene.render`
+  change, baseline stays **8887/8887**. `schema_compat` unaffected (`magium_lang`
+  is a `G_reader_settings` key, not in the save blob).
+- **Next:** owner device sign-off (spec §6), then `--no-ff` merge + log. After
+  Phase VII: Phase VIII (polish, e-ink tuning, packaging).
+
 ### 2026-09-07 (session 34) — Phase VI implemented: settings + viewport robustness
 
 Owner: "Start phase 6 planning" → approved plan (after a `/ponytail` pass that
