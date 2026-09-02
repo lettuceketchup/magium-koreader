@@ -13,6 +13,13 @@
 -- checks alone still exited 0). Every level this menu can show is also
 -- painted for real via Screen.bb, matching koreader's own
 -- spec/unit/widget_progresswidget_spec.lua pattern.
+--
+-- CAVEAT: this still runs under commonrequire's DUMMY Screen, hardcoded to
+-- 600x800 regardless of EMULATE_READER_W/H (see mgm.sh koenv's comment) — so
+-- these paint checks only prove "doesn't crash", not "looks right at the
+-- real PW12 1272x1696". The title/checkbox layout fix below was actually
+-- verified with a one-off non-dummy script at the real resolution
+-- (2026-09-04); making that the norm is Phase V.5 scope.
 
 require("commonrequire")
 local Screen = require("device").screen
@@ -37,8 +44,13 @@ end
 local PLUGIN = assert(package.path:match("^([^;]+)/%?%.lua"), "PLUGIN not found in package.path")
 local locale = Locale.load(PLUGIN .. "/data", "en")
 
-local function make(view)
-  return AchievementsMenu:new{ locale = locale, view = view or {}, on_close = function() end }
+local CHECKED, UNCHECKED = "\xe2\x9c\x93 ", "\xe2\x96\xa2 "   -- must match ui/achievementsmenu.lua
+
+local function make(view, on_reset)
+  return AchievementsMenu:new{
+    locale = locale, view = view or {}, on_close = function() end,
+    on_reset = on_reset or function() end,
+  }
 end
 
 local function find_by_prefix(item_table, prefix)
@@ -79,15 +91,17 @@ do  -- drilling into an entry list: locked/unlocked, and this is exactly the
   m:onMenuSelect(ch1)
   local coward = find_by_prefix(m.item_table, "Who are you calling a coward?")
   check("found the coward entry", coward ~= nil)
-  check("unlocked entry (flag=1) is not dimmed", coward and coward.dim == false)
-  check("caption is folded into text, not the unwrapped mandatory field",
-    coward and coward.mandatory == nil and coward.text:find("A true warrior", 1, true) ~= nil)
+  check("unlocked entry shows the checked glyph", coward and coward.mandatory == CHECKED)
+  check("mandatory is a short glyph, not the long caption (the crash class)",
+    coward and #coward.mandatory <= 4)
+  check("caption is folded into text (multilines_show_more_text wraps it)",
+    coward and coward.text:find("A true warrior", 1, true) ~= nil)
 
   local other
   for _, it in ipairs(m.item_table) do
     if it ~= coward then other = it end
   end
-  check("a not-yet-earned entry is dimmed", other and other.dim == true)
+  check("a not-yet-earned entry shows the unchecked glyph", other and other.mandatory == UNCHECKED)
   check("2 levels deep", #m.paths == 2)
   paint(m, "book 1 chapter 1 entries")
 end
@@ -108,7 +122,27 @@ do  -- unlocked test treats "2" (seen) the same as "1" (unseen)
   local ch1 = find_by_prefix(m.item_table, "Chapter 1")
   m:onMenuSelect(ch1)
   local coward = find_by_prefix(m.item_table, "Who are you calling a coward?")
-  check("'2' (seen) still counts as unlocked", coward and coward.dim == false)
+  check("'2' (seen) still counts as unlocked", coward and coward.mandatory == CHECKED)
+end
+
+do  -- reset: title-bar icon present, confirmation gate, calls on_reset then closes
+  local reset_called, closed = false, false
+  local m = make(nil, function() reset_called = true end)
+  m.close_callback = function() closed = true end
+  check("has a warning title-bar icon", m.title_bar_left_icon == "notice-warning")
+
+  local UIManager = require("ui/uimanager")
+  local real_show = UIManager.show
+  local shown
+  UIManager.show = function(_, w) shown = w end
+  m:onLeftButtonTap()
+  UIManager.show = real_show
+  check("tapping the icon shows a confirmation dialog, not an immediate reset",
+    shown ~= nil and not reset_called)
+
+  shown.ok_callback()
+  check("confirming calls on_reset", reset_called)
+  check("confirming closes the achievements screen", closed)
 end
 
 do  -- paint EVERY chapter's entry list, across all 3 books — the mandatory

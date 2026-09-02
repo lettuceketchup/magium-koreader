@@ -262,11 +262,49 @@ Built the achievement unlock toast and browsable menu, per
   roadmap entry in `docs/research/09-roadmap-effort.md`. **New standing rule**
   (CLAUDE.md "Doing implementation work"): every subsequent phase/change must
   run and update whatever regression suites exist, not just add its own.
-- **Next:** owner device pass on Phase V (unlock a real achievement, confirm
-  one toast + no repeat on resume; open Achievements, drill in and back —
-  chapters now render without crashing; confirm the immersion toast from the
-  stats screen). Then **Phase V.5** (owner's own session, test hardening) —
-  Phase VI does not start until it lands.
+- **Second device pass, same session.** Chapters opened without crashing
+  (1st-pass fix held), but two real layout problems remained: the title text
+  was single-line-ellipsized (not multi-line) and locked/unlocked had no
+  visible checkbox, only text-dim color.
+  - **Root cause of BOTH the bug and why the emulator "passed" it: found a
+    real infra gap.** Every `spec/ui/*_smoke.lua` requires `commonrequire`,
+    which sets `einkfb.dummy = true` — koreader's dummy `Screen` backend
+    **hardcodes a 600×800 buffer unconditionally**
+    (`base/ffi/framebuffer_SDL3.lua:17`), ignoring `EMULATE_READER_W/H`
+    entirely (those vars ARE real and correctly read by the *non-dummy* SDL
+    path, `base/ffi/SDL3.lua:118` — just never reached in dummy mode). So
+    every "paints without crashing" check this whole phase has only proven
+    exactly that — crash-avoidance — never actual PW12-resolution layout.
+    Diagnosed + fixed `mgm.sh koenv`'s misleading comment; built a one-off
+    non-dummy, `Xvfb`-backed screenshot script
+    (`Device.screen:init()` without the dummy flag + `Screen.bb:writePNG`) to
+    get a real 1272×1696 render and actually look at the bug.
+  - **Fix:** `multilines_show_more_text = true` on the `AchievementsMenu`
+    (koreader's own "shrink font to show wrapped text" mechanism — the
+    default path auto-promotes to single-line-ellipsis whenever the font
+    doesn't fit 2 lines at the row's *default* height, regardless of how much
+    room the row actually has); a real `✓`/`▢` checkbox glyph in `mandatory`
+    (short — safe, unlike the 1st-pass crash which was a *long* caption
+    there) — the exact glyphs koreader's own `ui/widget/checkmark.lua` uses
+    for the same purpose everywhere else in the app. Verified via
+    before/after screenshots.
+  - **New feature (owner-requested, no magium-dev reference):** reset-all-achievements
+    — a title-bar warning icon + `ConfirmBox`
+    ("Reset all achievements? This cannot be undone.") on the achievements
+    screen, `on_reset` callback wired in `main.lua` (keeps everything except
+    `v_ac_*`, mirrors `reset_to_intro`'s inverse).
+  - Smoke test updated to match (`✓`/`▢` glyph assertions, reset-flow
+    assertions); busted 122/0, all 5 UI smokes green. `oracle-corpus` not
+    re-run (zero `engine/` touch this round, UI-file changes only).
+  - **Redeploy attempted, device unreachable** (SSH connect timeout —
+    `192.168.1.11:2222`, likely asleep/off WiFi). Not yet on the device.
+- **Next:** get the device back online, redeploy, then the same device-pass
+  checklist as before (toast, drill-down, immersion toast) **plus**: titles
+  wrap across multiple lines, a real checkbox per entry, and the reset icon
+  asks for confirmation and actually clears every achievement. Then
+  **Phase V.5** (owner's own session, test hardening — now also covers the
+  dummy-`Screen` resolution gap found this round) — Phase VI does not start
+  until it lands.
 
 ### 2026-09-03 (session 29b) — Phase IV: first device pass, tutorial reworked
 

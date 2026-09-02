@@ -278,10 +278,17 @@ the achievements *data* for orphaned/unreachable content.
      `Story:preload()` in the test suite so a parse-time regression is
      caught automatically instead of rediscovered on-device (currently only
      tracked as a one-off spike finding, `docs/spikes/06-ondevice-parse-timing`).
+  7. **Fix `spec/ui/*_smoke.lua`'s dummy-`Screen` resolution** — found
+     2026-09-04 chasing a real layout bug the emulator's paint checks had
+     already "passed" at a hardcoded 600×800 instead of the real PW12
+     1272×1696 (`commonrequire`'s `einkfb.dummy=true` ignores
+     `EMULATE_READER_W/H` entirely). A reusable non-dummy bootstrap +
+     `mgm.sh` command, so every paint check proves layout, not just
+     crash-avoidance. Groups with item 5.
 - **Depends on:** Phase V (uses its screens/data as fixtures; the app-level
   harness naturally exercises the achievements menu too).
-- **Effort band: 12–19 hrs** (≈4–6 / 1–2 / 3–5 / 2–3 / 1–2 / 1 hrs per item
-  above).
+- **Effort band: 13–21 hrs** (≈4–6 / 1–2 / 3–5 / 2–3 / 1–2 / 1 / 1–2 hrs per
+  item above).
 - **Standing rule this phase establishes:** once its suites exist, **every
   subsequent phase and change must run them and update them as needed** —
   same status as `busted`/`oracle-corpus`/`spec/ui/*_smoke.lua` today. See
@@ -362,11 +369,11 @@ Phases I–VII).
 | III | Saves (4 blobs, debounced autosave, slots) | II | 10–15 hrs |
 | IV | Stats & stat-checks | II (∥ III) | 8–12 hrs |
 | V | Achievements | II (∥ III, IV) | 6–10 hrs |
-| V.5 | Test hardening (app-level E2E, content integrity, exhaustive walk, save-schema regression, content stress-testing, perf regression) | V | 12–19 hrs |
+| V.5 | Test hardening (app-level E2E, content integrity, exhaustive walk, save-schema regression, content stress-testing, perf regression, dummy-Screen resolution fix) | V | 13–21 hrs |
 | VI | Settings/themes (scoped down — much is KOReader's job) | II, V.5 | 4–8 hrs |
 | VII | Localization en+fr | II (∥ III–VI) | 4–8 hrs |
 | VIII | Polish: e-ink tuning (OQ-007), condition mitigation (OQ-011), GC tuning, full-corpus QA, packaging | all | 15–25 hrs |
-| **Total** | | | **~112–181 hrs** |
+| **Total** | | | **~113–183 hrs** |
 
 The total is a rough band, not a promise — the two widest-uncertainty items
 are Phase I's pagination widget (genuinely new, no direct KOReader prior art

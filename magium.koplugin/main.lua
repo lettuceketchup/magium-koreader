@@ -563,6 +563,18 @@ function Magium:openAchievements()
     locale = self.locale,
     view = self.store:snapshot(),
     on_close = function() trace.event("menu", { action = "achievements_close" }) end,
+    on_reset = function()
+      -- keep everything EXCEPT v_ac_* (mirrors reset_to_intro's inverse: that
+      -- keeps only v_ac_*, this drops only v_ac_*). Owner-requested feature,
+      -- no reference in magium-dev.
+      local keep = {}
+      for k, v in pairs(self.store:snapshot()) do
+        if k:sub(1, 5) ~= "v_ac_" then keep[k] = v end
+      end
+      self.store:restore(keep)
+      self.save:flush_now("achievements-reset")
+      trace.event("achievements", { op = "reset" })
+    end,
   }
   UIManager:show(self.achievements_ui)
   trace.event("menu", { action = "achievements" })

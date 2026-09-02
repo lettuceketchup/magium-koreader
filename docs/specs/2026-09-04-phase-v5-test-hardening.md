@@ -69,6 +69,20 @@ stale (an unreachable/orphaned achievement).
 5. **Content stress-testing beyond achievements.** Generalize "paint every
    real instance" to other free-form-text widgets.
 6. **Performance regression.** A parse-time budget assertion.
+7. **Fix `spec/ui/*_smoke.lua`'s paint checks to run at the real PW12
+   resolution, not a dummy 600×800.** Found chasing the achievements-menu
+   layout bug (`research-plan.md` 2026-09-04 session 30, 2nd device pass):
+   every `spec/ui/*_smoke.lua` requires `commonrequire`, whose
+   `einkfb.dummy = true` hardcodes `Screen` to 600×800
+   (`base/ffi/framebuffer_SDL3.lua:17`) regardless of `EMULATE_READER_W/H` —
+   so every existing `widget:paintTo(Screen.bb,...)` check (item 5 above and
+   the achievements-menu fix included) has only ever proven "doesn't crash",
+   never "looks right at 1272×1696". A one-off non-dummy, `Xvfb`-backed
+   bootstrap script (real `Screen:init()`, skip the dummy flag) proved this
+   works and is what actually caught the title-wrap bug — turn that into a
+   reusable `spec/support/real_screen_require.lua` (or similar) + a `mgm.sh`
+   command every `spec/ui/*_smoke.lua` can opt into. Groups naturally with
+   item 5; do both together.
 
 ### 1.3 Out of scope
 

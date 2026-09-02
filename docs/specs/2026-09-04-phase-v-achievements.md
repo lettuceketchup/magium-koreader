@@ -3,15 +3,31 @@
 - **Status:** implemented, automated gates green (busted **122/0**, `oracle-corpus`
   unchanged — `scene.render()` untouched, only `persist_effects` extended — `toast`
   + `achievementsmenu` + `savespage` + `statspage` + `reader` UI smokes green,
-  headless emu load clean). First device pass (2026-09-04) caught a real crash
-  the smoke test's structural asserts missed: `mandatory = e.caption` on an
-  entry row crashed on paint (`textwidget.lua:224: bad argument #2 to
-  'makeLine'` — `mandatory` is an unwrapped single-line `TextWidget`, wrong
-  field for a full sentence). Fixed (caption folded into `text`) and the smoke
-  test now paints every one of the 34 chapter entry-list screens for real
-  (`Screen.bb`), not just structural checks — see §4 and CLAUDE.md's
-  sharpened "Doing implementation work" rule. Re-tested green; awaiting a
-  second device pass.
+  headless emu load clean). Two device-pass rounds so far:
+  1. **First pass:** a real crash the smoke test's structural asserts missed:
+     `mandatory = e.caption` on an entry row crashed on paint
+     (`textwidget.lua:224: bad argument #2 to 'makeLine'` — `mandatory` is an
+     unwrapped single-line `TextWidget`, wrong field for a full sentence).
+     Fixed (caption folded into `text`) and the smoke test started painting
+     every one of the 34 chapter entry-list screens for real (`Screen.bb`).
+  2. **Second pass:** the fix from (1) *ran* without crashing but still didn't
+     look right: the title+caption text was single-line-ellipsized (not
+     multi-line) and the locked/unlocked state had no real checkbox, only
+     text-dim color. Root cause of *both*: the smoke test's `Screen.bb` is
+     `commonrequire`'s **dummy** framebuffer, hardcoded to 600×800 regardless
+     of `EMULATE_READER_W/H` — so "paints without crashing" never verified
+     actual layout at the real PW12 1272×1696. Diagnosed with a one-off
+     non-dummy, `Xvfb`-backed screenshot script (`Screen.bb:writePNG`) built
+     for this. Fixed: `multilines_show_more_text = true` on the Menu (the
+     item's font shrinks to actually show wrapped text, instead of
+     auto-promoting to single-line ellipsis) + a real `✓`/`▢` checkbox glyph
+     in `mandatory` (short, safe — the crash class from (1) was *long* text in
+     that field, not the field itself) — koreader's own
+     `ui/widget/checkmark.lua` convention. Also added an owner-requested
+     **reset-all-achievements** action (title-bar warning icon +
+     `ConfirmBox`, no reference in magium-dev). See §3.6 and §6.
+  Re-tested green (busted **122/0**, all 5 UI smokes including 2 new reset
+  checks). Awaiting a third device pass.
 - **Last updated:** 2026-09-04
 - **Phase:** Implementation — design cycle 5 (roadmap [Phase V](../research/09-roadmap-effort.md#phase-v--achievements))
 - **Sources:**
@@ -125,13 +141,11 @@ toasts, so N unlocks in one render just call `M.show` in a loop.
 
 ### 3.4 `ui/achievementsmenu.lua`
 
-`Menu:extend`, `AchievementsMenu:new{ locale, view, on_close }`. 3-level
-drill-down via `self.paths` (a stack of `{table, title}`) +
+`Menu:extend`, `AchievementsMenu:new{ locale, view, on_close, on_reset }`.
+3-level drill-down via `self.paths` (a stack of `{table, title}`) +
 `switchItemTable` + `onReturn` — the standard KOReader idiom (see
 `koreader/plugins/opds.koplugin/opdsbrowser.lua`), not `ui/savespage.lua`'s
-flat single-level list. Entry rows carry `dim = not unlocked` (native
-KOReader "greyed out" row styling) instead of a hand-rolled locked/unlocked
-glyph.
+flat single-level list.
 
 ### 3.5 `main.lua` wiring
 
@@ -146,6 +160,62 @@ glyph.
   since Phase I) and opens `Magium:openAchievements()`, mirroring
   `openSaves()`/`openStats()`.
 
+### 3.6 Entry-row layout: title/caption wrap + a real checkbox (2026-09-04, 2nd pass)
+
+Two on-device findings, both from a screen the emulator's dummy-`Screen`
+paint checks had already "passed" (§0/Status — see the diagnosis note
+there):
+
+- **Title didn't fit — single-line ellipsis, not wrapped.** `MenuItem`
+  auto-promotes to single-line-with-ellipsis whenever the font can't fit 2
+  lines at the row's *default* height (`menu.lua:142-156`) — true for a
+  title+caption pair even with room to spare, since the promotion check runs
+  before considering how much text there actually is. Fix: `multilines_show_more_text
+  = true` on the `Menu` — koreader's own mechanism for "let long item text
+  actually show, shrinking font as needed" (`menu.lua`'s
+  `multilines_show_more_text` branch), not a custom widget.
+- **No visible checkbox — dim color only.** The original `dim = not unlocked`
+  (native "greyed out" row) was the *only* locked/unlocked signal, and wasn't
+  visible enough. Fix: a real checkbox glyph in `mandatory` — `"✓ "` /
+  `"▢ "`, the exact glyphs `ui/widget/checkmark.lua` uses for the same
+  purpose everywhere else in koreader (guaranteed font coverage). This reuses
+  `mandatory`, the same field the 1st-pass crash came from — safe here
+  because the crash was specifically about *long* text in an unwrapped
+  field; a 2-character glyph is exactly what `mandatory` is for (file size,
+  page number, ...).
+- **Known simplification kept:** title and caption share one font/size (no
+  bold-title/small-caption split like the reference's separate `<div>`s) —
+  `text = title .. "\n" .. caption`, and the `\n` renders as a soft
+  wrap-point, not a guaranteed hard break (verified via screenshot — this
+  particular `TextBoxWidget` reconstruction path doesn't honor embedded `\n`
+  the way its own doc comment describes). Still reads correctly as one
+  flowing wrapped block; true HTML parity would need a custom item widget,
+  not justified here.
+
+Verified with a one-off, non-`commonrequire` script
+(`Device.screen:init()` without `einkfb.dummy = true`, real SDL headless via
+`xvfb-run -a`, `EMULATE_READER_W=1272 EMULATE_READER_H=1696`) that painted
+the actual entry-list screen to a PNG (`Screen.bb:writePNG`) and was visually
+inspected — before/after screenshots confirmed both the wrap and the
+checkbox render correctly at the real PW12 resolution.
+
+### 3.7 Reset all achievements (owner-requested, no reference in magium-dev)
+
+Title-bar left icon (`"notice-warning"`, koreader's own warning-icon asset)
++ `AchievementsMenu:onLeftButtonTap()` — Menu's one customizable title-bar
+icon slot (`menu.lua:630,728-731`). Shows a `ConfirmBox` ("Reset all
+achievements? This cannot be undone.") before doing anything, matching
+`ui/savespage.lua`'s Delete/Overwrite caution level. On confirm: calls
+`self.on_reset()` (provided by `main.lua`, does the real store mutation +
+`flush_now`) then closes the whole achievements screen via
+`self:onCloseAllMenus()` — simplest correct behavior since the reset
+invalidates whatever locked/unlocked state every currently-shown level was
+built from, rather than trying to re-render the current level in place.
+
+`main.lua:openAchievements()`'s `on_reset`: keeps every store key except
+`v_ac_*` and `store:restore()`s that — the exact inverse of `reset_to_intro`
+(which keeps *only* `v_ac_*`) — then `flush_now("achievements-reset")`.
+
 ## 4. Tests
 
 - `spec/engine/scene_spec.lua` — `persist_effects` latch: flips "1"→"2",
@@ -158,11 +228,18 @@ glyph.
   `Notification` per achievement), no-op on an empty list. Auto-run by `test-ui`.
 - `spec/ui/achievementsmenu_smoke.lua` (new) — book list; chapter-order
   inlining (the D5 case, asserted by position); entry unlocked/dimmed for
-  `"1"`, `"2"`, and absent; `onReturn` pops correctly. **Also calls
-  `widget:paintTo(Screen.bb, 0, 0)` for real** — the book list, one chapter
-  list, and every one of the 34 chapter entry-list screens across all 3
-  books, inside a `pcall` — not just structural item_table asserts, which
-  had missed the `mandatory`-caption crash. Auto-run by `test-ui`.
+  `"1"`, `"2"`, and absent (now: the `✓`/`▢` `mandatory` glyph, not `dim`);
+  `onReturn` pops correctly; the reset icon/`ConfirmBox`/`on_reset`/close
+  chain. **Also calls `widget:paintTo(Screen.bb, 0, 0)` for real** — the book
+  list, one chapter list, and every one of the 34 chapter entry-list screens
+  across all 3 books, inside a `pcall` — not just structural item_table
+  asserts, which had missed the `mandatory`-caption crash. Auto-run by
+  `test-ui`. **Caveat, documented in the file's own header:** this still runs
+  under `commonrequire`'s dummy 600×800 `Screen` (§0/Status), so these paint
+  checks only prove "doesn't crash", not "looks right at 1272×1696" — the
+  title-wrap/checkbox fix itself was verified separately via a one-off
+  non-dummy script (§3.6). Making non-dummy painting the norm here is Phase
+  V.5 scope.
 - `spec/flow/playthrough_spec.lua` — a real `achievement()` path
   (`Ch1-Cutthroat Dave` / `v_ac_ch1_coward`): shows on the unlocking render,
   latches to `"2"`, does not re-show on a further re-render of the same scene.
@@ -173,6 +250,8 @@ glyph.
 - [x] Automated gates green (see Status).
 - [ ] Owner on device: unlock a real achievement (e.g. Ch1 "Show myself") and
       see exactly one toast, not repeated on the next page turn or a resume;
-      open Achievements from the menu, drill book → chapter → entry and back;
-      confirm the `v_ac_ch6_immersion` ("Full immersion") toast fires from the
-      stats screen.
+      open Achievements from the menu, drill book → chapter → entry and back
+      — titles/captions readable across multiple lines, a real checkbox glyph
+      per entry; confirm the `v_ac_ch6_immersion` ("Full immersion") toast
+      fires from the stats screen; confirm the reset icon asks for
+      confirmation and actually clears every achievement.

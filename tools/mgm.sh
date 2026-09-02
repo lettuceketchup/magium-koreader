@@ -135,9 +135,20 @@ case "$cmd" in
     ;;
   koenv)
     # Run a Lua script inside the built EMULATOR's KOReader environment (real
-    # frontend widgets available) with the plugin dir on LUA_PATH. Headless:
-    # EMULATE_READER_W/H give Screen its size with no X server. Use for reader/UI
-    # smoke tests that need require("ui/widget/...").  Usage:
+    # frontend widgets available) with the plugin dir on LUA_PATH. EMULATE_READER_W/H
+    # ARE real (base/ffi/SDL3.lua:118, set by kodev's own --simulate/-W/-H flags)
+    # — BUT every spec/ui/*_smoke.lua requires "commonrequire" first, which sets
+    # `einkfb.dummy = true` (spec/unit/commonrequire.lua:22) to skip opening a
+    # real SDL window. Dummy mode ALWAYS hardcodes a 600x800 buffer
+    # (base/ffi/framebuffer_SDL3.lua:17) — it never reads these env vars at all,
+    # window or no window. So every koenv-based smoke test's paint checks run at
+    # 600x800, not the real PW12 1272x1696, regardless of these exports (found
+    # 2026-09-04 chasing a real-device-only layout bug the emulator "passed").
+    # Fixing this for real (a non-dummy, Xvfb-backed bootstrap for accurate
+    # paint verification) is Phase V.5 scope — until then, treat every
+    # spec/ui/*_smoke.lua paintTo check as "doesn't crash", not "looks right at
+    # 1272x1696"; verify actual layout on-device or via a one-off non-dummy
+    # script. Usage:
     #   mgm.sh koenv spec/ui/reader_smoke.lua      (path is relative to the plugin dir)
     [ -n "${1:-}" ] || die "usage: mgm.sh koenv <script.lua> [args]"
     [ -x "$EMU/koreader/luajit" ] || die "emulator not built ($EMU)"
