@@ -210,14 +210,17 @@ Design doc §3 "Stat variables + stat-check display."
 
 ### Phase V — Achievements
 
-> **Implemented 2026-09-04** — [`docs/specs/2026-09-04-phase-v-achievements.md`](../specs/2026-09-04-phase-v-achievements.md).
-> `ui/toast.lua` unlock toast, `ui/achievementsmenu.lua` book→chapter→entry
-> browser, `engine/scene.lua persist_effects` "1"→"2" seen-latch,
-> `engine/locale.lua` achievements JSON (exact on-disk chapter order). First
-> device pass caught a paint-time crash in the entry list (`mandatory` misuse
-> for a long caption) — fixed, and the gap it exposed in the UI-smoke
-> methodology is what Phase V.5 (below) exists to close. No `engine/scene:render`
-> change → `oracle-corpus` unchanged at 8887/8887. busted 122/0.
+> **Merged to `main` 2026-09-04** — [`docs/specs/2026-09-04-phase-v-achievements.md`](../specs/2026-09-04-phase-v-achievements.md)
+> → stable. `ui/toast.lua` unlock toast, `ui/achievementsmenu.lua`
+> book→chapter→entry browser, `engine/scene.lua persist_effects` "1"→"2"
+> seen-latch, `engine/locale.lua` achievements JSON (exact on-disk chapter
+> order). Four device-pass rounds refined the entry-list layout (a paint-time
+> crash from `mandatory` misuse; dummy-`Screen`-masked wrap/checkbox issues;
+> title/caption as two real rows; bold titles + no stray separator) — the
+> UI-smoke methodology gap this exposed is what Phase V.5 (below) exists to
+> close. Owner sign-off across the full exit checklist. No
+> `engine/scene:render` change → `oracle-corpus` unchanged at 8887/8887.
+> busted 122/0.
 
 Design doc §3 "Achievements (per book/chapter)."
 

@@ -349,15 +349,18 @@ Built the achievement unlock toast and browsable menu, per
     `m.linesize~=0` at chapters and after `onReturn`. busted 122/0, all 5 UI
     smokes green. Redeployed.
 - **Owner confirmed the achievements-menu layout fix on device: "looks
-  good."** Branch pushed to `origin/feat/phase-v-achievements` (not merged to
-  `main` yet).
-- **Next:** owner confirmation still open on the rest of the Phase V exit
-  checklist (toast fires once + no repeat on resume, immersion toast from
-  the stats screen, reset icon asks for confirmation and actually clears
-  every achievement) — then merge `feat/phase-v-achievements` to `main`.
-  Then **Phase V.5** (owner's own session, test hardening — covers the
-  dummy-`Screen` resolution gap found this round) — Phase VI does not start
-  until it lands.
+  good."** Branch pushed to `origin/feat/phase-v-achievements`.
+- **Owner confirmed the rest of the Phase V exit checklist done** (toast
+  fires once + no repeat on resume, immersion toast from the stats screen,
+  reset icon asks for confirmation and actually clears every achievement).
+- **Phase V MERGED to `main` 2026-09-04** (`2ec0dad`, `--no-ff`; verified
+  green on the merged tree — busted 122/0, all 5 UI smokes — before pushing).
+  `origin/main` updated (`d96db02..2ec0dad`); `feat/phase-v-achievements`
+  deleted (local + remote).
+- **Next:** **Phase V.5** (owner's own session, test hardening — covers the
+  dummy-`Screen` resolution gap found this round; full scope in
+  [`docs/specs/2026-09-04-phase-v5-test-hardening.md`](docs/specs/2026-09-04-phase-v5-test-hardening.md)) —
+  Phase VI does not start until it lands.
 
 ### 2026-09-03 (session 29b) — Phase IV: first device pass, tutorial reworked
 

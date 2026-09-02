@@ -1,6 +1,9 @@
 # Spec: Phase V — Achievements
 
-- **Status:** implemented, automated gates green (busted **122/0**, `oracle-corpus`
+- **Status:** **merged to `main` 2026-09-04** (`2ec0dad`, `--no-ff`; owner
+  device sign-off across the full exit checklist — toast, drill-down, layout,
+  immersion toast, reset — `feat/phase-v-achievements` pushed then deleted).
+  Automated gates green (busted **122/0**, `oracle-corpus`
   unchanged — `scene.render()` untouched, only `persist_effects` extended — `toast`
   + `achievementsmenu` + `savespage` + `statspage` + `reader` UI smokes green,
   headless emu load clean). Two device-pass rounds so far:
@@ -297,10 +300,10 @@ built from, rather than trying to re-render the current level in place.
 ## 5. Exit criteria
 
 - [x] Automated gates green (see Status).
-- [ ] Owner on device: unlock a real achievement (e.g. Ch1 "Show myself") and
-      see exactly one toast, not repeated on the next page turn or a resume;
-      open Achievements from the menu, drill book → chapter → entry and back
-      — titles/captions readable across multiple lines, a real checkbox glyph
-      per entry; confirm the `v_ac_ch6_immersion` ("Full immersion") toast
-      fires from the stats screen; confirm the reset icon asks for
-      confirmation and actually clears every achievement.
+- [x] Owner on device: unlock a real achievement — one toast, not repeated on
+      the next page turn or a resume; Achievements from the menu, drill
+      book → chapter → entry and back — titles bold, captions on their own
+      dim line, a real checkbox glyph per entry, no stray separator; the
+      `v_ac_ch6_immersion` ("Full immersion") toast fires from the stats
+      screen; the reset icon asks for confirmation and actually clears every
+      achievement. Confirmed 2026-09-04.
