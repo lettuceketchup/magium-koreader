@@ -204,7 +204,7 @@ Not a roadmap phase — release + housekeeping. Done:
 Gates: `busted` 134/0, all 6 `spec/ui/*_smoke.lua` PASS, `emu-smoke` clean.
 No engine/render change → `oracle-corpus` not re-run (baseline 8887/8887 holds).
 
-Merge commit: `<merge-sha>`.
+Merge commit: `7e6c326`.
 
 Next: nothing scheduled. Non-blocking follow-ups unchanged — Phase VII (needs a
 real fr `.magium` set), optional KOReader plugin-index listing, GC post-release
