@@ -174,8 +174,9 @@ Newest entries at the top. One entry per work session: what was done, decisions,
 
 Owner: "Start phase 5.5" → "High-value 4" (items 1/2/4/7; 3/5/6 deferred),
 real-`Persist`-temp-dir for the E2E harness. Merged to `main` via `--no-ff`
-(`<MERGE>`), owner device sign-off **not** required — V.5 ships no
-device-facing behavior (test-only). Per
+(`88d119c`; branch `feat/phase-v5-test-hardening` deleted, NOT pushed); owner
+device sign-off **not** required — V.5 ships no device-facing behavior
+(test-only). Per
 [Phase V.5 spec](docs/specs/2026-09-04-phase-v5-test-hardening.md).
 
 - **Item 7 — real-resolution smoke bootstrap.** The gap that let the Phase V
