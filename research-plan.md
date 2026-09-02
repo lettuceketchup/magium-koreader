@@ -217,8 +217,8 @@ scope), ADR-003 → `Superseded by ADR-008`, `docs/decisions/README.md` (ADR-007
 `test-ui` + `emu-smoke` run, green. No engine/scene change → `oracle-corpus` not
 re-run.
 
-**Branch** `feat/licensing`, merged `--no-ff` to `main` (`<merge-sha>`).
-**Not pushed** — push is stop-and-ask.
+**Branch** `feat/licensing`, merged `--no-ff` to `main` (`70d2310`; branch
+deleted). **Not pushed** — push is stop-and-ask.
 
 **Next:** nothing scheduled. The port is releasable — a GitHub Release (tarball
 of `magium.koplugin/`) is the owner's call; then optionally the plugin-index
