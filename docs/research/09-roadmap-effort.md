@@ -210,6 +210,15 @@ Design doc §3 "Stat variables + stat-check display."
 
 ### Phase V — Achievements
 
+> **Implemented 2026-09-04** — [`docs/specs/2026-09-04-phase-v-achievements.md`](../specs/2026-09-04-phase-v-achievements.md).
+> `ui/toast.lua` unlock toast, `ui/achievementsmenu.lua` book→chapter→entry
+> browser, `engine/scene.lua persist_effects` "1"→"2" seen-latch,
+> `engine/locale.lua` achievements JSON (exact on-disk chapter order). First
+> device pass caught a paint-time crash in the entry list (`mandatory` misuse
+> for a long caption) — fixed, and the gap it exposed in the UI-smoke
+> methodology is what Phase V.5 (below) exists to close. No `engine/scene:render`
+> change → `oracle-corpus` unchanged at 8887/8887. busted 122/0.
+
 Design doc §3 "Achievements (per book/chapter)."
 
 - **Deliverables:** `achievement()` gating on flag `=== "1"`,
@@ -220,6 +229,63 @@ Design doc §3 "Achievements (per book/chapter)."
 - **Depends on:** Phase II. Parallelizable with Phase IV — both extend the
   same variable engine independently and don't share UI surface.
 - **Effort band: 6–10 hrs.**
+
+### Phase V.5 — Test hardening
+
+> **Planned, not started** — [`docs/specs/2026-09-04-phase-v5-test-hardening.md`](../specs/2026-09-04-phase-v5-test-hardening.md).
+> Owner-requested, scoped 2026-09-04 after two device-only bugs (Phase IV's
+> lingering tutorial popup, Phase V's `mandatory`-field paint crash) each
+> slipped past a test suite that only checked pieces in isolation. Closes the
+> gap between "every piece works" and "the game works" before more UI surface
+> (Phase VI+) gets built on top of it. **Blocks Phase VI** — owner is doing
+> this phase in its own session before starting the next one.
+
+Not in the original design doc — added after Phase V's device pass exposed
+that no test drives the real top-level `Magium` object, and no test checks
+the achievements *data* for orphaned/unreachable content.
+
+- **Deliverables** (priority order — see the spec doc for full detail on each):
+  1. **App-level / E2E harness** — construct the real `Magium` object
+     (`main.lua`) headlessly (stub `self.ui.menu`, reuse
+     `spec/support/fake_writer.lua` / `fake_slotstore.lua`) and drive it
+     through `openReader()` → the real `openMenu()` `ButtonDialog` →
+     `openSaves()`/`openStats()`/`openAchievements()` → `newGame()` →
+     `onSuspend()`/`onClose()`, asserting screens actually open/close and
+     state survives. The one thing standing between "each piece works" and
+     "the game works."
+  2. **Content integrity: orphaned achievements** — cross-reference every
+     `variable` in `achievements{1,2,3}.json` (136 entries) against parsed
+     `achievement()` calls (`engine/parser.lua`) + `specials.lua`'s hardcoded
+     exceptions (`v_ac_b3_ch9_prize`, `v_ac_ch6_immersion`); fail on any
+     variable nobody can ever earn. Same shape as `navigation_spec.lua`.
+  3. **Systematic graph exploration** — replace/extend `playthrough_spec.lua`'s
+     single greedy walk with a BFS/DFS that tries multiple stat-variable
+     profiles at branch points, to exercise reachability under stat-gate
+     combinations the one heuristic path never visits. Lower value than 1–2
+     since `oracle-corpus` already exhaustively covers per-scene condition
+     correctness via `gen_cases.lua` — this is about reachability, not render
+     correctness.
+  4. **Save schema/compatibility regression** — a golden fixture of the
+     current save blob shape (`state`/`achievements`/`checkpoint`/slots) + a
+     loader test, so a later engine change that silently breaks an existing
+     save is caught. Low urgency now (no saves exist outside the owner's own
+     device yet) but cheap to establish before the format drifts further.
+  5. **Content stress-testing beyond achievements** — extend the
+     "paint every real instance, not a sample" principle that caught the
+     Phase V crash to other free-form-text widgets: longest choice label
+     through `ui/reader.lua`'s choice buttons, longest save-slot name.
+  6. **Performance regression** — a cheap `assert(elapsed < N)` around
+     `Story:preload()` in the test suite so a parse-time regression is
+     caught automatically instead of rediscovered on-device (currently only
+     tracked as a one-off spike finding, `docs/spikes/06-ondevice-parse-timing`).
+- **Depends on:** Phase V (uses its screens/data as fixtures; the app-level
+  harness naturally exercises the achievements menu too).
+- **Effort band: 12–19 hrs** (≈4–6 / 1–2 / 3–5 / 2–3 / 1–2 / 1 hrs per item
+  above).
+- **Standing rule this phase establishes:** once its suites exist, **every
+  subsequent phase and change must run them and update them as needed** —
+  same status as `busted`/`oracle-corpus`/`spec/ui/*_smoke.lua` today. See
+  CLAUDE.md "Doing implementation work."
 
 ### Phase VI — Settings / themes
 
@@ -296,10 +362,11 @@ Phases I–VII).
 | III | Saves (4 blobs, debounced autosave, slots) | II | 10–15 hrs |
 | IV | Stats & stat-checks | II (∥ III) | 8–12 hrs |
 | V | Achievements | II (∥ III, IV) | 6–10 hrs |
-| VI | Settings/themes (scoped down — much is KOReader's job) | II | 4–8 hrs |
+| V.5 | Test hardening (app-level E2E, content integrity, exhaustive walk, save-schema regression, content stress-testing, perf regression) | V | 12–19 hrs |
+| VI | Settings/themes (scoped down — much is KOReader's job) | II, V.5 | 4–8 hrs |
 | VII | Localization en+fr | II (∥ III–VI) | 4–8 hrs |
 | VIII | Polish: e-ink tuning (OQ-007), condition mitigation (OQ-011), GC tuning, full-corpus QA, packaging | all | 15–25 hrs |
-| **Total** | | | **~100–162 hrs** |
+| **Total** | | | **~112–181 hrs** |
 
 The total is a rough band, not a promise — the two widest-uncertainty items
 are Phase I's pagination widget (genuinely new, no direct KOReader prior art
@@ -311,16 +378,22 @@ an oracle, which is where this port's risk profile is actually good — see
 
 ## 3. Critical path & parallelism *(8.3)*
 
-**Critical path:** M0 → I → II → (III, IV, V, VII in any order/overlap) → VI
-→ VIII. Everything from III onward extends the full-corpus engine + widget
-Phase II establishes, so I and II can't be skipped or reordered — but once
-II lands, several branches stop depending on each other:
+**Critical path:** M0 → I → II → (III, IV, V, VII in any order/overlap) → V.5
+→ VI → VIII. Everything from III onward extends the full-corpus engine +
+widget Phase II establishes, so I and II can't be skipped or reordered — but
+once II lands, several branches stop depending on each other:
 
 - **III (saves), IV (stats), V (achievements) are largely independent
   extensions of the same variable engine** — each touches its own UI screen
   and its own slice of `v_*` state, with no shared blocking dependency
   between them beyond II. A second contributor could pick up any one of
   these without waiting on the others.
+- **V.5 (test hardening) is a deliberate stop, not a parallel branch** —
+  it's scheduled right after V, before VI opens more UI surface, precisely
+  because two device-only bugs (IV's tutorial popup, V's paint crash) each
+  slipped past isolated per-piece tests. Once V.5's suites exist, every
+  phase from VI onward is expected to run and extend them, not just the
+  existing busted/oracle-corpus/UI-smoke gates.
 - **VII (localization) is the best candidate to hand off or parallelize
   early** — it depends only on II (the full corpus + nav structure being in
   place), not on III–VI's logic at all, since it's a data-bundle swap plus

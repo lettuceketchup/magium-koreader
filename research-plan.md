@@ -236,10 +236,37 @@ Built the achievement unlock toast and browsable menu, per
     owner directive, 2026-09-04.
   - Re-deployed via SSH; busted 122/0, all 5 UI smokes green (36 paint
     checks in the achievements menu alone). Awaiting a second device pass.
-- **Next:** owner device pass (unlock a real achievement, confirm one toast +
-  no repeat on resume; open Achievements, drill in and back — chapters now
-  render without crashing; confirm the immersion toast from the stats
-  screen). Then Phase VI (settings).
+- **Phase V.5 (test hardening) scoped, same session.** Owner asked what
+  "proper testing" for a game of this shape would look like and what's
+  missing — audited the whole suite against a standard test pyramid
+  (differential/unit/content-validation/flow/widget/app-level/manual).
+  Strong on differential (`oracle-corpus`), unit, content-validation
+  (`navigation_spec.lua`), flow, and widget layers; **zero coverage of the
+  app-level layer** — nothing ever constructs the real `Magium` object
+  (`main.lua`) and drives it, which is exactly the layer both device-only
+  bugs this session lived in. Scoped as a new **Phase V.5**, inserted
+  between V and VI in the roadmap, owner's own session, **blocks Phase VI**:
+  1. app-level/E2E harness (highest value — construct real `Magium`
+     headlessly, drive menu→screens→newGame→suspend/close)
+  2. orphaned-achievement content-integrity check (cross-reference JSON
+     variables against parsed `achievement()` calls + `specials.lua`
+     exceptions)
+  3. systematic graph exploration (multi-profile walk, lower priority —
+     `oracle-corpus` already covers per-scene condition correctness)
+  4. save schema/compatibility regression fixture
+  5. content stress-testing beyond achievements (longest choice label, etc.)
+  6. parse-time performance regression tripwire
+
+  Full design notes in
+  [`docs/specs/2026-09-04-phase-v5-test-hardening.md`](docs/specs/2026-09-04-phase-v5-test-hardening.md);
+  roadmap entry in `docs/research/09-roadmap-effort.md`. **New standing rule**
+  (CLAUDE.md "Doing implementation work"): every subsequent phase/change must
+  run and update whatever regression suites exist, not just add its own.
+- **Next:** owner device pass on Phase V (unlock a real achievement, confirm
+  one toast + no repeat on resume; open Achievements, drill in and back —
+  chapters now render without crashing; confirm the immersion toast from the
+  stats screen). Then **Phase V.5** (owner's own session, test hardening) —
+  Phase VI does not start until it lands.
 
 ### 2026-09-03 (session 29b) — Phase IV: first device pass, tutorial reworked
 

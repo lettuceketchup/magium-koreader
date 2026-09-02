@@ -127,6 +127,17 @@ Scene header ("Book X - Chapter Y") is derived from the scene ID:
     reach, not just the first one that comes to mind.
 - Still-open items that need device time or code are tracked as roadmap work, not
   `OQ-NNN` (see `docs/research/07-risks-open-questions.md` blocking-status note).
+- **Every regression suite that exists must be run and kept up to date by every
+  later phase or change — not just the one that added it.** (Owner rule,
+  2026-09-04, prompted by Phase V.5: `docs/specs/2026-09-04-phase-v5-test-hardening.md`.)
+  A change that alters behavior without updating the test that asserted the
+  old behavior is incomplete, the same way a `ui/` change without an emulator
+  check is incomplete. Today that means `busted` (`mgm.sh test`),
+  `oracle-corpus` (`mgm.sh oracle-corpus`), and `spec/ui/*_smoke.lua`
+  (`mgm.sh test-ui`); Phase V.5 adds an app-level E2E harness, a content-integrity
+  check over the achievements data, and others — once it lands, this line
+  covers those too. Phase VI+ is **blocked on Phase V.5 landing first** — see
+  the roadmap's Phase V.5 entry.
 
 ## Git
 
