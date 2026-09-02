@@ -39,9 +39,27 @@ single KOReader plugin. The story is bundled; there is nothing else to download.
 
 ## Quick start
 
-You need a device running KOReader. **Reference build:** Kindle Paperwhite 12
-(2024), KOReader `v2026.07.1`. Other devices and builds are untested but should
-work — [tell us if yours doesn't](CONTRIBUTING.md).
+### 1. Install KOReader
+
+Magium is a KOReader plugin, so you need
+**[KOReader](https://github.com/koreader/koreader)** ([koreader.rocks](https://koreader.rocks/))
+first — a free, open-source e-reader for Kindle, Kobo, PocketBook, reMarkable,
+Android, and Linux. Follow the
+[install guide for your device](https://github.com/koreader/koreader/wiki#installation).
+
+> **Kindle owners:** KOReader only runs on a **jailbroken** Kindle (it launches
+> from KUAL). This is a well-established, reversible process — the
+> [KOReader Kindle guide](https://github.com/koreader/koreader/wiki/Installation-on-Kindle-devices)
+> points to current jailbreak instructions
+> ([Kindle Modding wiki](https://kindlemodding.org/), [MobileRead](https://www.mobileread.com/forums/forumdisplay.php?f=150)).
+> Kobo, PocketBook, reMarkable and Android need no jailbreak.
+
+**Reference build:** Kindle Paperwhite 12 (2024), KOReader `v2026.07.1`. Any
+device on a recent KOReader release with ~1 GB RAM should be fine — the plugin
+is lightweight Lua and the story adds ~7.7 MB. Other setups are untested —
+[tell us if yours doesn't work](CONTRIBUTING.md).
+
+### 2. Install Magium
 
 1. Download `magium-koreader-v1.0.zip` from the
    [latest release](https://github.com/lettuceketchup/magium-koreader/releases/latest).
