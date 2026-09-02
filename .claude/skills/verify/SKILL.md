@@ -27,9 +27,9 @@ All commands run from the repo root through WSL:
 |---|---|---|
 | anything | `test` (full busted suite) | always — cheap, catches the obvious |
 | `engine/` — parser, conditions, store, stats, locale, specials, scene, story | `oracle-corpus` **and** `test` | per-scene render parity vs the magium-dev oracle. ~15 min. The only proof a render-path change stays faithful. |
-| `ui/` | `test-ui` + `emu-smoke` + a real `paintTo` check (below) | real KOReader widget stack, headless; `emu-smoke` proves the plugin still loads |
-| `save/` | `test` (save specs + the flow round-trip) | |
-| `main.lua` / glue | `test` + `emu-smoke` | |
+| `ui/` | `test-ui` (fast dummy) → `test-ui-real` (xvfb, real 1272×1696) + `emu-smoke` | real KOReader widget stack, headless; `test-ui-real` is the layout gate before a device pass / merge; `emu-smoke` proves the plugin still loads |
+| `save/` | `test` (save specs + the flow round-trip + `schema_compat_spec.lua`) | |
+| `main.lua` / glue | `test` (incl. `spec/ui/main_e2e_smoke.lua` via `test-ui`/`test-ui-real`) + `emu-smoke` | the E2E harness drives the real `Magium` object |
 
 Skip `oracle-corpus` **only** when the change cannot reach a render: a pure
 `save/` or `ui/` change, or an `engine/` function `scene.render` never calls.
@@ -43,7 +43,9 @@ were skipped.
 - **oracle-corpus** — matches the baseline in the newest `research-plan.md`
   running-log entry (currently `8887/8887`, 0 DIFF vs magium-dev @ its recorded
   commit). A new DIFF is a stop — triage below.
-- **test-ui** — every `spec/ui/*_smoke.lua` exits 0.
+- **test-ui / test-ui-real** — every `spec/ui/*_smoke.lua` exits 0 (each prints
+  `PASS  (0 checks failed)`). `test-ui-real` needs a working xvfb (same as
+  `emu-smoke`).
 - **emu-smoke** — no `error` / `traceback` lines in the run log, `crash.log`
   empty.
 
@@ -60,21 +62,27 @@ case; that bug was data-length-dependent — call
 `widget:paintTo(Screen.bb, 0, 0)` inside a `pcall` and assert it does not
 error. Pattern: `koreader/spec/unit/widget_progresswidget_spec.lua`.
 
-**What the paint check still cannot see:** `spec/ui/*_smoke.lua` require
-`commonrequire`, whose `einkfb.dummy = true` hardcodes `Screen` to 600×800 and
-ignores `EMULATE_READER_W/H`. So `paintTo` proves "does not crash", never
-"looks right at the real PW12 1272×1696". Actual layout is confirmed on-device
-(the `device` skill) or with a one-off non-dummy Xvfb screenshot — until
-Phase V.5 item 7 ships a reusable `mgm.sh` command for it.
+**Two resolutions (Phase V.5 item 7).** `test-ui` runs the smokes under
+`commonrequire`'s dummy 600×800 `Screen` — fast, no X server, proves "does not
+crash". `test-ui-real` runs them under `spec/support/real_screen.lua` (a
+non-dummy SDL framebuffer at the owner's PW12 profile, 1272×1696 @ 300 dpi, via
+xvfb) — this is what catches real-width layout bugs (title wrap, a field
+painting past the text column). Run `test-ui-real` before any device pass or
+merge. It still isn't a substitute for the device pass: e-ink feel, real input,
+and font rendering at true DPI are only confirmed on-device (the `device`
+skill).
 
 ## Regression suites stay current
 
 Every suite that exists is run and updated by every change, not only the one
 that added it. A change that alters behavior without updating the test that
 asserted the old behavior is incomplete — the same way a `ui/` change without
-an emulator check is incomplete. Today that's `test`, `oracle-corpus`,
-`test-ui`; Phase V.5 adds an app-level E2E harness and others, and this rule
-extends to them once they land.
+an emulator check is incomplete. The suites: `test`, `oracle-corpus`,
+`test-ui` / `test-ui-real`, plus the Phase V.5 additions —
+`spec/ui/main_e2e_smoke.lua` (real `Magium` object end to end),
+`spec/engine/navigation_spec.lua`'s achievements content-integrity block,
+`spec/save/schema_compat_spec.lua` + `spec/save/fixtures/save_v1.lua` (freeze
+the save shape; if the format changes, add `save_v2.lua` and keep loading both).
 
 ## When a gate fails
 

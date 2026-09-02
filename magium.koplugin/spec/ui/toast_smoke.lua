@@ -5,7 +5,9 @@
 --
 -- Plain asserts, no busted. Exits non-zero on the first failure.
 
-require("commonrequire")
+-- bootstrap: a real 1272x1696 @300dpi SDL Screen under `mgm.sh test-ui-real` /
+-- `real-screen` (MAGIUM_REAL_SCREEN=1), else commonrequire's fast dummy 600x800.
+if os.getenv("MAGIUM_REAL_SCREEN") then require("spec/support/real_screen") else require("commonrequire") end
 local UIManager = require("ui/uimanager")
 local Toast = require("ui/toast")
 

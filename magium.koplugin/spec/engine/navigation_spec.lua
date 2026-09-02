@@ -2,6 +2,7 @@ require("spec/spec_helper")
 local parser = require("engine/parser")
 local Story = require("engine/story")
 local specials = require("engine/specials")
+local Locale = require("engine/locale")
 
 -- Static navigation-integrity check over the WHOLE corpus. Complements the
 -- oracle-corpus sweep (which checks each scene RENDERS like magium-dev) — this
@@ -101,5 +102,73 @@ describe("navigation integrity (whole corpus)", function()
     end
     assert.message(string.format("%d unreachable scenes:\n  %s",
       #unreachable, table.concat(unreachable, "\n  "))).is_true(#unreachable <= 16)
+  end)
+end)
+
+-- Content integrity for the achievements menu (Phase V.5, item 2). The menu is
+-- driven by achievements{1,2,3}.json (136 entries); the toast + unlock is driven
+-- by achievement() calls in the corpus. A mismatch = an achievement that can
+-- never be earned (menu entry, no unlock path) or a toast for something the menu
+-- never lists. Complements oracle-corpus (per-scene RENDER parity) — this is the
+-- cross-file wiring check.
+describe("achievements content integrity (JSON <-> corpus)", function()
+  -- Unlocks with no in-story achievement() call: shown by their own modal
+  -- (stats.ejs / the consolation rule), not main.ejs's per-scene loop. Kept in
+  -- sync with main.lua openStats() (#11) and engine/store.lua (#13 consolation).
+  local NO_ACHIEVEMENT_CALL = {
+    v_ac_ch6_immersion = "main.lua openStats() — special case #11 (stats.ejs:175)",
+    v_ac_b3_ch9_prize  = "engine/specials.lua CONSOLATION — special case, store.lua:41",
+  }
+
+  local ach_call_vars, json_vars
+
+  setup(function()
+    local scenes = load_all()
+    ach_call_vars = {}
+    for id, sc in pairs(scenes) do
+      for _, a in ipairs(sc.achievements) do ach_call_vars[a.variable] = id end
+    end
+
+    json_vars = {}
+    local loc = Locale.load("./data", "en")
+    for book = 1, loc:achievement_book_count() do
+      for _, key in ipairs(loc:achievement_chapters(book)) do
+        for _, e in ipairs(loc:achievement_entries(book, key)) do
+          assert(not json_vars[e.variable], "duplicate achievement variable in JSON: " .. e.variable)
+          json_vars[e.variable] = key
+        end
+      end
+    end
+  end)
+
+  it("every menu (JSON) achievement has an unlock path (achievement() call or a known special case)", function()
+    local orphans = {}
+    for v, key in pairs(json_vars) do
+      if not ach_call_vars[v] and not NO_ACHIEVEMENT_CALL[v] then
+        orphans[#orphans + 1] = string.format("%s (%s) — never unlocked", v, key)
+      end
+    end
+    table.sort(orphans)
+    assert.message("orphaned achievements:\n  " .. table.concat(orphans, "\n  ")).are.same({}, orphans)
+  end)
+
+  it("every achievement() call in the corpus has a matching menu (JSON) entry", function()
+    local strays = {}
+    for v, id in pairs(ach_call_vars) do
+      if not json_vars[v] then
+        strays[#strays + 1] = string.format("%s (called at %s) — no menu entry", v, id)
+      end
+    end
+    table.sort(strays)
+    assert.message("achievement() calls with no JSON entry:\n  " .. table.concat(strays, "\n  ")).are.same({}, strays)
+  end)
+
+  it("the known no-achievement()-call unlocks still lack a call (else drop them from the exception list)", function()
+    for v, why in pairs(NO_ACHIEVEMENT_CALL) do
+      assert.message(v .. " now HAS an achievement() call — remove it from NO_ACHIEVEMENT_CALL (" .. why .. ")")
+        .is_nil(ach_call_vars[v])
+      assert.message(v .. " is in NO_ACHIEVEMENT_CALL but not in the JSON menu at all")
+        .is_truthy(json_vars[v])
+    end
   end)
 end)

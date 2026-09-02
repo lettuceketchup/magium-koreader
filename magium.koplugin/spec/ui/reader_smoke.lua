@@ -7,7 +7,9 @@
 -- Plain asserts, no busted — mgm.sh koenv runs bare luajit inside the emulator
 -- env. Exits non-zero on the first failed assert.
 
-require("commonrequire")   -- KOReader test bootstrap: G_reader_settings, dummy Screen/Input
+-- bootstrap: a real 1272x1696 @300dpi SDL Screen under `mgm.sh test-ui-real` /
+-- `real-screen` (MAGIUM_REAL_SCREEN=1), else commonrequire's fast dummy 600x800.
+if os.getenv("MAGIUM_REAL_SCREEN") then require("spec/support/real_screen") else require("commonrequire") end
 local Geom = require("ui/geometry")
 local Reader = require("ui/reader")
 

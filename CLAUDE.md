@@ -123,15 +123,23 @@ Scene header ("Book X - Chapter Y") is derived from the scene ID:
   a `spec/ui/*_smoke.lua` (real `paintTo` for every state realistic data can
   reach, not just structural asserts) and/or a `spec/flow/*` — before the
   owner is asked to test on device.** The device pass confirms e-ink feel and
-  real input, never that the code works or that a screen renders. The smoke
-  paint runs at a dummy 600×800, so it proves "doesn't crash", not "looks
-  right at 1272×1696" — real layout is a device or screenshot check.
+  real input, never that the code works or that a screen renders.
   → **`verify`** and **`device`** skills.
+- **The test commands** (all `wsl -d Ubuntu -- bash -lc 'bash tools/mgm.sh <cmd>'`):
+  `test` (full busted — pure engine/save/flow + the app-level E2E
+  `spec/save/schema_compat_spec.lua` / `navigation_spec.lua` integrity block);
+  `test-ui` (fast dummy-600×800 smoke pass, "doesn't crash");
+  `test-ui-real` (xvfb + real 1272×1696 @300dpi via `spec/support/real_screen.lua`
+  — proves layout, **the gate before a device pass / merge**);
+  `oracle-corpus` (per-scene render parity vs magium-dev, only when a render
+  path could change); `emu-smoke` (plugin still loads).
 - **Every regression suite that exists is run and updated by every later phase
-  or change, not just the one that added it.** A behavior change that doesn't
-  update the test asserting the old behavior is incomplete. Phase VI+ is
-  **blocked on Phase V.5** landing first
-  (`docs/specs/2026-09-04-phase-v5-test-hardening.md`). → **`verify`** skill.
+  or change, not just the one that added it** — `test`, `test-ui` /
+  `test-ui-real`, `oracle-corpus`, and the Phase V.5 additions
+  (`spec/ui/main_e2e_smoke.lua`, the `navigation_spec.lua` achievements-integrity
+  block, `spec/save/schema_compat_spec.lua` + its `fixtures/save_v1.lua`).
+  A behavior change that doesn't update the test asserting the old behavior is
+  incomplete. → **`verify`** skill.
 - Still-open items that need device time or code are tracked as roadmap work, not
   `OQ-NNN` (see `docs/research/07-risks-open-questions.md` blocking-status note).
 

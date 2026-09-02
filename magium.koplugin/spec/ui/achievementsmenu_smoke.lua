@@ -21,7 +21,9 @@
 -- verified with a one-off non-dummy script at the real resolution
 -- (2026-09-04); making that the norm is Phase V.5 scope.
 
-require("commonrequire")
+-- bootstrap: a real 1272x1696 @300dpi SDL Screen under `mgm.sh test-ui-real` /
+-- `real-screen` (MAGIUM_REAL_SCREEN=1), else commonrequire's fast dummy 600x800.
+if os.getenv("MAGIUM_REAL_SCREEN") then require("spec/support/real_screen") else require("commonrequire") end
 local Screen = require("device").screen
 local Locale = require("engine/locale")
 local AchievementsMenu = require("ui/achievementsmenu")
