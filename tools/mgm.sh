@@ -28,6 +28,10 @@
 #                       framebuffer (spec/support/real_screen.lua) — proves
 #                       layout at the owner's PW12 resolution. The gate before a
 #                       device pass / merge (Phase V.5, item 7).
+#   test-ui-matrix      test-ui-real repeated across ~4 device profiles (small 6"
+#                       Kindle .. Kindle Scribe) — proves the custom reader lays
+#                       out on screens other than the PW12 (Phase VI). The gate
+#                       for any ui/reader.lua / pagination.lua / choices.lua change.
 #   lua <file> [args]   run luajit from magium.koplugin/
 #   koenv <script> [a]  run one Lua <script> (path relative to magium.koplugin/)
 #                       inside the built emulator's KOReader env: real frontend
@@ -141,6 +145,28 @@ case "$cmd" in
       out=$(bash "$0" "$sub" "spec/ui/${s##*/}" 2>&1) || rc=1
       echo "$out" | grep -E "^\s+(ok|FAIL)|^(PASS|FAIL)" || echo "$out" | tail -5
     done
+    exit $rc
+    ;;
+  test-ui-matrix)
+    # test-ui-real across a set of device profiles other than the owner's PW12
+    # (Phase VI). Proves the custom reader (ui/reader.lua + pagination + choices)
+    # lays out on small/large screens we can't test on hardware. Every
+    # spec/ui/*_smoke.lua must exit 0 at every profile.
+    # profile = "name WxH DPI"
+    profiles=(
+      "kindle-6in     600  800  167"
+      "paperwhite-11  1072 1448 300"
+      "paperwhite-12  1272 1696 300"
+      "kindle-scribe  1860 2480 300"
+    )
+    rc=0
+    for p in "${profiles[@]}"; do
+      read -r name w h dpi <<< "$p"
+      echo "════ profile $name  ${w}x${h} @${dpi}dpi"
+      EMULATE_READER_W="$w" EMULATE_READER_H="$h" EMULATE_READER_DPI="$dpi" \
+        bash "$0" test-ui-real || rc=1
+    done
+    [ $rc -eq 0 ] && echo "mgm: test-ui-matrix OK (all profiles)" || echo "mgm: test-ui-matrix FAILED"
     exit $rc
     ;;
   lua)

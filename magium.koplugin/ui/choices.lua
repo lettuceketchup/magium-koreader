@@ -3,6 +3,8 @@
 -- with that button's { label, target, set_vars, special } (pagination.lua fields).
 local ButtonTable = require("ui/widget/buttontable")
 local Font = require("ui/font")
+local Geom = require("ui/geometry")
+local ScrollableContainer = require("ui/widget/container/scrollablecontainer")
 local TextWidget = require("ui/widget/textwidget")
 local VerticalGroup = require("ui/widget/verticalgroup")
 local logger = require("logger")
@@ -44,11 +46,24 @@ function M.build(opts)
       callback = function() opts.on_select(b) end,
     } }
   end
-  return ButtonTable:new{
+  local bt = ButtonTable:new{
     width = opts.width,
     buttons = rows,
     show_parent = opts.show_parent,
   }
+  -- On a small viewport the choice list can be taller than the page body and
+  -- its lower buttons paint off-screen, untappable (spec §3.4). When that
+  -- happens, crop it into a ScrollableContainer sized to the budget. On the
+  -- common case (a few short choices on a PW-sized screen) return it bare —
+  -- no behavioural change, no scroll chrome.
+  if opts.height and bt:getSize().h > opts.height then
+    return ScrollableContainer:new{
+      dimen = Geom:new{ x = 0, y = 0, w = opts.width, h = opts.height },
+      show_parent = opts.show_parent,
+      bt,
+    }
+  end
+  return bt
 end
 
 return M

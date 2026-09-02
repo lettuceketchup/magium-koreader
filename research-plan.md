@@ -170,6 +170,56 @@ proceeds to Phase 8 in the meantime.
 
 Newest entries at the top. One entry per work session: what was done, decisions, what's next.
 
+### 2026-09-07 (session 34) — Phase VI implemented: settings + viewport robustness
+
+Owner: "Start phase 6 planning" → approved plan (after a `/ponytail` pass that
+cut a standalone viewport smoke + `mgm.sh viewport` subcommand + a
+pre-committed ADR). Spec:
+[`docs/specs/2026-09-07-phase-vi-settings.md`](docs/specs/2026-09-07-phase-vi-settings.md).
+On `feat/phase-vi-settings`, **not merged, not pushed** — awaiting owner device
+sign-off.
+
+- **Scoping pass (the roadmap's "maybe none" for this phase):** of magium-dev's
+  4 settings, only **cheat mode** and a **reader-local text size** are ported.
+  Theme = KOReader native; language = Phase VII. No ADR — the "don't port
+  theme/font/language" call is already in the roadmap; the two new decisions
+  (text size is a plugin-local preset; live rotation stays Phase VIII) are
+  small and uncontested (spec §3.6).
+- **`main.lua`** — enabled the dead in-game-menu "Settings" row →
+  `openSettings()` (a `ButtonDialog`): **Text size** sub-dialog (3 presets
+  Small 17 / Medium 20 / Large 25, persisted as `G_reader_settings`
+  `magium_prose_size`, applied via the existing `_reopenReader()` — no new
+  re-pagination path); **Cheat mode** → `ConfirmBox` reusing the localized
+  `settingsCheatMode*` / `localeYes` / `localeNo` strings, sets
+  `v_available_points = "50"` + `flush_now("cheat")`, one-shot & unconditional
+  (parity with `settings.ejs`).
+- **`ui/reader.lua`** — reads `magium_prose_size` in `init()` (the custom reader
+  does not inherit KOReader's document font); `prose_height` floored at one
+  prose line so a tiny viewport can't drive pagination to one-word-per-page;
+  passes the page-body height into `Choices.build`; frees a scrolling choices
+  page's crop buffer on re-render (`onCloseWidget`, which `WidgetContainer:free`
+  doesn't reach).
+- **`ui/choices.lua`** — when the built `ButtonTable` is taller than the page
+  body, crop it into a `ScrollableContainer` sized to the budget; else return
+  it bare (zero change for the common PW12 case).
+- **Viewport testing** — new **`mgm.sh test-ui-matrix`**: re-runs `test-ui-real`
+  across 4 profiles (600×800@167, 1072×1448@300, 1272×1696@300, 1860×2480@300).
+  `spec/ui/reader_smoke.lua` extended: page-body-in-bounds asserts, paint at
+  each text-size preset, a deterministic 60-choice scene proving the scroll
+  wrap engages + paints. `spec/ui/main_e2e_smoke.lua` updated: the old
+  "'Settings' is disabled" assert flipped to enabled + a new block driving
+  Settings → cheat confirm (asserts `v_available_points == "50"` + disk flush)
+  and Settings → Text size → Large (asserts `magium_prose_size == 25` + reader
+  live). Added to the `verify` skill as the gate for any
+  `reader.lua`/`pagination.lua`/`choices.lua` change.
+- **Gates:** `test` **132/0** (unchanged — new asserts are in `spec/ui`
+  smokes, not busted). `test-ui` + `test-ui-real` all 6 smokes green.
+  `test-ui-matrix` green at all 4 profiles. `emu-smoke` clean (plugin loads,
+  `crash.log` empty). `oracle-corpus` **not re-run** — no `engine/` or
+  `scene.render` change; baseline stays 8887/8887.
+- **Next:** owner device pass (PW12) against the spec exit checklist, then
+  `--no-ff` merge + log. Phase VII (localization) is the next phase.
+
 ### 2026-09-06 (session 33) — Phase V.5: test hardening (items 3, 5, 6 — the remainder)
 
 Owner: "Do the rest of the phase 5.5 as well." Items 3/5/6 implemented on

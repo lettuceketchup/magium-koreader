@@ -28,6 +28,7 @@ All commands run from the repo root through WSL:
 | anything | `test` (full busted suite) | always — cheap, catches the obvious |
 | `engine/` — parser, conditions, store, stats, locale, specials, scene, story | `oracle-corpus` **and** `test` | per-scene render parity vs the magium-dev oracle. ~15 min. The only proof a render-path change stays faithful. |
 | `ui/` | `test-ui` (fast dummy) → `test-ui-real` (xvfb, real 1272×1696) + `emu-smoke` | real KOReader widget stack, headless; `test-ui-real` is the layout gate before a device pass / merge; `emu-smoke` proves the plugin still loads |
+| `ui/reader.lua`, `ui/pagination.lua`, `ui/choices.lua` | also `test-ui-matrix` | the custom reader is the only widget that isn't a native KOReader screen — this re-runs `test-ui-real` across 4 device profiles (600×800 … 1860×2480) so a layout that only works at PW12 size is caught (Phase VI) |
 | `save/` | `test` (save specs + the flow round-trip + `schema_compat_spec.lua`) | |
 | `main.lua` / glue | `test` (incl. `spec/ui/main_e2e_smoke.lua` via `test-ui`/`test-ui-real`) + `emu-smoke` | the E2E harness drives the real `Magium` object |
 
@@ -43,8 +44,9 @@ were skipped.
 - **oracle-corpus** — matches the baseline in the newest `research-plan.md`
   running-log entry (currently `8887/8887`, 0 DIFF vs magium-dev @ its recorded
   commit). A new DIFF is a stop — triage below.
-- **test-ui / test-ui-real** — every `spec/ui/*_smoke.lua` exits 0 (each prints
-  `PASS  (0 checks failed)`). `test-ui-real` needs a working xvfb (same as
+- **test-ui / test-ui-real / test-ui-matrix** — every `spec/ui/*_smoke.lua`
+  exits 0 (each prints `PASS  (0 checks failed)`); `test-ui-matrix` ends with
+  `test-ui-matrix OK (all profiles)`. All three need a working xvfb (same as
   `emu-smoke`).
 - **emu-smoke** — no `error` / `traceback` lines in the run log, `crash.log`
   empty.

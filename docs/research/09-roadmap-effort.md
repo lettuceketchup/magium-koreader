@@ -316,6 +316,18 @@ the achievements *data* for orphaned/unreachable content.
 
 ### Phase VI — Settings / themes
 
+> **Implemented 2026-09-07** —
+> [`../specs/2026-09-07-phase-vi-settings.md`](../specs/2026-09-07-phase-vi-settings.md),
+> on `feat/phase-vi-settings` (awaiting owner device sign-off). Scoping pass
+> result: of magium-dev's 4 settings only **cheat mode** and a **reader-local
+> text-size preset** (`magium_prose_size`, 3 presets) are ported — theme is
+> KOReader's job, language is Phase VII. Also hardened the custom reader for
+> non-PW12 screen sizes: choices page scrolls on overflow
+> (`ScrollableContainer`), `prose_height` floored, new `mgm.sh test-ui-matrix`
+> (4 device profiles). No `engine/` change → `oracle-corpus` unchanged at
+> 8887/8887; busted 132/0. No ADR (the theme/language non-port is already
+> recorded here).
+
 Design doc §3 "Settings / theming (Original, Catppuccin)."
 
 - **Deliverables:** first, a scoping pass — [`01` §8](01-magium-analysis.md#8-saves--settings-task-18)

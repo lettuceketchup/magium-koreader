@@ -49,6 +49,12 @@ local shared_locale
 -- which opens no replacement (one open handle per process, not one per open).
 local trace_file
 
+-- Phase VI: reader "Text size" presets. { label, point size } — persisted as
+-- the G_reader_settings int key `magium_prose_size`, read in ui/reader.lua:init.
+-- "Medium" 20 == ui/reader.lua's PROSE_SIZE default (unset -> Medium).
+local PROSE_PRESETS = { { _("Small"), 17 }, { _("Medium"), 20 }, { _("Large"), 25 } }
+local PROSE_DEFAULT = 20
+
 local Magium = WidgetContainer:extend{ name = "magium", is_doc_only = false }
 
 -- ---- helpers ----------------------------------------------------------------
@@ -414,9 +420,8 @@ function Magium:openReader()
   UIManager:show(self.reader)
 end
 
--- The in-game menu (spec §6, D2). The full magium-dev menu.ejs shell;
--- Settings is disabled until its phase (VI). Reached from the reader header's
--- "Menu" tap zone and from the special:stats choice.
+-- The in-game menu (spec §6, D2). The full magium-dev menu.ejs shell. Reached
+-- from the reader header's "Menu" tap zone and from the special:stats choice.
 function Magium:openMenu()
   local ButtonDialog = require("ui/widget/buttondialog")
   local TextViewer = require("ui/widget/textviewer")
@@ -444,7 +449,7 @@ function Magium:openMenu()
         text = self.locale:str("menuAchievementsText") or _("Achievements"),
         callback = act(function() self:openAchievements() end),
       }},
-      {{ text = _("Settings"), enabled = false }},
+      {{ text = _("Settings"), callback = act(function() self:openSettings() end) }},
       {{ text = _("About"), callback = act(function()
         UIManager:show(TextViewer:new{ title = _("About"), text = about })
       end) }},
@@ -578,6 +583,75 @@ function Magium:openAchievements()
   }
   UIManager:show(self.achievements_ui)
   trace.event("menu", { action = "achievements" })
+end
+
+-- The Settings screen (spec §3, roadmap Phase VI). Reached from the in-game
+-- menu's "Settings" row. Scoping pass: theme is KOReader's job, language is
+-- Phase VII — only cheat mode + a reader-local text-size preset are ported.
+function Magium:openSettings()
+  local ButtonDialog = require("ui/widget/buttondialog")
+  local dialog
+  local function act(fn) return function() UIManager:close(dialog); fn() end end
+  dialog = ButtonDialog:new{
+    title = _("Settings"), title_align = "center",
+    buttons = {
+      {{ text = _("Text size"), callback = act(function() self:_openTextSizeDialog() end) }},
+      {{
+        text = self.locale:str("settingsCheatModeText") or _("Cheat mode"),
+        callback = act(function() self:_confirmCheatMode() end),
+      }},
+      {{ text = _("Back to game"), callback = act(function() end) }},
+    },
+  }
+  UIManager:show(dialog)
+  trace.event("menu", { action = "settings" })
+end
+
+-- Text size: 3 presets, persisted as G_reader_settings `magium_prose_size`
+-- (ui/reader.lua:init reads it). Applying = write the key + reopen the reader;
+-- _reopenReader re-runs Reader:init which re-paginates at the new size.
+function Magium:_openTextSizeDialog()
+  local ButtonDialog = require("ui/widget/buttondialog")
+  local current = G_reader_settings:readSetting("magium_prose_size") or PROSE_DEFAULT
+  local dialog
+  local rows = {}
+  for _, preset in ipairs(PROSE_PRESETS) do
+    local label, pt = preset[1], preset[2]
+    rows[#rows + 1] = {{
+      text = pt == current and (label .. " ✓") or label,
+      callback = function()
+        UIManager:close(dialog)
+        G_reader_settings:saveSetting("magium_prose_size", pt)
+        trace.event("settings", { op = "text_size", pt = pt })
+        if pt ~= current then self:_reopenReader() end
+      end,
+    }}
+  end
+  rows[#rows + 1] = {{ text = _("Cancel"), callback = function() UIManager:close(dialog) end }}
+  dialog = ButtonDialog:new{ title = _("Text size"), title_align = "center", buttons = rows }
+  UIManager:show(dialog)
+end
+
+-- Cheat mode: parity with magium-dev settings.ejs — one-shot, unconditional,
+-- sets v_available_points to 50 so every stat can be maxed on the next Stats
+-- visit. ConfirmBox (same widget newGame uses), reusing the localized strings.
+function Magium:_confirmCheatMode()
+  local ConfirmBox = require("ui/widget/confirmbox")
+  local text = (self.locale:str("settingsCheatModeModalText")
+    or "Enable cheat mode? You will get 50 stat points to spend."):gsub("<br%s*/?>", "\n")
+  UIManager:show(ConfirmBox:new{
+    text = text,
+    ok_text = self.locale:str("localeYes") or _("Yes"),
+    cancel_text = self.locale:str("localeNo") or _("No"),
+    ok_callback = function()
+      self.store:set("v_available_points", "50")
+      self.save:flush_now("cheat")
+      trace.event("settings", { op = "cheat" })
+      UIManager:show(InfoMessage:new{
+        text = _("Cheat mode enabled — open Stats to spend your points."),
+      })
+    end,
+  })
 end
 
 -- Close the current reader (flushing) and re-open on the current v_current_scene.
