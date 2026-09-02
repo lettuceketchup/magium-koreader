@@ -13,6 +13,32 @@ Mihailescu). See [`README.md`](README.md#licence) and
 
 ---
 
+## Before you start: install KOReader
+
+Magium is a plugin for **[KOReader](https://github.com/koreader/koreader)**
+([koreader.rocks](https://koreader.rocks/)) — a free, open-source reader for
+e-ink devices. Install KOReader first, then add this plugin. Per-device guides
+live in the
+**[KOReader wiki → Installation](https://github.com/koreader/koreader/wiki#installation)**.
+In brief:
+
+| Platform | Jailbreak / setup | Guide |
+|---|---|---|
+| **Kindle** | **Jailbreak required.** KOReader launches from KUAL on a jailbroken device. The process is reversible and well-documented. | [Kindle install](https://github.com/koreader/koreader/wiki/Installation-on-Kindle-devices) → links current jailbreak steps ([Kindle Modding](https://kindlemodding.org/), [MobileRead](https://www.mobileread.com/forums/forumdisplay.php?f=150)) |
+| **Kobo** | No jailbreak — one-file install to the hidden `.adds/` folder. | [Kobo install](https://github.com/koreader/koreader/wiki/Installation-on-Kobo-devices) |
+| **PocketBook** | No jailbreak — install the `.pbi` package. | [PocketBook install](https://github.com/koreader/koreader/wiki/Installation-on-PocketBook-devices) |
+| **reMarkable** | No jailbreak — needs developer mode / Toltec. | [reMarkable install](https://github.com/koreader/koreader/wiki/Installation-on-reMarkable) |
+| **Android** | No root — install the APK (F-Droid or KOReader releases). | [Android install](https://github.com/koreader/koreader/wiki/Installation-on-Android-devices) |
+| **Linux desktop** | No setup — AppImage / Flatpak. Handy for trying Magium without a device. | [desktop Linux install](https://github.com/koreader/koreader/wiki/Installation-on-desktop-Linux) |
+
+**What Magium needs:** a recent KOReader release (developed and tested against
+`v2026.07.1`) and roughly **1 GB RAM**. The plugin is pure Lua and light on
+resources; the bundled story files add ~7.7 MB. It is built and verified on a
+**Kindle Paperwhite 12 (2024)** — every other device and build is untested but
+expected to work. If yours doesn't, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+---
+
 ## The simple way (any device)
 
 1. Download `magium-koreader-v1.0.zip` from the
