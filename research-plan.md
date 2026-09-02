@@ -176,11 +176,12 @@ Owner: "Start phase 6 planning" → approved plan (after a `/ponytail` pass that
 cut a standalone viewport smoke + `mgm.sh viewport` subcommand + a
 pre-committed ADR). Spec:
 [`docs/specs/2026-09-07-phase-vi-settings.md`](docs/specs/2026-09-07-phase-vi-settings.md).
-On `feat/phase-vi-settings`, **not merged, not pushed**. Owner device pass
-2026-09-07: settings + text size + cheat mode all confirmed. Choices-scroll:
-owner couldn't reach an overflowing scene → verified in the emulator. The pass
-also surfaced a **pre-existing reopen bug** (below), now fixed → owner confirm
-pass pending on the re-deploy.
+**Merged to `main` 2026-09-07** via `--no-ff` (owner device sign-off across the
+full exit checklist, two passes; `feat/phase-vi-settings` deleted, **not
+pushed**). Owner pass 1: settings + text size + cheat mode all confirmed;
+choices-scroll verified in the emulator (no overflowing scene reachable on a
+PW12); the pass surfaced a **pre-existing reopen bug** (below). Owner pass 2:
+reopen fix confirmed ("confirmed").
 
 - **Reopen bug (§3.7) — found on the device pass, pre-existing since Phase IV.**
   `Magium:openReader()` ran `save:load()` *unconditionally*, and
@@ -235,9 +236,8 @@ pass pending on the re-deploy.
   `test-ui-matrix` green at all 4 profiles. `emu-smoke` clean (plugin loads,
   `crash.log` empty). `oracle-corpus` **not re-run** — no `engine/` or
   `scene.render` change; baseline stays 8887/8887.
-- **Next:** owner confirm pass on the re-deploy (the reopen fix + choices
-  scroll), then `--no-ff` merge + log finalize. Phase VII (localization) is the
-  next phase.
+- **Next:** Phase VII (localization — en + fr bundle swap + plugin-chrome
+  `.po`). Depends only on Phase II.
 
 ### 2026-09-06 (session 33) — Phase V.5: test hardening (items 3, 5, 6 — the remainder)
 

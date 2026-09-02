@@ -1,14 +1,15 @@
 # Spec: Phase VI — Settings & viewport robustness
 
-- **Status:** implemented on `feat/phase-vi-settings` — automated gates green
-  (busted **132/0**, `test-ui` + `test-ui-real` + new `test-ui-matrix` all
-  profiles green, `emu-smoke` clean; `oracle-corpus` not re-run — no `engine/`
-  change, baseline stays **8887/8887**). Owner device pass: settings + text
-  size + cheat mode confirmed; choices-scroll verified in the emulator (owner
-  couldn't reach an overflowing scene on device). The device pass also
-  surfaced a **pre-existing reopen bug** (§3.8) — a `special:stats` choice
-  reverted to the last autosave on return — now fixed. **Re-deploy for a
-  confirm pass.**
+- **Status:** **stable — merged to `main` 2026-09-07** (`--no-ff`, owner device
+  sign-off across the full exit checklist over two device passes;
+  `feat/phase-vi-settings` deleted, not pushed). Automated gates green (busted
+  **132/0**, `test-ui` + `test-ui-real` + new `test-ui-matrix` all profiles
+  green, `emu-smoke` clean; `oracle-corpus` not re-run — no `engine/` change,
+  baseline stays **8887/8887**). First device pass confirmed settings + text
+  size + cheat mode and surfaced a **pre-existing reopen bug** (§3.7 — a
+  `special:stats` choice reverted to the last autosave on return); fixed +
+  regression-tested, confirmed on the second pass. Choices-scroll verified in
+  the emulator (no overflowing scene reachable on a PW12).
 - **Last updated:** 2026-09-07
 - **Phase:** Implementation — design cycle 6 (roadmap [Phase VI](../research/09-roadmap-effort.md#phase-vi--settings--themes))
 - **Sources:**

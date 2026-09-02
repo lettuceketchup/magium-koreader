@@ -316,17 +316,19 @@ the achievements *data* for orphaned/unreachable content.
 
 ### Phase VI — Settings / themes
 
-> **Implemented 2026-09-07** —
-> [`../specs/2026-09-07-phase-vi-settings.md`](../specs/2026-09-07-phase-vi-settings.md),
-> on `feat/phase-vi-settings` (awaiting owner device sign-off). Scoping pass
-> result: of magium-dev's 4 settings only **cheat mode** and a **reader-local
-> text-size preset** (`magium_prose_size`, 3 presets) are ported — theme is
-> KOReader's job, language is Phase VII. Also hardened the custom reader for
-> non-PW12 screen sizes: choices page scrolls on overflow
-> (`ScrollableContainer`), `prose_height` floored, new `mgm.sh test-ui-matrix`
-> (4 device profiles). No `engine/` change → `oracle-corpus` unchanged at
-> 8887/8887; busted 132/0. No ADR (the theme/language non-port is already
-> recorded here).
+> **Merged to `main` 2026-09-07** —
+> [`../specs/2026-09-07-phase-vi-settings.md`](../specs/2026-09-07-phase-vi-settings.md)
+> → stable (owner device sign-off, two passes). Scoping pass result: of
+> magium-dev's 4 settings only **cheat mode** and a **reader-local text-size
+> preset** (`magium_prose_size`, 3 presets) are ported — theme is KOReader's
+> job, language is Phase VII. Also hardened the custom reader for non-PW12
+> screen sizes: choices page scrolls on overflow (`ScrollableContainer`),
+> `prose_height` floored, new `mgm.sh test-ui-matrix` (4 device profiles). The
+> device pass also caught + fixed a pre-existing bug (Phase IV): `openReader()`
+> reloaded the store from disk on every `_reopenReader()`, so a `special:stats`
+> choice reverted to the last autosave on return. No `engine/` change →
+> `oracle-corpus` unchanged at 8887/8887; busted 132/0. No ADR (the
+> theme/language non-port is already recorded here).
 
 Design doc §3 "Settings / theming (Original, Catppuccin)."
 
@@ -402,7 +404,7 @@ Phases I–VII).
 | IV | Stats & stat-checks | II (∥ III) | 8–12 hrs |
 | V | Achievements | II (∥ III, IV) | 6–10 hrs |
 | V.5 | Test hardening — **done** (app-level E2E, achievements content-integrity, save-schema regression, real-resolution smoke bootstrap, varied-profile walk, content stress-paint, parse-time budget) | V | 13–21 hrs |
-| VI | Settings/themes (scoped down — much is KOReader's job) | II, V.5 | 4–8 hrs |
+| VI | Settings/themes — **done** (scoped down: cheat mode + reader text-size preset only; + custom-reader viewport robustness + a reopen-bug fix) | II, V.5 | 4–8 hrs |
 | VII | Localization en+fr | II (∥ III–VI) | 4–8 hrs |
 | VIII | Polish: e-ink tuning (OQ-007), condition mitigation (OQ-011), GC tuning, full-corpus QA, packaging | all | 15–25 hrs |
 | **Total** | | | **~113–183 hrs** |
